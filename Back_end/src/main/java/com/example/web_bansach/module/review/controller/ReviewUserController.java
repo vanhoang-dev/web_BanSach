@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.web_bansach.common.response.ApiResponse;
+import com.example.web_bansach.common.response.PageResponse;
 import com.example.web_bansach.module.review.dto.request.CreateReviewRequest;
 import com.example.web_bansach.module.review.dto.response.ReviewResponse;
 import com.example.web_bansach.module.review.service.ReviewService;
@@ -38,12 +40,12 @@ public class ReviewUserController {
      * POST /user/reviews
      */
     @PostMapping
-    public ResponseEntity<ReviewResponse> createReview(
+    public ResponseEntity<ApiResponse<ReviewResponse>> createReview(
             Authentication auth,
             @Valid @RequestBody CreateReviewRequest request) {
         String username = auth.getName();
         ReviewResponse review = reviewService.createReview(username, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(review);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(review));
     }
 
     /**
@@ -51,13 +53,13 @@ public class ReviewUserController {
      * PUT /user/reviews/{reviewId}
      */
     @PutMapping("/{reviewId}")
-    public ResponseEntity<ReviewResponse> updateReview(
+    public ResponseEntity<ApiResponse<ReviewResponse>> updateReview(
             Authentication auth,
             @PathVariable Long reviewId,
             @Valid @RequestBody CreateReviewRequest request) {
         String username = auth.getName();
         ReviewResponse review = reviewService.updateReview(username, reviewId, request);
-        return ResponseEntity.ok(review);
+        return ResponseEntity.ok(ApiResponse.success(review));
     }
 
     /**
@@ -65,12 +67,12 @@ public class ReviewUserController {
      * DELETE /user/reviews/{reviewId}
      */
     @DeleteMapping("/{reviewId}")
-    public ResponseEntity<?> deleteReview(
+    public ResponseEntity<ApiResponse<?>> deleteReview(
             Authentication auth,
             @PathVariable Long reviewId) {
         String username = auth.getName();
         reviewService.deleteReview(username, reviewId);
-        return ResponseEntity.ok("Đánh giá đã được xóa thành công");
+        return ResponseEntity.ok(ApiResponse.success("Đánh giá đã được xóa thành công", null));
     }
 
     /**
@@ -78,15 +80,15 @@ public class ReviewUserController {
      * GET /user/reviews/book/{bookId}/my-review
      */
     @GetMapping("/book/{bookId}/my-review")
-    public ResponseEntity<?> getMyReview(
+    public ResponseEntity<ApiResponse<ReviewResponse>> getMyReview(
             Authentication auth,
             @PathVariable Long bookId) {
         String username = auth.getName();
         ReviewResponse review = reviewService.getMyReview(username, bookId);
         if (review == null) {
-            return ResponseEntity.ok("Bạn chưa đánh giá sách này");
+            return ResponseEntity.ok(ApiResponse.failure(HttpStatus.NOT_FOUND.value(), "Bạn chưa đánh giá sách này"));
         }
-        return ResponseEntity.ok(review);
+        return ResponseEntity.ok(ApiResponse.success(review));
     }
 
     /**
@@ -94,12 +96,12 @@ public class ReviewUserController {
      * GET /user/reviews/book/{bookId}?page=0&size=10
      */
     @GetMapping("/book/{bookId}")
-    public ResponseEntity<Page<ReviewResponse>> getReviewsByBook(
+    public ResponseEntity<ApiResponse<PageResponse<ReviewResponse>>> getReviewsByBook(
             @PathVariable Long bookId,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         Page<ReviewResponse> reviews = reviewService.getReviewsByBook(bookId, page, size);
-        return ResponseEntity.ok(reviews);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(reviews)));
     }
 
     /**
@@ -107,12 +109,12 @@ public class ReviewUserController {
      * GET /user/reviews/book/{bookId}/stats
      */
     @GetMapping("/book/{bookId}/stats")
-    public ResponseEntity<?> getReviewStats(@PathVariable Long bookId) {
+    public ResponseEntity<ApiResponse<?>> getReviewStats(@PathVariable Long bookId) {
         Double avgRating = reviewService.getAverageRating(bookId);
         long reviewCount = reviewService.getReviewCount(bookId);
-        return ResponseEntity.ok(java.util.Map.of(
+        return ResponseEntity.ok(ApiResponse.success(java.util.Map.of(
                 "averageRating", avgRating,
                 "reviewCount", reviewCount
-        ));
+        )));
     }
 }

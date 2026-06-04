@@ -3,7 +3,6 @@ package com.example.web_bansach.module.voucher.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,16 +15,23 @@ import com.example.web_bansach.common.exception.ResourceNotFoundException;
 import com.example.web_bansach.module.voucher.dto.request.CreateVoucherRequest;
 import com.example.web_bansach.module.voucher.dto.response.VoucherResponse;
 import com.example.web_bansach.module.voucher.entity.Voucher;
+import com.example.web_bansach.module.voucher.mapper.VoucherMapper;
 import com.example.web_bansach.module.voucher.repository.VoucherRepository;
 
 /**
  * Service quản lý voucher
+ * Sử dụng constructor injection thay vì field injection
  */
 @Service
 public class VoucherService {
 
-    @Autowired
-    private VoucherRepository voucherRepository;
+    private final VoucherRepository voucherRepository;
+    private final VoucherMapper voucherMapper;
+
+    public VoucherService(VoucherRepository voucherRepository, VoucherMapper voucherMapper) {
+        this.voucherRepository = voucherRepository;
+        this.voucherMapper = voucherMapper;
+    }
 
     /**
      * Tạo voucher mới (admin)
@@ -47,7 +53,7 @@ public class VoucherService {
         voucher.setUpdatedAt(LocalDateTime.now());
 
         Voucher savedVoucher = voucherRepository.save(voucher);
-        return mapToResponse(savedVoucher);
+        return voucherMapper.mapToResponse(savedVoucher);
     }
 
     /**
@@ -71,7 +77,7 @@ public class VoucherService {
         voucher.setUpdatedAt(LocalDateTime.now());
 
         Voucher updatedVoucher = voucherRepository.save(voucher);
-        return mapToResponse(updatedVoucher);
+        return voucherMapper.mapToResponse(updatedVoucher);
     }
 
     /**
@@ -101,7 +107,7 @@ public class VoucherService {
             throw new BusinessException("Voucher này đã hết lượt sử dụng");
         }
 
-        return mapToResponse(voucher);
+        return voucherMapper.mapToResponse(voucher);
     }
 
     /**
@@ -111,7 +117,7 @@ public class VoucherService {
     public VoucherResponse getVoucherDetail(Long voucherId) {
         Voucher voucher = voucherRepository.findById(voucherId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy voucher"));
-        return mapToResponse(voucher);
+        return voucherMapper.mapToResponse(voucher);
     }
 
     /**
@@ -122,7 +128,7 @@ public class VoucherService {
         LocalDate today = LocalDate.now();
         Pageable pageable = PageRequest.of(page, size, Sort.by("expiredAt").ascending());
         return voucherRepository.findValidVouchers(today, pageable)
-                .map(this::mapToResponse);
+                .map(voucherMapper::mapToResponse);
     }
 
     /**
@@ -132,7 +138,7 @@ public class VoucherService {
     public Page<VoucherResponse> getAllVouchers(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return voucherRepository.findAll(pageable)
-                .map(this::mapToResponse);
+                .map(voucherMapper::mapToResponse);
     }
 
     /**
@@ -143,7 +149,7 @@ public class VoucherService {
         LocalDate today = LocalDate.now();
         Pageable pageable = PageRequest.of(page, size, Sort.by("expiredAt").descending());
         return voucherRepository.findExpiredVouchers(today, pageable)
-                .map(this::mapToResponse);
+                .map(voucherMapper::mapToResponse);
     }
 
     /**
@@ -165,24 +171,5 @@ public class VoucherService {
         voucher.setQuantity(voucher.getQuantity() - 1);
         voucher.setUpdatedAt(LocalDateTime.now());
         voucherRepository.save(voucher);
-    }
-
-    private VoucherResponse mapToResponse(Voucher voucher) {
-        VoucherResponse response = new VoucherResponse();
-        response.setId(voucher.getId());
-        response.setCode(voucher.getCode());
-        response.setDiscountPercent(voucher.getDiscountPercent());
-        response.setMaxDiscount(voucher.getMaxDiscount());
-        response.setQuantity(voucher.getQuantity());
-        response.setExpiredAt(voucher.getExpiredAt());
-
-        LocalDate today = LocalDate.now();
-        boolean isExpired = voucher.getExpiredAt().isBefore(today);
-        response.setIsExpired(isExpired);
-
-        boolean isValid = !isExpired && voucher.getQuantity() > 0;
-        response.setIsValid(isValid);
-
-        return response;
     }
 }

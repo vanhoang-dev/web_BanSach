@@ -1,7 +1,6 @@
 package com.example.web_bansach.security.handler;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
@@ -26,12 +25,9 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
             HttpServletResponse response,
             AuthenticationException authException) throws IOException, ServletException {
 
-        ErrorResponse errorResponse = new ErrorResponse(
-                "AUTHENTICATION_ERROR",
+        ErrorResponse errorResponse = ErrorResponse.authenticationError(
                 authException.getMessage() != null ? authException.getMessage()
                         : "Bạn chưa đăng nhập hoặc token không hợp lệ",
-                HttpStatus.UNAUTHORIZED.value(),
-                LocalDateTime.now(),
                 request.getRequestURI());
 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());

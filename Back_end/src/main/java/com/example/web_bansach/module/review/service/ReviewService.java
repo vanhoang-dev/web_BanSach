@@ -2,7 +2,6 @@ package com.example.web_bansach.module.review.service;
 
 import java.time.LocalDateTime;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,30 +16,47 @@ import com.example.web_bansach.module.book.repository.BookRepository;
 import com.example.web_bansach.module.review.dto.request.CreateReviewRequest;
 import com.example.web_bansach.module.review.dto.response.ReviewResponse;
 import com.example.web_bansach.module.review.entity.Review;
+import com.example.web_bansach.module.review.mapper.ReviewMapper;
 import com.example.web_bansach.module.review.repository.ReviewRepository;
+import com.example.web_bansach.module.order.repository.OrderRepository;
 import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.UserRepository;
 
 /**
  * Service xử lý đánh giá sách
+ * Sử dụng constructor injection thay vì field injection
  */
 @Service
 public class ReviewService {
 
-    @Autowired
-    private ReviewRepository reviewRepository;
+    private final ReviewRepository reviewRepository;
+    private final UserRepository userRepository;
+    private final BookRepository bookRepository;
+    private final ReviewMapper reviewMapper;
+    private final ReviewValidationService reviewValidationService;
+    private final OrderRepository orderRepository;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private BookRepository bookRepository;
+    public ReviewService(ReviewRepository reviewRepository,
+            UserRepository userRepository,
+            BookRepository bookRepository,
+            ReviewMapper reviewMapper,
+            ReviewValidationService reviewValidationService,
+            OrderRepository orderRepository) {
+        this.reviewRepository = reviewRepository;
+        this.userRepository = userRepository;
+        this.bookRepository = bookRepository;
+        this.reviewMapper = reviewMapper;
+        this.reviewValidationService = reviewValidationService;
+        this.orderRepository = orderRepository;
+    }
 
     /**
      * Tạo đánh giá mới (user)
      */
     @Transactional(rollbackFor = Exception.class)
     public ReviewResponse createReview(String username, CreateReviewRequest request) {
+        reviewValidationService.validateReviewRequest(request);
+
         Users user = userRepository.findByUsername(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
@@ -48,6 +64,8 @@ public class ReviewService {
 
         Book book = bookRepository.findById(request.getBookId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sách"));
+
+        validatePurchasedBook(user.getId(), book.getId());
 
         // Kiểm tra user đã review sách này chưa
         if (reviewRepository.findByUserIdAndBookId(user.getId(), book.getId()).isPresent()) {
@@ -62,7 +80,7 @@ public class ReviewService {
         review.setCreatedAt(LocalDateTime.now());
 
         Review savedReview = reviewRepository.save(review);
-        return mapToResponse(savedReview);
+        return reviewMapper.mapToResponse(savedReview);
     }
 
     /**
@@ -70,6 +88,8 @@ public class ReviewService {
      */
     @Transactional(rollbackFor = Exception.class)
     public ReviewResponse updateReview(String username, Long reviewId, CreateReviewRequest request) {
+        reviewValidationService.validateReviewRequest(request);
+
         Users user = userRepository.findByUsername(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
@@ -83,11 +103,15 @@ public class ReviewService {
             throw new BusinessException("Bạn không có quyền sửa đánh giá này");
         }
 
+        if (!review.getBook().getId().equals(request.getBookId())) {
+            throw new BusinessException("Không thể thay đổi sách của đánh giá");
+        }
+
         review.setRating(request.getRating());
         review.setComment(request.getComment());
 
         Review updatedReview = reviewRepository.save(review);
-        return mapToResponse(updatedReview);
+        return reviewMapper.mapToResponse(updatedReview);
     }
 
     /**
@@ -111,6 +135,13 @@ public class ReviewService {
         reviewRepository.delete(review);
     }
 
+    private void validatePurchasedBook(Long userId, Long bookId) {
+        long purchasedCount = orderRepository.countCompletedItemsByUserIdAndBookId(userId, bookId);
+        if (purchasedCount <= 0) {
+            throw new BusinessException("Chỉ có thể đánh giá sau khi đã mua và hoàn thành đơn hàng");
+        }
+    }
+
     /**
      * Lấy đánh giá của user cho một sách
      */
@@ -124,7 +155,7 @@ public class ReviewService {
         Review review = reviewRepository.findByUserIdAndBookId(user.getId(), bookId)
                 .orElse(null);
 
-        return review != null ? mapToResponse(review) : null;
+        return review != null ? reviewMapper.mapToResponse(review) : null;
     }
 
     /**
@@ -134,7 +165,7 @@ public class ReviewService {
     public Page<ReviewResponse> getReviewsByBook(Long bookId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return reviewRepository.findByBookId(bookId, pageable)
-                .map(this::mapToResponse);
+                .map(reviewMapper::mapToResponse);
     }
 
     /**
@@ -144,7 +175,7 @@ public class ReviewService {
     public Page<ReviewResponse> getReviewsByUser(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return reviewRepository.findByUserId(userId, pageable)
-                .map(this::mapToResponse);
+                .map(reviewMapper::mapToResponse);
     }
 
     /**
@@ -154,7 +185,7 @@ public class ReviewService {
     public ReviewResponse getReviewDetail(Long reviewId) {
         Review review = reviewRepository.findByIdWithJoin(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đánh giá"));
-        return mapToResponse(review);
+        return reviewMapper.mapToResponse(review);
     }
 
     /**
@@ -181,24 +212,5 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public long getReviewCount(Long bookId) {
         return reviewRepository.countByBookId(bookId);
-    }
-
-    private ReviewResponse mapToResponse(Review review) {
-        ReviewResponse response = new ReviewResponse();
-        response.setId(review.getId());
-        if (review.getUser() != null) {
-            response.setUserId(review.getUser().getId());
-            response.setUserName(review.getUser().getFullName() != null
-                    ? review.getUser().getFullName()
-                    : review.getUser().getUsername());
-        }
-        if (review.getBook() != null) {
-            response.setBookId(review.getBook().getId());
-            response.setBookTitle(review.getBook().getTitle());
-        }
-        response.setRating(review.getRating());
-        response.setComment(review.getComment());
-        response.setCreatedAt(review.getCreatedAt());
-        return response;
     }
 }

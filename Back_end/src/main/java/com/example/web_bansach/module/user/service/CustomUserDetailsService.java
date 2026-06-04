@@ -2,7 +2,6 @@ package com.example.web_bansach.module.user.service;
 
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,21 +15,24 @@ import com.example.web_bansach.module.user.repository.UserRepository;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+
+    public CustomUserDetailsService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
-    public UserDetails loadUserByUsername(String username)
+    public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException {
 
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(email);
 
         if (user == null) {
-            throw new UsernameNotFoundException("Không tìm thấy user: " + username);
+            throw new UsernameNotFoundException("Không tìm thấy email: " + email);
         }
 
         return new User(
-                user.getUsername(),
+                user.getEmail(),
                 user.getPassword(),
                 user.getIsActive(),
                 true,

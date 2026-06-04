@@ -23,4 +23,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     @Query("SELECT o FROM Order o WHERE o.id = :orderId AND o.user.id = :userId")
     Order findByIdAndUserId(@Param("orderId") Long orderId, @Param("userId") Long userId);
+
+    @Query("SELECT COUNT(oi) FROM OrderItem oi WHERE oi.order.user.id = :userId AND oi.book.id = :bookId AND oi.order.status = com.example.web_bansach.module.order.entity.OrderStatus.COMPLETED")
+    long countCompletedItemsByUserIdAndBookId(@Param("userId") Long userId, @Param("bookId") Long bookId);
 }

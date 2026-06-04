@@ -1,324 +1,430 @@
+# Back_end
+
+Cây thư mục bên dưới giữ nguyên cấu trúc dự án backend, nhưng mình thêm chú thích ngay sau từng class/file để bạn biết nó dùng để làm gì trong hệ thống.
+
+```text
 src/main/java/com/example/web_bansach
-├── common/                         → Phần dùng chung cho toàn hệ thống, không thuộc riêng domain nào
-│   ├── config/                     → Cấu hình chung của ứng dụng
-│   │   ├── CorsConfig.java         → Cấu hình CORS cho frontend gọi API
-│   │   ├── SwaggerConfig.java      → Cấu hình Swagger/OpenAPI
-│   │   ├── JacksonConfig.java      → Cấu hình JSON serialize/deserialize
-│   │   └── WebMvcConfig.java       → Cấu hình MVC chung nếu cần
-│   │
-│   ├── constant/                   → Hằng số dùng chung
-│   │   ├── AppConstants.java       → Các hằng số tổng quát của app
-│   │   ├── RoleConstants.java      → Tên role như ADMIN, USER
-│   │   ├── SecurityConstants.java  → Header, prefix token, v.v.
-│   │   └── MessageConstants.java   → Message cố định dùng nhiều nơi
-│   │
-│   ├── exception/                  → Xử lý lỗi chung của toàn hệ thống
-│   │   ├── BusinessException.java  → Lỗi nghiệp vụ
-│   │   ├── ResourceNotFoundException.java → Không tìm thấy dữ liệu
-│   │   ├── UnauthorizedException.java → Chưa đăng nhập / token sai
-│   │   ├── ForbiddenException.java → Không đủ quyền
-│   │   ├── ErrorResponse.java      → Cấu trúc response lỗi
-│   │   └── GlobalExceptionHandler.java → Bắt lỗi tập trung toàn app
-│   │
-│   ├── response/                   → Response dùng chung
-│   │   ├── ApiResponse.java        → Wrapper response chung
-│   │   ├── PageResponse.java       → Response phân trang
-│   │   └── PaginationMeta.java     → Metadata phân trang
-│   │
-│   ├── util/                       → Hàm tiện ích dùng chung
-│   │   ├── DateUtils.java          → Xử lý ngày giờ
-│   │   ├── SlugUtils.java          → Sinh slug
-│   │   ├── CurrencyUtils.java      → Hỗ trợ format tiền
-│   │   └── FileUtils.java          → Hỗ trợ file nếu cần
-│   │
-│   └── mapper/                     → Mapper dùng chung hoặc base mapper
-│       └── BaseMapper.java         → Interface/base mapper nếu bạn muốn chuẩn hóa
+├── common/                                      → Phần dùng chung cho toàn dự án
+│   ├── config/
+│   │   ├── CorsConfig.java                      → Cấu hình CORS cho frontend gọi API
+│   │   ├── SwaggerConfig.java                   → Cấu hình tài liệu API Swagger/OpenAPI
+│   │   ├── JacksonConfig.java                   → Cấu hình serialize/deserialize JSON
+│   │   └── WebMvcConfig.java                    → Cấu hình MVC chung cho ứng dụng
+│   ├── constant/
+│   │   ├── AppConstants.java                    → Hằng số ứng dụng như phân trang, upload, format
+│   │   ├── RoleConstants.java                   → Tên các role như ADMIN, USER
+│   │   ├── SecurityConstants.java               → Hằng số liên quan JWT và bảo mật
+│   │   └── MessageConstants.java                → Các message lỗi/thành công dùng chung
+│   ├── exception/
+│   │   ├── BusinessException.java               → Lỗi nghiệp vụ do logic gây ra
+│   │   ├── ResourceNotFoundException.java        → Lỗi không tìm thấy dữ liệu
+│   │   ├── UnauthorizedException.java            → Lỗi chưa xác thực / token sai
+│   │   ├── ForbiddenException.java               → Lỗi không đủ quyền truy cập
+│   │   ├── ValidationException.java              → Lỗi validate dữ liệu đầu vào
+│   │   ├── ErrorResponse.java                    → Cấu trúc response lỗi
+│   │   └── GlobalExceptionHandler.java           → Bắt và chuẩn hóa lỗi toàn hệ thống
+│   ├── response/
+│   │   ├── ApiResponse.java                      → Wrapper response chuẩn cho API
+│   │   ├── PageResponse.java                     → Wrapper cho dữ liệu phân trang
+│   │   └── PaginationMeta.java                   → Metadata của phân trang
+│   ├── util/
+│   │   ├── DateUtils.java                        → Hàm tiện ích xử lý ngày giờ
+│   │   ├── SlugUtils.java                        → Hàm tạo slug / xử lý chuỗi
+│   │   ├── CurrencyUtils.java                    → Hàm tiện ích xử lý tiền tệ
+│   │   └── FileUtils.java                        → Hàm tiện ích xử lý file
+│   └── mapper/
+│       └── BaseMapper.java                       → Interface nền để chuẩn hóa mapping entity/DTO
 │
-├── security/                       → Toàn bộ phần bảo mật và xác thực
-│   ├── config/                     → Cấu hình Spring Security
-│   │   └── SecurityConfiguration.java → Khai báo filter chain, route public/private
-│   │
-│   ├── jwt/                        → Xử lý JWT
-│   │   ├── JwtAuthenticationFilter.java → Filter đọc và kiểm tra token
-│   │   ├── JwtTokenProvider.java   → Tạo, parse, validate JWT
-│   │   └── JwtProperties.java      → Cấu hình JWT secret, expiration
-│   │
-│   ├── principal/                  → Đại diện user đang đăng nhập
-│   │   └── UserPrincipal.java      → Chứa id, email, role của user hiện tại
-│   │
-│   ├── service/                    → Service phục vụ security
-│   │   └── CustomUserDetailsService.java → Load user từ DB cho Spring Security
-│   │
-│   └── handler/                    → Xử lý lỗi liên quan security
-│       ├── JwtAuthenticationEntryPoint.java → Lỗi chưa xác thực
-│       └── JwtAccessDeniedHandler.java → Lỗi không đủ quyền
+├── security/                                    → Phần xác thực và phân quyền
+│   ├── config/
+│   │   └── SecurityConfiguration.java            → Cấu hình Spring Security cho toàn app
+│   ├── jwt/
+│   │   ├── JwtAuthenticationFilter.java          → Filter đọc JWT từ request
+│   │   ├── JwtTokenProvider.java                 → Tạo, kiểm tra và phân tích JWT
+│   │   └── JwtProperties.java                    → Cấu hình secret, thời gian sống của token
+│   ├── principal/
+│   │   └── UserPrincipal.java                    → Đại diện user đang đăng nhập trong SecurityContext
+│   ├── service/
+│   │   └── CustomUserDetailsService.java          → Load user từ database cho Spring Security
+│   └── handler/
+│       ├── JwtAuthenticationEntryPoint.java      → Trả lỗi khi chưa đăng nhập
+│       └── JwtAccessDeniedHandler.java           → Trả lỗi khi không đủ quyền
 │
-├── infrastructure/                 → Tích hợp hạ tầng và dịch vụ ngoài
-│   ├── cloudinary/                 → Tích hợp Cloudinary
-│   │   ├── CloudinaryConfig.java   → Cấu hình Cloudinary
-│   │   └── CloudinaryFileStorageService.java → Upload/xóa ảnh trên Cloudinary
-│   │
-│   ├── payment/                    → Tích hợp cổng thanh toán
-│   │   ├── PaymentGateway.java     → Interface abstraction cho cổng thanh toán
-│   │   ├── VNPayGateway.java       → Tích hợp VNPay
-│   │   ├── MomoGateway.java        → Tích hợp Momo nếu có
-│   │   └── PaymentStrategyFactory.java → Chọn provider thanh toán phù hợp
-│   │
-│   ├── messaging/                  → Tích hợp queue/message broker nếu có
-│   │   └── NotificationProducer.java → Gửi message ra queue
-│   │
-│   ├── persistence/                → Cấu hình và hỗ trợ persistence
-│   │   ├── JpaConfig.java          → Config JPA nếu cần
-│   │   ├── AuditingConfig.java     → Tự động createdAt/updatedAt
-│   │   └── BaseEntity.java         → Entity base dùng chung
-│   │
-│   └── external/                   → Tích hợp dịch vụ ngoài khác
-│       └── EmailSender.java        → Gửi email qua provider ngoài
+├── infrastructure/                               → Tầng tích hợp với dịch vụ ngoài và hạ tầng
+│   ├── cloudinary/
+│   │   ├── CloudinaryConfig.java                 → Cấu hình Cloudinary client
+│   │   └── CloudinaryFileStorageService.java     → Upload/xóa ảnh trên Cloudinary
+│   ├── file/
+│   │   ├── FileUploadService.java                → Abstraction cho việc upload file
+│   │   └── impl/
+│   │       └── CloudinaryFileUploadService.java   → Triển khai upload file bằng Cloudinary
+│   ├── payment/
+│   │   ├── PaymentGateway.java                   → Interface chiến lược thanh toán
+│   │   ├── VNPayGateway.java                     → Triển khai thanh toán VNPay
+│   │   ├── MomoGateway.java                      → Triển khai thanh toán Momo
+│   │   └── PaymentStrategyFactory.java           → Chọn gateway theo phương thức thanh toán
+│   ├── messaging/
+│   │   └── NotificationProducer.java             → Gửi thông báo ra hệ thống queue nếu có
+│   ├── persistence/
+│   │   ├── JpaConfig.java                        → Cấu hình JPA repositories
+│   │   ├── AuditingConfig.java                   → Bật audit createdAt/updatedAt
+│   │   └── BaseEntity.java                       → Base entity chứa các trường audit chung
+│   └── external/
+│       └── EmailSender.java                      → Gửi email qua dịch vụ ngoài
 │
-└── module/                         → Các domain/chức năng chính của hệ thống
-    ├── auth/                       → Nghiệp vụ xác thực: login, register
+└── module/                                       → Các module nghiệp vụ chính của dự án
+    ├── auth/
     │   ├── controller/
-    │   │   └── AuthController.java → API login/register
+    │   │   └── AuthController.java               → API đăng ký, đăng nhập, xác thực
     │   ├── service/
-    │   │   └── AuthService.java    → Xử lý nghiệp vụ auth
+    │   │   ├── AuthService.java                  → Interface cho nghiệp vụ auth
+    │   │   ├── TokenService.java                 → Interface xử lý token/JWT
+    │   │   └── impl/
+    │   │       ├── AuthServiceImpl.java          → Xử lý đăng ký và đăng nhập
+    │   │       └── TokenServiceImpl.java         → Tạo và kiểm tra token
     │   ├── dto/
     │   │   ├── request/
-    │   │   │   ├── LoginRequest.java → Dữ liệu đăng nhập
-    │   │   │   └── RegisterRequest.java → Dữ liệu đăng ký
+    │   │   │   ├── LoginRequest.java             → Dữ liệu request đăng nhập
+    │   │   │   └── RegisterRequest.java          → Dữ liệu request đăng ký
     │   │   └── response/
-    │   │       └── AuthResponse.java → Token + thông tin user sau login
-    │   └── mapper/
-    │       └── AuthMapper.java     → Map dữ liệu auth nếu cần
-    │
-    ├── user/                       → Nghiệp vụ người dùng
-    │   ├── controller/
-    │   │   ├── UserController.java → API user tự xem/sửa profile
-    │   │   └── UserAdminController.java → API admin quản lý user
-    │   ├── service/
-    │   │   ├── UserService.java    → Service chính của user
-    │   │   ├── UserQueryService.java → Lấy danh sách/chi tiết user
-    │   │   └── UserCommandService.java → Tạo/sửa/khóa user
-    │   ├── dto/
-    │   │   ├── request/
-    │   │   │   ├── UpdateProfileRequest.java → Sửa hồ sơ
-    │   │   │   └── ChangePasswordRequest.java → Đổi mật khẩu
-    │   │   └── response/
-    │   │       ├── UserResponse.java → Thông tin user cơ bản
-    │   │       └── UserDetailResponse.java → Chi tiết user
-    │   ├── entity/
-    │   │   └── User.java           → Entity người dùng
-    │   ├── repository/
-    │   │   └── UserRepository.java → Truy cập DB của user
+    │   │       └── AuthResponse.java             → Dữ liệu trả về sau đăng nhập
     │   ├── mapper/
-    │   │   └── UserMapper.java     → Map entity ↔ DTO
+    │   │   └── AuthMapper.java                   → Chuyển đổi dữ liệu auth giữa entity và DTO
     │   └── validator/
-    │       └── UserValidator.java  → Validate rule nghiệp vụ của user
+    │       └── AuthValidator.java                → Kiểm tra dữ liệu đăng ký/đăng nhập
     │
-    ├── author/                     → Nghiệp vụ tác giả
+    ├── user/
     │   ├── controller/
-    │   │   └── AuthorController.java → API quản lý / lấy tác giả
+    │   │   ├── UserProfileController.java         → API cho user tự xem/sửa hồ sơ
+    │   │   └── UserAdminController.java          → API admin quản lý user
     │   ├── service/
-    │   │   └── AuthorService.java  → Xử lý nghiệp vụ author
-    │   ├── dto/
-    │   ├── entity/
-    │   │   └── Author.java         → Entity tác giả
-    │   ├── repository/
-    │   │   └── AuthorRepository.java → Truy cập DB author
-    │   └── mapper/
-    │       └── AuthorMapper.java   → Map dữ liệu author
-    │
-    ├── category/                   → Nghiệp vụ danh mục sách
-    │   ├── controller/
-    │   │   ├── CategoryController.java → API danh mục cho user
-    │   │   └── CategoryAdminController.java → API admin quản lý danh mục
-    │   ├── service/
-    │   │   └── CategoryService.java → Xử lý nghiệp vụ category
-    │   ├── dto/
-    │   ├── entity/
-    │   │   └── Category.java       → Entity danh mục
-    │   ├── repository/
-    │   │   └── CategoryRepository.java → Truy cập DB category
-    │   └── mapper/
-    │       └── CategoryMapper.java → Map dữ liệu category
-    │
-    ├── book/                       → Nghiệp vụ sách
-    │   ├── controller/
-    │   │   ├── BookPublicController.java → API danh sách, chi tiết sách cho user
-    │   │   └── BookAdminController.java → API admin thêm/sửa/xóa sách
-    │   ├── service/
-    │   │   ├── BookService.java    → Service tổng nếu bạn muốn giữ một cổng chính
-    │   │   ├── BookQueryService.java → Lấy danh sách, chi tiết, search, filter
-    │   │   ├── BookCommandService.java → Tạo, sửa, xóa, đổi trạng thái sách
-    │   │   └── BookValidationService.java → Rule validate nghiệp vụ của sách
+    │   │   ├── UserProfileService.java           → Nghiệp vụ hồ sơ cá nhân
+    │   │   ├── UserAdminQueryService.java        → Đọc danh sách/chi tiết user
+    │   │   ├── UserAdminCommandService.java      → Tạo/sửa/khóa user
+    │   │   ├── UserValidationService.java        → Validate các rule của user
+    │   │   └── impl/
+    │   │       ├── UserProfileServiceImpl.java   → Hiện thực nghiệp vụ hồ sơ cá nhân
+    │   │       ├── UserAdminQueryServiceImpl.java→ Hiện thực đọc dữ liệu admin
+    │   │       ├── UserAdminCommandServiceImpl.java → Hiện thực ghi dữ liệu admin
+    │   │       └── UserValidationServiceImpl.java→ Hiện thực validate user
     │   ├── dto/
     │   │   ├── request/
-    │   │   │   ├── CreateBookRequest.java → Dữ liệu tạo sách
-    │   │   │   ├── UpdateBookRequest.java → Dữ liệu sửa sách
-    │   │   │   └── BookSearchRequest.java → Điều kiện tìm kiếm/lọc
+    │   │   │   ├── UpdateUserProfileRequest.java  → Request cập nhật hồ sơ cá nhân
+    │   │   │   ├── ChangePasswordRequest.java     → Request đổi mật khẩu
+    │   │   │   ├── CreateUserRequest.java        → Request tạo user
+    │   │   │   ├── UpdateUserRequest.java        → Request update user
+    │   │   │   └── UpdateUserStatusRequest.java  → Request đổi trạng thái user
     │   │   └── response/
-    │   │       ├── BookResponse.java → Dữ liệu sách cơ bản
-    │   │       ├── BookDetailResponse.java → Chi tiết sách
-    │   │       └── BookAdminResponse.java → Response phục vụ màn admin
+    │   │       ├── UserProfileResponse.java      → Response hồ sơ cá nhân
+    │   │       ├── UserAdminResponse.java        → Response danh sách user cho admin
+    │   │       └── UserDetailResponse.java       → Response chi tiết user
     │   ├── entity/
-    │   │   └── Book.java           → Entity sách
+    │   │   └── User.java                         → Entity user ánh xạ database
     │   ├── repository/
-    │   │   └── BookRepository.java → Truy cập DB của sách
+    │   │   └── UserRepository.java               → Truy vấn dữ liệu user
     │   ├── mapper/
-    │   │   └── BookMapper.java     → Map entity sách sang DTO
+    │   │   └── UserMapper.java                   → Map Users sang response DTO
+    │   └── validator/
+    │       └── UserValidator.java                → Validate dữ liệu user
+    │
+    ├── book/
+    │   ├── controller/
+    │   │   ├── BookPublicController.java         → API xem sách cho khách/user
+    │   │   └── BookAdminController.java          → API quản lý sách cho admin
+    │   ├── service/
+    │   │   ├── BookQueryService.java             → Interface đọc dữ liệu sách
+    │   │   ├── BookCommandService.java           → Interface ghi dữ liệu sách
+    │   │   ├── BookApprovalService.java          → Interface duyệt/từ chối sách
+    │   │   ├── BookValidationService.java        → Interface validate sách
+    │   │   └── impl/
+    │   │       ├── BookQueryServiceImpl.java     → Đọc danh sách/chi tiết/tìm kiếm sách
+    │   │       ├── BookCommandServiceImpl.java   → Tạo/sửa/xóa sách
+    │   │       ├── BookApprovalServiceImpl.java  → Duyệt hoặc từ chối sách
+    │   │       └── BookValidationServiceImpl.java → Validate dữ liệu sách
+    │   ├── dto/
+    │   │   ├── request/
+    │   │   │   ├── CreateBookRequest.java       → Request tạo sách
+    │   │   │   ├── UpdateBookRequest.java       → Request cập nhật sách
+    │   │   │   ├── BookSearchRequest.java       → Request tìm kiếm/lọc sách
+    │   │   │   └── RejectBookRequest.java       → Request từ chối sách
+    │   │   └── response/
+    │   │       ├── BookResponse.java            → Response sách cho user
+    │   │       ├── BookDetailResponse.java      → Response chi tiết sách
+    │   │       └── BookAdminResponse.java       → Response sách cho admin
+    │   ├── entity/
+    │   │   └── Book.java                        → Entity sách
+    │   ├── repository/
+    │   │   └── BookRepository.java              → Truy vấn DB sách
+    │   ├── mapper/
+    │   │   └── BookMapper.java                  → Map Book sang DTO
     │   ├── validator/
-    │   │   └── BookValidator.java  → Validate rule như tên, giá, category
+    │   │   └── BookValidator.java               → Validate rule sách
     │   └── specification/
-    │       └── BookSpecification.java → Query động cho search/filter
+    │       └── BookSpecification.java           → Query động cho search/filter sách
     │
-    ├── inventory/                  → Nghiệp vụ tồn kho
+    ├── author/
     │   ├── controller/
-    │   │   └── InventoryAdminController.java → API admin chỉnh tồn kho
+    │   │   ├── AuthorPublicController.java      → API xem tác giả
+    │   │   └── AuthorAdminController.java       → API admin quản lý tác giả
     │   ├── service/
-    │   │   ├── InventoryService.java → Xử lý tồn kho
-    │   │   └── InventoryCheckService.java → Kiểm tra còn hàng/đủ hàng
+    │   │   ├── AuthorQueryService.java          → Interface đọc dữ liệu tác giả
+    │   │   ├── AuthorCommandService.java        → Interface ghi dữ liệu tác giả
+    │   │   ├── AuthorValidationService.java     → Interface validate tác giả
+    │   │   └── impl/
+    │   │       ├── AuthorQueryServiceImpl.java  → Đọc danh sách tác giả
+    │   │       ├── AuthorCommandServiceImpl.java→ Tạo/sửa/xóa tác giả
+    │   │       └── AuthorValidationServiceImpl.java → Validate dữ liệu tác giả
     │   ├── dto/
     │   │   ├── request/
-    │   │   │   └── UpdateInventoryRequest.java → Dữ liệu cập nhật tồn kho
+    │   │   │   ├── CreateAuthorRequest.java     → Request tạo tác giả
+    │   │   │   └── UpdateAuthorRequest.java     → Request cập nhật tác giả
     │   │   └── response/
-    │   │       └── InventoryResponse.java → Thông tin tồn kho
+    │   │       ├── AuthorResponse.java          → Response tác giả
+    │   │       └── AuthorDetailResponse.java    → Response chi tiết tác giả
     │   ├── entity/
-    │   │   └── Inventory.java      → Entity tồn kho
+    │   │   └── Author.java                      → Entity tác giả
     │   ├── repository/
-    │   │   └── InventoryRepository.java → Truy cập DB inventory
-    │   └── validator/
-    │       └── InventoryValidator.java → Validate rule tồn kho
-    │
-    ├── cart/                       → Nghiệp vụ giỏ hàng
-    │   ├── controller/
-    │   │   └── CartController.java → API thêm/xóa/sửa giỏ hàng
-    │   ├── service/
-    │   │   ├── CartService.java    → Service chính của giỏ hàng
-    │   │   └── CartPricingService.java → Tính tổng tạm thời của giỏ hàng
-    │   ├── dto/
-    │   │   ├── request/
-    │   │   │   ├── AddToCartRequest.java → Thêm sách vào giỏ
-    │   │   │   └── UpdateCartItemRequest.java → Sửa số lượng item
-    │   │   └── response/
-    │   │       ├── CartResponse.java → Toàn bộ giỏ hàng
-    │   │       └── CartItemResponse.java → Từng item trong giỏ
-    │   ├── entity/
-    │   │   ├── Cart.java           → Entity giỏ hàng
-    │   │   └── CartItem.java       → Entity item trong giỏ
-    │   ├── repository/
-    │   │   ├── CartRepository.java → DB cart
-    │   │   └── CartItemRepository.java → DB cart item
+    │   │   └── AuthorRepository.java            → Truy vấn DB tác giả
     │   ├── mapper/
-    │   │   └── CartMapper.java     → Map dữ liệu cart
+    │   │   └── AuthorMapper.java                → Map Author sang DTO
     │   └── validator/
-    │       └── CartValidator.java  → Validate rule giỏ hàng
+    │       └── AuthorValidator.java             → Validate rule tác giả
     │
-    ├── order/                      → Nghiệp vụ đơn hàng
+    ├── category/
     │   ├── controller/
-    │   │   ├── OrderController.java → API user tạo và xem đơn
-    │   │   └── OrderAdminController.java → API admin xử lý đơn hàng
+    │   │   ├── CategoryPublicController.java    → API đọc danh mục cho người dùng
+    │   │   └── CategoryAdminController.java     → API quản lý danh mục cho admin
     │   ├── service/
-    │   │   ├── OrderService.java   → Service tổng nếu cần
-    │   │   ├── OrderCommandService.java → Tạo đơn, hủy đơn, cập nhật trạng thái
-    │   │   ├── OrderQueryService.java → Lấy danh sách, chi tiết, lịch sử đơn
-    │   │   ├── OrderStatusService.java → Rule chuyển trạng thái đơn
-    │   │   └── CheckoutFacade.java → Gom luồng checkout nếu bạn muốn dùng Facade
+    │   │   ├── CategoryQueryService.java        → Interface đọc danh mục
+    │   │   ├── CategoryCommandService.java      → Interface ghi danh mục
+    │   │   ├── CategoryValidationService.java   → Interface validate danh mục
+    │   │   └── impl/
+    │   │       ├── CategoryQueryServiceImpl.java→ Đọc danh mục / tìm kiếm
+    │   │       ├── CategoryCommandServiceImpl.java → Tạo/sửa/xóa/activate/deactivate danh mục
+    │   │       └── CategoryValidationServiceImpl.java → Validate danh mục
     │   ├── dto/
     │   │   ├── request/
-    │   │   │   ├── CreateOrderRequest.java → Dữ liệu tạo đơn
-    │   │   │   ├── CancelOrderRequest.java → Dữ liệu hủy đơn
-    │   │   │   └── UpdateOrderStatusRequest.java → Đổi trạng thái đơn
+    │   │   │   ├── CreateCategoryRequest.java   → Request tạo danh mục
+    │   │   │   └── UpdateCategoryRequest.java   → Request cập nhật danh mục
     │   │   └── response/
-    │   │       ├── OrderResponse.java → Đơn hàng cơ bản
-    │   │       ├── OrderDetailResponse.java → Chi tiết đơn hàng
-    │   │       └── OrderAdminResponse.java → Response cho admin
+    │   │       ├── CategoryResponse.java       → Response danh mục
+    │   │       └── CategoryDetailResponse.java → Response chi tiết danh mục
     │   ├── entity/
-    │   │   ├── Order.java          → Entity đơn hàng
-    │   │   └── OrderItem.java      → Entity item trong đơn
+    │   │   └── Category.java                    → Entity danh mục
     │   ├── repository/
-    │   │   ├── OrderRepository.java → DB đơn hàng
-    │   │   └── OrderItemRepository.java → DB item đơn hàng
+    │   │   └── CategoryRepository.java         → Truy vấn DB danh mục
     │   ├── mapper/
-    │   │   └── OrderMapper.java    → Map entity đơn hàng sang DTO
+    │   │   └── CategoryMapper.java             → Map Category sang DTO
+    │   └── validator/
+    │       └── CategoryValidator.java          → Validate rule danh mục
+    │
+    ├── cart/
+    │   ├── controller/
+    │   │   └── CartController.java              → API giỏ hàng cho user
+    │   ├── service/
+    │   │   ├── CartQueryService.java           → Interface đọc giỏ hàng
+    │   │   ├── CartCommandService.java         → Interface thao tác giỏ hàng
+    │   │   ├── CartPricingService.java         → Interface tính giá giỏ hàng
+    │   │   ├── CartValidationService.java      → Interface validate giỏ hàng
+    │   │   └── impl/
+    │   │       ├── CartQueryServiceImpl.java   → Đọc giỏ hàng
+    │   │       ├── CartCommandServiceImpl.java  → Thêm/sửa/xóa/clear giỏ hàng
+    │   │       ├── CartPricingServiceImpl.java  → Tính giá và giảm giá giỏ hàng
+    │   │       └── CartValidationServiceImpl.java → Validate số lượng/sách/item
+    │   ├── dto/
+    │   │   ├── request/
+    │   │   │   ├── AddToCartRequest.java       → Request thêm sách vào giỏ
+    │   │   │   └── UpdateCartItemRequest.java  → Request sửa số lượng item
+    │   │   └── response/
+    │   │       ├── CartResponse.java           → Response toàn bộ giỏ hàng
+    │   │       └── CartItemResponse.java       → Response từng item trong giỏ
+    │   ├── entity/
+    │   │   ├── Cart.java                       → Entity giỏ hàng
+    │   │   └── CartItem.java                   → Entity item trong giỏ
+    │   ├── repository/
+    │   │   ├── CartRepository.java             → Truy vấn DB cart
+    │   │   └── CartItemRepository.java         → Truy vấn DB cart item
+    │   ├── mapper/
+    │   │   └── CartItemMapper.java             → Map CartItem sang response
+    │   └── validator/
+    │       └── CartValidator.java              → Validate rule giỏ hàng
+    │
+    ├── order/
+    │   ├── controller/
+    │   │   ├── OrderUserController.java        → API user tạo và xem đơn hàng
+    │   │   └── OrderAdminController.java       → API admin xử lý đơn hàng
+    │   ├── service/
+    │   │   ├── OrderQueryService.java          → Interface đọc đơn hàng
+    │   │   ├── OrderCommandService.java        → Interface tạo/cập nhật đơn
+    │   │   ├── OrderStatusService.java         → Interface chuyển trạng thái đơn
+    │   │   ├── CheckoutFacade.java             → Interface gom luồng checkout
+    │   │   ├── OrderValidationService.java     → Interface validate đơn hàng
+    │   │   └── impl/
+    │   │       ├── OrderQueryServiceImpl.java  → Đọc danh sách/chi tiết đơn
+    │   │       ├── OrderCommandServiceImpl.java→ Tạo/cập nhật đơn
+    │   │       ├── OrderStatusServiceImpl.java → Chuyển trạng thái đơn hàng
+    │   │       ├── CheckoutFacadeImpl.java     → Điều phối checkout end-to-end
+    │   │       └── OrderValidationServiceImpl.java → Validate đơn hàng
+    │   ├── dto/
+    │   │   ├── request/
+    │   │   │   ├── CreateOrderRequest.java     → Request tạo đơn
+    │   │   │   ├── CancelOrderRequest.java     → Request hủy đơn
+    │   │   │   ├── UpdateOrderStatusRequest.java → Request đổi trạng thái đơn
+    │   │   │   └── OrderSearchRequest.java     → Request tìm kiếm đơn
+    │   │   └── response/
+    │   │       ├── OrderResponse.java          → Response đơn hàng
+    │   │       ├── OrderDetailResponse.java    → Response chi tiết đơn
+    │   │       └── OrderAdminResponse.java     → Response đơn cho admin
+    │   ├── entity/
+    │   │   ├── Order.java                      → Entity đơn hàng
+    │   │   └── OrderItem.java                  → Entity item trong đơn
+    │   ├── repository/
+    │   │   ├── OrderRepository.java            → Truy vấn DB đơn hàng
+    │   │   └── OrderItemRepository.java        → Truy vấn DB item đơn hàng
+    │   ├── mapper/
+    │   │   └── OrderMapper.java               → Map Order và OrderItem sang DTO
     │   ├── validator/
-    │   │   └── OrderValidator.java → Validate rule nghiệp vụ order
+    │   │   └── OrderValidator.java            → Validate rule nghiệp vụ đơn hàng
     │   └── specification/
-    │       └── OrderSpecification.java → Filter/search order cho admin
+    │       └── OrderSpecification.java       → Query động cho lọc/tìm kiếm đơn
     │
-    ├── payment/                    → Nghiệp vụ thanh toán trong hệ thống
+    ├── payment/
     │   ├── controller/
-    │   │   └── PaymentController.java → API tạo payment, callback, tra cứu payment
+    │   │   └── PaymentController.java         → API khởi tạo và theo dõi thanh toán
     │   ├── service/
-    │   │   ├── PaymentService.java → Xử lý payment trong app
-    │   │   ├── PaymentCallbackService.java → Xử lý callback từ cổng thanh toán
-    │   │   └── PaymentStatusService.java → Quản lý trạng thái payment
+    │   │   ├── PaymentService.java            → Interface điều phối payment
+    │   │   ├── PaymentCallbackService.java    → Xử lý callback từ cổng thanh toán
+    │   │   ├── PaymentStatusService.java      → Tra cứu/cập nhật trạng thái payment
+    │   │   ├── PaymentValidationService.java  → Validate dữ liệu thanh toán
+    │   │   └── impl/
+    │   │       ├── PaymentServiceImpl.java    → Hiện thực flow thanh toán
+    │   │       ├── PaymentCallbackServiceImpl.java → Hiện thực callback payment
+    │   │       ├── PaymentStatusServiceImpl.java   → Hiện thực trạng thái payment
+    │   │       └── PaymentValidationServiceImpl.java → Validate payment
     │   ├── dto/
     │   │   ├── request/
-    │   │   │   └── CreatePaymentRequest.java → Tạo payment
+    │   │   │   ├── CreatePaymentRequest.java  → Request tạo payment
+    │   │   │   └── PaymentCallbackRequest.java→ Request callback từ gateway
     │   │   └── response/
-    │   │       └── PaymentResponse.java → Response payment
+    │   │       └── PaymentResponse.java      → Response payment
     │   ├── entity/
-    │   │   └── Payment.java        → Entity thanh toán
+    │   │   └── Payment.java                  → Entity thanh toán
     │   ├── repository/
-    │   │   └── PaymentRepository.java → DB payment
+    │   │   └── PaymentRepository.java        → Truy vấn DB payment
     │   ├── mapper/
-    │   │   └── PaymentMapper.java  → Map payment
+    │   │   └── PaymentMapper.java            → Map Payment sang DTO
     │   └── validator/
-    │       └── PaymentValidator.java → Validate rule payment
+    │       └── PaymentValidator.java         → Validate rule payment
     │
-    ├── review/                     → Nghiệp vụ đánh giá sách
+    ├── review/
     │   ├── controller/
-    │   │   └── ReviewController.java → API tạo/sửa/xóa/xem review
+    │   │   ├── ReviewPublicController.java   → API xem review công khai
+    │   │   └── ReviewUserController.java     → API user tạo/sửa/xóa review
     │   ├── service/
-    │   │   └── ReviewService.java  → Xử lý review
+    │   │   ├── ReviewQueryService.java       → Interface đọc review
+    │   │   ├── ReviewCommandService.java     → Interface ghi review
+    │   │   ├── ReviewValidationService.java  → Interface validate review
+    │   │   └── impl/
+    │   │       ├── ReviewQueryServiceImpl.java → Đọc danh sách/chi tiết review
+    │   │       ├── ReviewCommandServiceImpl.java → Tạo/cập nhật/xóa review
+    │   │       └── ReviewValidationServiceImpl.java → Validate review
     │   ├── dto/
     │   │   ├── request/
-    │   │   │   └── CreateReviewRequest.java → Tạo review
+    │   │   │   ├── CreateReviewRequest.java  → Request tạo review
+    │   │   │   └── UpdateReviewRequest.java  → Request cập nhật review
     │   │   └── response/
-    │   │       └── ReviewResponse.java → Response review
+    │   │       └── ReviewResponse.java       → Response review
     │   ├── entity/
-    │   │   └── Review.java         → Entity review
+    │   │   └── Review.java                   → Entity đánh giá sách
     │   ├── repository/
-    │   │   └── ReviewRepository.java → DB review
+    │   │   └── ReviewRepository.java        → Truy vấn DB review
     │   ├── mapper/
-    │   │   └── ReviewMapper.java   → Map review
+    │   │   └── ReviewMapper.java            → Map Review sang DTO
     │   └── validator/
-    │       └── ReviewValidator.java → Validate rule đánh giá
+    │       └── ReviewValidator.java         → Validate rule review
     │
-    ├── voucher/                    → Nghiệp vụ mã giảm giá
+    ├── voucher/
     │   ├── controller/
-    │   │   ├── VoucherController.java → API áp voucher cho user
-    │   │   └── VoucherAdminController.java → API admin tạo/sửa/xóa voucher
+    │   │   ├── VoucherPublicController.java → API user xem/áp voucher
+    │   │   └── VoucherAdminController.java  → API admin quản lý voucher
     │   ├── service/
-    │   │   ├── VoucherService.java → Xử lý voucher
-    │   │   └── VoucherApplyService.java → Kiểm tra và áp voucher
+    │   │   ├── VoucherQueryService.java     → Interface đọc voucher
+    │   │   ├── VoucherCommandService.java   → Interface ghi voucher
+    │   │   ├── VoucherApplyService.java     → Interface áp voucher vào đơn
+    │   │   ├── VoucherValidationService.java→ Interface validate voucher
+    │   │   └── impl/
+    │   │       ├── VoucherQueryServiceImpl.java → Đọc danh sách voucher
+    │   │       ├── VoucherCommandServiceImpl.java→ Tạo/sửa/xóa voucher
+    │   │       ├── VoucherApplyServiceImpl.java → Áp voucher vào checkout
+    │   │       └── VoucherValidationServiceImpl.java → Validate voucher
     │   ├── dto/
     │   │   ├── request/
-    │   │   │   ├── CreateVoucherRequest.java → Tạo voucher
-    │   │   │   └── ApplyVoucherRequest.java → Áp voucher vào đơn/giỏ
+    │   │   │   ├── CreateVoucherRequest.java → Request tạo voucher
+    │   │   │   ├── UpdateVoucherRequest.java → Request cập nhật voucher
+    │   │   │   └── ApplyVoucherRequest.java  → Request áp voucher
     │   │   └── response/
-    │   │       └── VoucherResponse.java → Response voucher
+    │   │       ├── VoucherResponse.java     → Response voucher
+    │   │       └── VoucherApplyResponse.java→ Response khi áp voucher
     │   ├── entity/
-    │   │   └── Voucher.java        → Entity voucher
+    │   │   └── Voucher.java                 → Entity voucher
     │   ├── repository/
-    │   │   └── VoucherRepository.java → DB voucher
+    │   │   └── VoucherRepository.java       → Truy vấn DB voucher
     │   ├── mapper/
-    │   │   └── VoucherMapper.java  → Map voucher
+    │   │   └── VoucherMapper.java           → Map Voucher sang DTO
     │   └── validator/
-    │       └── VoucherValidator.java → Validate rule voucher
+    │       └── VoucherValidator.java        → Validate rule voucher
     │
-    └── wishlist/                   → Nghiệp vụ danh sách yêu thích
+    ├── wishlist/
+    │   ├── controller/
+    │   │   └── WishlistController.java      → API quản lý danh sách yêu thích
+    │   ├── service/
+    │   │   ├── WishlistQueryService.java    → Interface đọc wishlist
+    │   │   ├── WishlistCommandService.java   → Interface ghi wishlist
+    │   │   ├── WishlistValidationService.java→ Interface validate wishlist
+    │   │   └── impl/
+    │   │       ├── WishlistQueryServiceImpl.java → Đọc danh sách yêu thích
+    │   │       ├── WishlistCommandServiceImpl.java→ Thêm/xóa wishlist
+    │   │       └── WishlistValidationServiceImpl.java → Validate wishlist
+    │   ├── dto/
+    │   │   ├── request/
+    │   │   │   └── AddWishlistRequest.java → Request thêm sách vào wishlist
+    │   │   └── response/
+    │   │       └── WishlistResponse.java    → Response wishlist
+    │   ├── entity/
+    │   │   └── Wishlist.java               → Entity wishlist
+    │   ├── repository/
+    │   │   └── WishlistRepository.java     → Truy vấn DB wishlist
+    │   ├── mapper/
+    │   │   └── WishlistMapper.java         → Map Wishlist sang DTO
+    │   └── validator/
+    │       └── WishlistValidator.java      → Validate rule wishlist
+    │
+    └── inventory/
         ├── controller/
-        │   └── WishlistController.java → API thêm/xóa/xem wishlist
+        │   └── InventoryAdminController.java → API admin quản lý tồn kho
         ├── service/
-        │   └── WishlistService.java → Xử lý wishlist
+        │   ├── InventoryQueryService.java    → Interface đọc tồn kho
+        │   ├── InventoryCommandService.java  → Interface cập nhật tồn kho
+        │   ├── InventoryCheckService.java    → Interface kiểm tra hàng còn/hết
+        │   ├── InventoryValidationService.java → Interface validate tồn kho
+        │   └── impl/
+        │       ├── InventoryQueryServiceImpl.java → Đọc tồn kho
+        │       ├── InventoryCommandServiceImpl.java → Cập nhật tồn kho
+        │       ├── InventoryCheckServiceImpl.java → Kiểm tra trạng thái tồn
+        │       └── InventoryValidationServiceImpl.java → Validate tồn kho
         ├── dto/
         │   ├── request/
-        │   │   └── AddWishlistRequest.java → Thêm item yêu thích
+        │   │   └── UpdateInventoryRequest.java → Request cập nhật số lượng tồn
         │   └── response/
-        │       └── WishlistResponse.java → Response wishlist
+        │       └── InventoryResponse.java    → Response tồn kho
         ├── entity/
-        │   └── Wishlist.java       → Entity wishlist
+        │   └── Inventory.java                → Entity tồn kho
         ├── repository/
-        │   └── WishlistRepository.java → DB wishlist
-        └── mapper/
-            └── WishlistMapper.java → Map wishlist
+        │   └── InventoryRepository.java      → Truy vấn DB tồn kho
+        ├── mapper/
+        │   └── InventoryMapper.java          → Map Inventory sang DTO
+        └── validator/
+            └── InventoryValidator.java       → Validate rule tồn kho
+
+WebBansachApplication.java                     → Class khởi động Spring Boot
+```

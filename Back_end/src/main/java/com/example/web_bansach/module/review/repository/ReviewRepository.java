@@ -28,17 +28,17 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query("SELECT r FROM Review r JOIN FETCH r.user JOIN FETCH r.book WHERE r.id = :id")
     Optional<Review> findByIdWithJoin(@Param("id") Long id);
 
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.user.id = :userId AND r.book.id = :bookId AND r.book.deletedAt IS NULL")
+    long countByUserIdAndBookId(@Param("userId") Long userId, @Param("bookId") Long bookId);
+
     // Get all reviews with user and book info
-    @Query("SELECT r FROM Review r JOIN FETCH r.user JOIN FETCH r.book WHERE r.bookId = :bookId ORDER BY r.createdAt DESC")
+    @Query("SELECT r FROM Review r JOIN FETCH r.user JOIN FETCH r.book WHERE r.book.id = :bookId ORDER BY r.createdAt DESC")
     List<Review> findByBookIdWithJoin(@Param("bookId") Long bookId);
 
     // Count reviews for a book
     long countByBookId(Long bookId);
 
     // Get average rating for a book
-    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.bookId = :bookId")
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.book.id = :bookId")
     Double getAverageRatingByBookId(@Param("bookId") Long bookId);
 }
-
-
-

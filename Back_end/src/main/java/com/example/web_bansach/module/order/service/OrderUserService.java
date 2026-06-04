@@ -3,9 +3,7 @@ package com.example.web_bansach.module.order.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,51 +13,60 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
-import com.example.web_bansach.module.cart.entity.Cart;
 import com.example.web_bansach.module.cart.entity.CartItem;
 import com.example.web_bansach.module.cart.repository.CartItemRepository;
 import com.example.web_bansach.module.cart.repository.CartRepository;
-import com.example.web_bansach.module.cart.service.CartService;
 import com.example.web_bansach.module.inventory.entity.Inventory;
 import com.example.web_bansach.module.inventory.repository.InventoryRepository;
 import com.example.web_bansach.module.order.dto.request.CreateOrderRequest;
-import com.example.web_bansach.module.order.dto.response.OrderItemResponse;
 import com.example.web_bansach.module.order.dto.response.OrderResponse;
 import com.example.web_bansach.module.order.entity.Order;
 import com.example.web_bansach.module.order.entity.OrderItem;
 import com.example.web_bansach.module.order.entity.OrderStatus;
+import com.example.web_bansach.module.order.mapper.OrderMapper;
 import com.example.web_bansach.module.order.repository.OrderItemRepository;
 import com.example.web_bansach.module.order.repository.OrderRepository;
 import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.UserRepository;
 import com.example.web_bansach.module.voucher.service.VoucherService;
+import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
 
+/**
+ * Service xử lý tạo order từ phía user
+ * Sử dụng constructor injection thay vì field injection
+ */
 @Service
 public class OrderUserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+    private final InventoryRepository inventoryRepository;
+    private final VoucherService voucherService;
+    private final OrderMapper orderMapper;
+    private final RealtimeNotificationService realtimeNotificationService;
 
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private OrderItemRepository orderItemRepository;
-
-    @Autowired
-    private CartService cartService;
-
-    @Autowired
-    private CartItemRepository cartItemRepository;
-
-    @Autowired
-    private CartRepository cartRepository;
-
-    @Autowired
-    private InventoryRepository inventoryRepository;
-
-    @Autowired
-    private VoucherService voucherService;
+    public OrderUserService(UserRepository userRepository,
+            OrderRepository orderRepository,
+            OrderItemRepository orderItemRepository,
+            CartRepository cartRepository,
+            CartItemRepository cartItemRepository,
+            InventoryRepository inventoryRepository,
+            VoucherService voucherService,
+            OrderMapper orderMapper,
+            RealtimeNotificationService realtimeNotificationService) {
+        this.userRepository = userRepository;
+        this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
+        this.cartRepository = cartRepository;
+        this.cartItemRepository = cartItemRepository;
+        this.inventoryRepository = inventoryRepository;
+        this.voucherService = voucherService;
+        this.orderMapper = orderMapper;
+        this.realtimeNotificationService = realtimeNotificationService;
+    }
 
     @Transactional(rollbackFor = Exception.class)
     public OrderResponse createOrder(String username, CreateOrderRequest request) {
@@ -68,7 +75,8 @@ public class OrderUserService {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
 
-        Cart cart = cartService.getOrCreateCart(username);
+        var cart = cartRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new BusinessException("Giỏ hàng trống, không thể tạo đơn"));
         List<CartItem> cartItems = cartItemRepository.findByCartIdWithBook(cart.getId());
         if (cartItems.isEmpty()) {
             throw new BusinessException("Giỏ hàng trống, không thể tạo đơn");
@@ -104,11 +112,12 @@ public class OrderUserService {
         if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
             try {
                 var voucherResponse = voucherService.getVoucherByCode(request.getVoucherCode());
-                
-                // Tính tiền giảm: (discountPercent / 100) * itemsTotal, nhưng không vượt quá maxDiscount
+
+                // Tính tiền giảm: (discountPercent / 100) * itemsTotal, nhưng không vượt quá
+                // maxDiscount
                 BigDecimal discountAmount = itemsTotal.multiply(new BigDecimal(voucherResponse.getDiscountPercent()))
                         .divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
-                
+
                 if (discountAmount.compareTo(voucherResponse.getMaxDiscount()) > 0) {
                     discountAmount = voucherResponse.getMaxDiscount();
                 }
@@ -158,7 +167,7 @@ public class OrderUserService {
         }
 
         // Sử dụng voucher nếu đã áp dụng thành công
-        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty() 
+        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()
                 && voucherDiscount.compareTo(BigDecimal.ZERO) > 0) {
             try {
                 voucherService.useVoucher(request.getVoucherCode());
@@ -167,8 +176,23 @@ public class OrderUserService {
             }
         }
 
-        cartService.clearCart(username);
-        return mapToOrderResponse(savedOrder);
+        cartItemRepository.deleteByCartId(cart.getId());
+        cart.setUpdatedAt(LocalDateTime.now());
+        cartRepository.save(cart);
+
+        realtimeNotificationService.publishOrderEvent(
+            "ORDER_CREATED",
+            savedOrder.getId(),
+            user.getUsername(),
+            "Đơn hàng mới đã được tạo",
+            "PENDING",
+            java.util.Map.of(
+                "orderId", savedOrder.getId(),
+                "username", user.getUsername(),
+                "totalAmount", savedOrder.getTotalAmount(),
+                "status", savedOrder.getStatus().name()));
+
+        return orderMapper.mapToResponse(savedOrder);
     }
 
     @Transactional(readOnly = true)
@@ -180,7 +204,7 @@ public class OrderUserService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
         return orderRepository.findByUserId(user.getId(), pageable)
-                .map(this::mapToOrderResponse);
+                .map(orderMapper::mapToResponse);
     }
 
     @Transactional(readOnly = true)
@@ -195,7 +219,7 @@ public class OrderUserService {
             throw new ResourceNotFoundException("Không tìm thấy đơn hàng");
         }
 
-        return mapToOrderResponse(order);
+        return orderMapper.mapToResponse(order);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -231,33 +255,16 @@ public class OrderUserService {
         order.setStatus(OrderStatus.CANCELLED);
         order.setUpdatedAt(LocalDateTime.now());
         orderRepository.save(order);
-    }
 
-    private OrderResponse mapToOrderResponse(Order order) {
-        OrderResponse response = new OrderResponse();
-        response.setId(order.getId());
-        response.setTotalAmount(order.getTotalAmount());
-        response.setStatus(order.getStatus());
-        response.setReceiverName(order.getReceiverName());
-        response.setReceiverPhone(order.getReceiverPhone());
-        response.setShippingAddress(order.getShippingAddress());
-        response.setVoucherCode(order.getVoucherCode());
-        response.setVoucherDiscount(order.getVoucherDiscount());
-        response.setOrderDate(order.getOrderDate());
-
-        List<OrderItemResponse> items = orderItemRepository.findByOrderIdWithBook(order.getId())
-                .stream()
-                .map(item -> {
-                    OrderItemResponse itemResponse = new OrderItemResponse();
-                    itemResponse.setBookId(item.getBook().getId());
-                    itemResponse.setBookTitle(item.getBook().getTitle());
-                    itemResponse.setQuantity(item.getQuantity());
-                    itemResponse.setPrice(item.getPrice());
-                    return itemResponse;
-                })
-                .collect(Collectors.toList());
-
-        response.setItems(items);
-        return response;
+        realtimeNotificationService.publishOrderEvent(
+            "ORDER_CANCELLED",
+            order.getId(),
+            user.getUsername(),
+            "Đơn hàng đã bị hủy",
+            OrderStatus.CANCELLED.name(),
+            java.util.Map.of(
+                "orderId", order.getId(),
+                "username", user.getUsername(),
+                "status", OrderStatus.CANCELLED.name()));
     }
 }

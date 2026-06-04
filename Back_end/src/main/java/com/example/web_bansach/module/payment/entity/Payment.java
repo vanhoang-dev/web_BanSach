@@ -1,17 +1,11 @@
 package com.example.web_bansach.module.payment.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import com.example.web_bansach.module.order.entity.Order;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,11 +22,42 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id")
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
+    @JoinColumn(name = "order_id", unique = true)
     private Order order;
 
     private BigDecimal amount;
-    private String paymentMethod;
-    private String status;
+    private String paymentMethod; // SEPAY only
+    private String status; // PENDING, SUCCESS, FAILED, REFUNDED, CANCELLED
+
+    // Transaction tracking
+    private String transactionId; // ID từ payment gateway
+    private String paymentUrl; // URL để redirect người dùng
+
+    // Callback verification
+    private String callbackSignature; // Chữ ký từ callback
+    private LocalDateTime callbackReceivedAt; // Thời gian nhận callback
+    private Boolean callbackVerified; // Trạng thái xác minh callback
+
+    // Timestamps
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime paidAt; // Thời gian thanh toán thành công
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (status == null) {
+            status = "PENDING";
+        }
+        if (callbackVerified == null) {
+            callbackVerified = false;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

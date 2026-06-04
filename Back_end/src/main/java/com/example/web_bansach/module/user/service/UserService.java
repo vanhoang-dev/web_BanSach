@@ -1,110 +1,50 @@
 package com.example.web_bansach.module.user.service;
 
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
-import com.example.web_bansach.module.auth.dto.request.LoginRequest;
-import com.example.web_bansach.module.auth.dto.request.UserRequest;
-import com.example.web_bansach.module.auth.dto.response.LoginResponse;
+import com.example.web_bansach.module.user.dto.request.ChangePasswordRequest;
 import com.example.web_bansach.module.user.dto.request.AdminUpdateUserRequest;
 import com.example.web_bansach.module.user.dto.request.UpdateUserRequest;
 import com.example.web_bansach.module.user.dto.response.UserResponse;
 import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.UserRepository;
-import com.example.web_bansach.security.jwt.JwtService;
 
-import jakarta.transaction.Transactional;
-
+/**
+ * Service xử lý User operations
+ * Sử dụng constructor injection thay vì field injection
+ */
 @Service
 public class UserService {
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    public UserService(UserRepository userRepository,
+            PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
-    @Autowired
-    private JwtService jwtService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Transactional
+    @Transactional(readOnly = true)
     public Users layNguoiDungTheoId(Long id) {
         if (id == null || id <= 0) {
             throw new BusinessException("ID người dùng không hợp lệ");
         }
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
-    }
-
-    @Transactional
-    public Users taoTaiKhoanMoi(UserRequest request) {
-        Users existingUser = userRepository.findByUsername(request.getUsername());
-        if (existingUser != null) {
-            throw new BusinessException("Tên tài khoản đã được sử dụng");
-        }
-
-        Users existingEmail = userRepository.findByEmail(request.getEmail());
-        if (existingEmail != null) {
-            throw new BusinessException("Email đã được sử dụng");
-        }
-
-        Users newUser = new Users();
-        newUser.setUsername(request.getUsername().trim());
-        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
-        newUser.setEmail(request.getEmail().trim());
-        newUser.setPhone(request.getPhone());
-        newUser.setFullName(request.getFullName());
-        newUser.setAddress(request.getAddress());
-        newUser.setIsActive(true);
-
-        return userRepository.save(newUser);
-    }
-
-    @Transactional
-    public LoginResponse dangNhap(LoginRequest request) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getUsername(),
-                            request.getPassword()));
-        } catch (Exception e) {
-            throw new BusinessException("Sai tên đăng nhập hoặc mật khẩu");
-        }
-
-        Users user = userRepository.findByUsername(request.getUsername());
-        if (user == null) {
-            throw new ResourceNotFoundException("Không tìm thấy người dùng");
-        }
-
-        if (!user.getIsActive()) {
-            throw new BusinessException("Tài khoản này đã bị khóa");
-        }
-
-        String token = jwtService.generateToken(request.getUsername());
-        Set<String> roles = user.getRoles()
-                .stream()
-                .map(r -> r.getName())
-                .collect(Collectors.toSet());
-
-        return new LoginResponse(token, user.getId(), user.getUsername(), roles);
     }
 
     @Transactional
@@ -136,6 +76,15 @@ public class UserService {
         return response;
     }
 
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUserProfile(String username) {
+        Users user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new ResourceNotFoundException("Người dùng không tồn tại");
+        }
+        return convertToUserResponse(user);
+    }
+
     @Transactional
     public void updateCurrentUserProfile(String username, UpdateUserRequest update) {
         Users user = userRepository.findByUsername(username);
@@ -143,6 +92,41 @@ public class UserService {
             throw new ResourceNotFoundException("Người dùng không tồn tại");
         }
         updateUserProfileById(user.getId(), update);
+    }
+
+    @Transactional
+    public void changeCurrentUserPassword(String username, ChangePasswordRequest request) {
+        Users user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new ResourceNotFoundException("Người dùng không tồn tại");
+        }
+
+        if (request == null) {
+            throw new BusinessException("Thông tin đổi mật khẩu không hợp lệ");
+        }
+
+        if (request.getCurrentPassword() == null || request.getCurrentPassword().trim().isEmpty()) {
+            throw new BusinessException("Mật khẩu hiện tại không được để trống");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().trim().isEmpty()) {
+            throw new BusinessException("Mật khẩu mới không được để trống");
+        }
+
+        if (request.getConfirmPassword() == null || !request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException("Xác nhận mật khẩu mới không khớp");
+        }
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BusinessException("Mật khẩu hiện tại không đúng");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new BusinessException("Mật khẩu mới phải khác mật khẩu hiện tại");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     @Transactional

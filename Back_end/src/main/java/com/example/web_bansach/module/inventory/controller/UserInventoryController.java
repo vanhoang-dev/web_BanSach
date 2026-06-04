@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.web_bansach.common.response.ApiResponse;
 import com.example.web_bansach.module.inventory.dto.response.InventoryResponse;
 import com.example.web_bansach.module.inventory.service.InventoryService;
 
@@ -20,7 +21,7 @@ public class UserInventoryController {
     private InventoryService inventoryService;
 
     @GetMapping("/book/{bookId}")
-    public ResponseEntity<InventoryResponse> getInventoryByBook(@PathVariable Long bookId) {
-        return ResponseEntity.ok(inventoryService.getByBookId(bookId));
+    public ResponseEntity<ApiResponse<InventoryResponse>> getInventoryByBook(@PathVariable Long bookId) {
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.getByBookId(bookId)));
     }
 }

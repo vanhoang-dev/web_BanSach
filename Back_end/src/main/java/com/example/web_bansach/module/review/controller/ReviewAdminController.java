@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.web_bansach.common.response.ApiResponse;
+import com.example.web_bansach.common.response.PageResponse;
 import com.example.web_bansach.module.review.dto.response.ReviewResponse;
 import com.example.web_bansach.module.review.service.ReviewService;
 
@@ -30,12 +32,12 @@ public class ReviewAdminController {
      * GET /admin/reviews/user/{userId}?page=0&size=10
      */
     @GetMapping("/user/{userId}")
-    public ResponseEntity<Page<ReviewResponse>> getUserReviews(
+    public ResponseEntity<ApiResponse<PageResponse<ReviewResponse>>> getUserReviews(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         Page<ReviewResponse> reviews = reviewService.getReviewsByUser(userId, page, size);
-        return ResponseEntity.ok(reviews);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(reviews)));
     }
 
     /**
@@ -43,9 +45,9 @@ public class ReviewAdminController {
      * GET /admin/reviews/{reviewId}
      */
     @GetMapping("/{reviewId}")
-    public ResponseEntity<ReviewResponse> getReviewDetail(@PathVariable Long reviewId) {
+    public ResponseEntity<ApiResponse<ReviewResponse>> getReviewDetail(@PathVariable Long reviewId) {
         ReviewResponse review = reviewService.getReviewDetail(reviewId);
-        return ResponseEntity.ok(review);
+        return ResponseEntity.ok(ApiResponse.success(review));
     }
 
     /**
@@ -53,8 +55,8 @@ public class ReviewAdminController {
      * DELETE /admin/reviews/{reviewId}
      */
     @DeleteMapping("/{reviewId}")
-    public ResponseEntity<?> deleteReview(@PathVariable Long reviewId) {
+    public ResponseEntity<ApiResponse<?>> deleteReview(@PathVariable Long reviewId) {
         reviewService.deleteReviewAdmin(reviewId);
-        return ResponseEntity.ok("Đánh giá đã được xóa thành công");
+        return ResponseEntity.ok(ApiResponse.success("Đánh giá đã được xóa thành công", null));
     }
 }

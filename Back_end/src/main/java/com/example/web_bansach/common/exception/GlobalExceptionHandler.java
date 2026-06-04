@@ -1,90 +1,120 @@
 package com.example.web_bansach.common.exception;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.BadCredentialsException;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
+import com.example.web_bansach.common.constant.MessageConstants;
+import com.example.web_bansach.common.response.ApiResponse;
+
+/**
+ * Global exception handler for all REST endpoints
+ * Converts exceptions to standardized ApiResponse format
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
         private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-        /**
-         * Xử lý ResourceNotFoundException
-         */
+        private String requestPath(WebRequest request) {
+                return request.getDescription(false).replace("uri=", "");
+        }
+
         @ExceptionHandler(ResourceNotFoundException.class)
-        public ResponseEntity<ErrorResponse> handleNotFound(
+        public ResponseEntity<ApiResponse<?>> handleResourceNotFound(
                         ResourceNotFoundException ex,
                         WebRequest request) {
-
                 logger.warn("Resource not found: {}", ex.getMessage());
 
-                ErrorResponse errorResponse = new ErrorResponse(
-                                "RESOURCE_NOT_FOUND",
-                                ex.getMessage(),
+                ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.NOT_FOUND.value(),
-                                LocalDateTime.now(),
-                                request.getDescription(false).replace("uri=", ""));
+                                ex.getMessage() != null ? ex.getMessage() : MessageConstants.RESOURCE_NOT_FOUND);
+                response.setPath(requestPath(request));
 
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
-        /**
-         * Xử lý BadCredentialsException
-         */
+        @ExceptionHandler(UnauthorizedException.class)
+        public ResponseEntity<ApiResponse<?>> handleUnauthorized(
+                        UnauthorizedException ex,
+                        WebRequest request) {
+                logger.warn("Unauthorized access: {}", ex.getMessage());
+
+                ApiResponse<?> response = ApiResponse.failure(
+                                HttpStatus.UNAUTHORIZED.value(),
+                                ex.getMessage() != null ? ex.getMessage() : MessageConstants.UNAUTHORIZED);
+                response.setPath(requestPath(request));
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        @ExceptionHandler(ForbiddenException.class)
+        public ResponseEntity<ApiResponse<?>> handleForbidden(
+                        ForbiddenException ex,
+                        WebRequest request) {
+                logger.warn("Forbidden access: {}", ex.getMessage());
+
+                ApiResponse<?> response = ApiResponse.failure(
+                                HttpStatus.FORBIDDEN.value(),
+                                ex.getMessage() != null ? ex.getMessage() : MessageConstants.FORBIDDEN);
+                response.setPath(requestPath(request));
+
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
         @ExceptionHandler(BadCredentialsException.class)
-        public ResponseEntity<ErrorResponse> handleAuth(
+        public ResponseEntity<ApiResponse<?>> handleBadCredentials(
                         BadCredentialsException ex,
                         WebRequest request) {
+                logger.warn("Bad credentials");
 
-                logger.warn("Authentication failed");
-
-                ErrorResponse errorResponse = new ErrorResponse(
-                                "INVALID_CREDENTIALS",
-                                "Sai tên đăng nhập hoặc mật khẩu",
+                ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.UNAUTHORIZED.value(),
-                                LocalDateTime.now(),
-                                request.getDescription(false).replace("uri=", ""));
+                                MessageConstants.INVALID_CREDENTIALS);
+                response.setPath(requestPath(request));
 
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
-        /**
-         * Xử lý BusinessException
-         */
         @ExceptionHandler(BusinessException.class)
-        public ResponseEntity<ErrorResponse> handleBusinessException(
+        public ResponseEntity<ApiResponse<?>> handleBusinessException(
                         BusinessException ex,
                         WebRequest request) {
-
                 logger.warn("Business exception: {}", ex.getMessage());
 
-                ErrorResponse errorResponse = new ErrorResponse(
-                                "BUSINESS_ERROR",
-                                ex.getMessage(),
+                ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.BAD_REQUEST.value(),
-                                LocalDateTime.now(),
-                                request.getDescription(false).replace("uri=", ""));
+                                ex.getMessage() != null ? ex.getMessage() : MessageConstants.INVALID_REQUEST);
+                response.setPath(requestPath(request));
 
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        /**
-         * Xử lý validation errors
-         */
+        @ExceptionHandler(ValidationException.class)
+        public ResponseEntity<ApiResponse<?>> handleValidationException(
+                        ValidationException ex,
+                        WebRequest request) {
+                logger.warn("Validation exception: {}", ex.getMessage());
+
+                ApiResponse<?> response = ApiResponse.failure(
+                                HttpStatus.BAD_REQUEST.value(),
+                                ex.getMessage() != null ? ex.getMessage() : MessageConstants.INVALID_REQUEST);
+                response.setPath(requestPath(request));
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
         @ExceptionHandler(MethodArgumentNotValidException.class)
-        public ResponseEntity<ErrorResponse> handleValidation(
+        public ResponseEntity<ApiResponse<?>> handleMethodArgumentNotValid(
                         MethodArgumentNotValidException ex,
                         WebRequest request) {
 
@@ -94,54 +124,40 @@ public class GlobalExceptionHandler {
 
                 logger.warn("Validation failed: {}", errors);
 
-                ErrorResponse errorResponse = new ErrorResponse(
-                                "VALIDATION_ERROR",
-                                "Dữ liệu không hợp lệ",
+                ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.BAD_REQUEST.value(),
-                                LocalDateTime.now(),
-                                request.getDescription(false).replace("uri=", ""));
-                errorResponse.setDetails(errors);
+                                MessageConstants.INVALID_REQUEST,
+                                errors);
+                response.setPath(requestPath(request));
 
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        /**
-         * Xử lý IllegalArgumentException
-         */
         @ExceptionHandler(IllegalArgumentException.class)
-        public ResponseEntity<ErrorResponse> handleBadRequest(
+        public ResponseEntity<ApiResponse<?>> handleIllegalArgument(
                         IllegalArgumentException ex,
                         WebRequest request) {
-
                 logger.warn("Invalid argument: {}", ex.getMessage());
 
-                ErrorResponse errorResponse = new ErrorResponse(
-                                "INVALID_ARGUMENT",
-                                ex.getMessage(),
+                ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.BAD_REQUEST.value(),
-                                LocalDateTime.now(),
-                                request.getDescription(false).replace("uri=", ""));
+                                ex.getMessage() != null ? ex.getMessage() : MessageConstants.INVALID_REQUEST);
+                response.setPath(requestPath(request));
 
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        /**
-         * Xử lý tất cả các exceptions khác
-         */
         @ExceptionHandler(Exception.class)
-        public ResponseEntity<ErrorResponse> handleAll(
+        public ResponseEntity<ApiResponse<?>> handleGlobalException(
                         Exception ex,
                         WebRequest request) {
-
                 logger.error("Unexpected error: {}", ex.getMessage(), ex);
 
-                ErrorResponse errorResponse = new ErrorResponse(
-                                "INTERNAL_SERVER_ERROR",
-                                "Lỗi hệ thống, vui lòng thử lại sau",
+                ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                                LocalDateTime.now(),
-                                request.getDescription(false).replace("uri=", ""));
+                                MessageConstants.INTERNAL_SERVER_ERROR);
+                response.setPath(requestPath(request));
 
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
 }

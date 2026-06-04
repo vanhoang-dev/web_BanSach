@@ -1,28 +1,32 @@
 package com.example.web_bansach.module.inventory.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
 import com.example.web_bansach.module.inventory.dto.response.InventoryResponse;
 import com.example.web_bansach.module.inventory.entity.Inventory;
+import com.example.web_bansach.module.inventory.mapper.InventoryMapper;
 import com.example.web_bansach.module.inventory.repository.InventoryRepository;
 
 @Service
 public class InventoryService {
 
-    @Autowired
-    private InventoryRepository inventoryRepository;
+    private final InventoryRepository inventoryRepository;
+    private final InventoryMapper inventoryMapper;
 
-    private final int DEFAULT_LOW_STOCK_THRESHOLD = 5;
+    public InventoryService(InventoryRepository inventoryRepository, InventoryMapper inventoryMapper) {
+        this.inventoryRepository = inventoryRepository;
+        this.inventoryMapper = inventoryMapper;
+    }
 
     @Transactional(readOnly = true)
     public InventoryResponse getByBookId(Long bookId) {
         Inventory inv = inventoryRepository.findByBookId(bookId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bản ghi tồn kho cho sách"));
 
-        return mapToResponse(inv);
+        return inventoryMapper.mapToResponse(inv);
     }
 
     @Transactional(readOnly = true)
@@ -32,6 +36,10 @@ public class InventoryService {
 
     @Transactional
     public Inventory setQuantity(Long inventoryId, Integer quantity) {
+        if (quantity == null || quantity < 0) {
+            throw new BusinessException("Số lượng tồn kho không được âm");
+        }
+
         Inventory inv = inventoryRepository.findById(inventoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy inventory"));
         inv.setQuantity(quantity);
@@ -44,25 +52,21 @@ public class InventoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy inventory"));
         int newQty = (inv.getQuantity() == null ? 0 : inv.getQuantity()) + delta;
         if (newQty < 0) {
-            throw new IllegalArgumentException("Số lượng không thể âm");
+            throw new BusinessException("Số lượng tồn kho không thể âm");
         }
         inv.setQuantity(newQty);
         return inventoryRepository.save(inv);
     }
 
-    private InventoryResponse mapToResponse(Inventory inv) {
-        InventoryResponse r = new InventoryResponse();
-        r.setInventoryId(inv.getId());
-        if (inv.getBook() != null) {
-            r.setBookId(inv.getBook().getId());
-            r.setBookTitle(inv.getBook().getTitle());
-            r.setCoverImage(inv.getBook().getCoverImage());
+    @Transactional
+    public Inventory reconcileQuantity(Long inventoryId, Integer actualQuantity) {
+        if (actualQuantity == null || actualQuantity < 0) {
+            throw new BusinessException("Số lượng đối soát không được âm");
         }
-        Integer qty = inv.getQuantity();
-        r.setQuantity(qty);
-        r.setInStock(qty != null && qty > 0);
-        r.setLowStockThreshold(DEFAULT_LOW_STOCK_THRESHOLD);
-        r.setIsLowStock(qty != null && qty <= DEFAULT_LOW_STOCK_THRESHOLD);
-        return r;
+
+        Inventory inv = inventoryRepository.findById(inventoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy inventory"));
+        inv.setQuantity(actualQuantity);
+        return inventoryRepository.save(inv);
     }
 }

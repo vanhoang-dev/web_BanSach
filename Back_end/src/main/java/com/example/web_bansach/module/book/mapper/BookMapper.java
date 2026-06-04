@@ -22,7 +22,7 @@ public class BookMapper {
         response.setAuthorId(book.getAuthor() != null ? book.getAuthor().getId() : null);
         response.setAuthorName(book.getAuthor() != null ? book.getAuthor().getAuthorName() : null);
         response.setCategoryId(book.getCategory() != null ? book.getCategory().getId() : null);
-        response.setCategoryName(book.getCategory() != null ? book.getCategory().getCategoryName() : null);
+        response.setCategoryName(book.getCategory() != null ? book.getCategory().getName() : null);
         response.setDiscountId(book.getDiscount() != null ? book.getDiscount().getId() : null);
         response.setDiscountPercent(book.getDiscount() != null ? book.getDiscount().getDiscountPercent() : null);
         response.setCreatedAt(book.getCreatedAt());
@@ -38,7 +38,7 @@ public class BookMapper {
         response.setDescription(book.getDescription());
         response.setCoverImage(book.getCoverImage());
         response.setAuthorName(book.getAuthor() != null ? book.getAuthor().getAuthorName() : null);
-        response.setCategoryName(book.getCategory() != null ? book.getCategory().getCategoryName() : null);
+        response.setCategoryName(book.getCategory() != null ? book.getCategory().getName() : null);
         response.setDiscountPercent(book.getDiscount() != null ? book.getDiscount().getDiscountPercent() : null);
         return response;
     }

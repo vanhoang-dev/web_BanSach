@@ -1,7 +1,6 @@
 package com.example.web_bansach.security.handler;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -26,12 +25,9 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
             HttpServletResponse response,
             AccessDeniedException accessDeniedException) throws IOException, ServletException {
 
-        ErrorResponse errorResponse = new ErrorResponse(
-                "ACCESS_DENIED",
-                "Bạn không có quyền truy cập tài nguyên này",
-                HttpStatus.FORBIDDEN.value(),
-                LocalDateTime.now(),
-                request.getRequestURI());
+        ErrorResponse errorResponse = ErrorResponse.accessDenied(
+            "Bạn không có quyền truy cập tài nguyên này",
+            request.getRequestURI());
 
         response.setStatus(HttpStatus.FORBIDDEN.value());
         response.setContentType("application/json;charset=UTF-8");

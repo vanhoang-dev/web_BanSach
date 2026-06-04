@@ -1,7 +1,6 @@
 package com.example.web_bansach.module.book.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.web_bansach.common.response.ApiResponse;
+import com.example.web_bansach.common.response.PageResponse;
 import com.example.web_bansach.module.book.dto.request.BookRequest;
 import com.example.web_bansach.module.book.dto.response.BookAdminResponse;
-import com.example.web_bansach.module.book.service.BookService;
+import com.example.web_bansach.module.book.service.BookCommandService;
 
 import jakarta.validation.Valid;
 
@@ -28,41 +29,44 @@ import jakarta.validation.Valid;
 @PreAuthorize("hasAuthority('ADMIN')")
 public class BookAdminController {
 
-    @Autowired
-    private BookService bookService;
+    private final BookCommandService bookCommandService;
+
+    public BookAdminController(BookCommandService bookCommandService) {
+        this.bookCommandService = bookCommandService;
+    }
 
     @GetMapping
-    public ResponseEntity<Page<BookAdminResponse>> getBooksAdmin(
+    public ResponseEntity<ApiResponse<PageResponse<BookAdminResponse>>> getBooksAdmin(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(bookService.getAllBooks(pageable));
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(bookCommandService.getAllBooks(pageable))));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookAdminResponse> getBookDetail(@PathVariable Long id) {
-        return ResponseEntity.ok(bookService.getBookDetail(id));
+    public ResponseEntity<ApiResponse<BookAdminResponse>> getBookDetail(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(bookCommandService.getBookDetail(id)));
     }
 
     @PostMapping(value = "/create-book", consumes = "multipart/form-data")
-    public ResponseEntity<BookAdminResponse> createBook(
+    public ResponseEntity<ApiResponse<BookAdminResponse>> createBook(
             @Valid @ModelAttribute BookRequest request,
             @RequestParam(required = false) MultipartFile image) throws Exception {
-        return ResponseEntity.ok(bookService.createBook(request, image));
+        return ResponseEntity.status(201).body(ApiResponse.created(bookCommandService.createBook(request, image)));
     }
 
     @PutMapping(value = "/update-book/{id}", consumes = "multipart/form-data")
-    public ResponseEntity<BookAdminResponse> updateBook(
+    public ResponseEntity<ApiResponse<BookAdminResponse>> updateBook(
             @PathVariable Long id,
             @Valid @ModelAttribute BookRequest request,
             @RequestParam(required = false) MultipartFile image) throws Exception {
-        return ResponseEntity.ok(bookService.updateBook(id, request, image));
+        return ResponseEntity.ok(ApiResponse.success(bookCommandService.updateBook(id, request, image)));
     }
 
     @DeleteMapping("/delete-book/{id}")
-    public ResponseEntity<String> deleteBook(@PathVariable Long id) {
-        bookService.deleteBook(id);
-        return ResponseEntity.ok("Xóa mềm sách thành công");
+    public ResponseEntity<ApiResponse<?>> deleteBook(@PathVariable Long id) {
+        bookCommandService.deleteBook(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa mềm sách thành công", null));
     }
 
 }

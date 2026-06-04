@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginResponse {
     private String jwt;
+    private String refreshToken;
     private Long userId;
     private String username;
     private Set<String> roles;

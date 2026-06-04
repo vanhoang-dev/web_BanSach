@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.web_bansach.common.response.ApiResponse;
+import com.example.web_bansach.common.response.PageResponse;
 import com.example.web_bansach.module.voucher.dto.request.CreateVoucherRequest;
 import com.example.web_bansach.module.voucher.dto.response.VoucherResponse;
 import com.example.web_bansach.module.voucher.service.VoucherService;
@@ -37,9 +39,9 @@ public class VoucherAdminController {
      * POST /admin/vouchers
      */
     @PostMapping
-    public ResponseEntity<VoucherResponse> createVoucher(@Valid @RequestBody CreateVoucherRequest request) {
+    public ResponseEntity<ApiResponse<VoucherResponse>> createVoucher(@Valid @RequestBody CreateVoucherRequest request) {
         VoucherResponse voucher = voucherService.createVoucher(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(voucher);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(voucher));
     }
 
     /**
@@ -47,11 +49,11 @@ public class VoucherAdminController {
      * PUT /admin/vouchers/{voucherId}
      */
     @PutMapping("/{voucherId}")
-    public ResponseEntity<VoucherResponse> updateVoucher(
+    public ResponseEntity<ApiResponse<VoucherResponse>> updateVoucher(
             @PathVariable Long voucherId,
             @Valid @RequestBody CreateVoucherRequest request) {
         VoucherResponse voucher = voucherService.updateVoucher(voucherId, request);
-        return ResponseEntity.ok(voucher);
+        return ResponseEntity.ok(ApiResponse.success(voucher));
     }
 
     /**
@@ -59,9 +61,9 @@ public class VoucherAdminController {
      * DELETE /admin/vouchers/{voucherId}
      */
     @DeleteMapping("/{voucherId}")
-    public ResponseEntity<?> deleteVoucher(@PathVariable Long voucherId) {
+    public ResponseEntity<ApiResponse<?>> deleteVoucher(@PathVariable Long voucherId) {
         voucherService.deleteVoucher(voucherId);
-        return ResponseEntity.ok("Voucher đã được xóa thành công");
+        return ResponseEntity.ok(ApiResponse.success("Voucher đã được xóa thành công", null));
     }
 
     /**
@@ -69,9 +71,9 @@ public class VoucherAdminController {
      * GET /admin/vouchers/{voucherId}
      */
     @GetMapping("/{voucherId}")
-    public ResponseEntity<VoucherResponse> getVoucherDetail(@PathVariable Long voucherId) {
+    public ResponseEntity<ApiResponse<VoucherResponse>> getVoucherDetail(@PathVariable Long voucherId) {
         VoucherResponse voucher = voucherService.getVoucherDetail(voucherId);
-        return ResponseEntity.ok(voucher);
+        return ResponseEntity.ok(ApiResponse.success(voucher));
     }
 
     /**
@@ -79,11 +81,11 @@ public class VoucherAdminController {
      * GET /admin/vouchers?page=0&size=10
      */
     @GetMapping
-    public ResponseEntity<Page<VoucherResponse>> getAllVouchers(
+    public ResponseEntity<ApiResponse<PageResponse<VoucherResponse>>> getAllVouchers(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         Page<VoucherResponse> vouchers = voucherService.getAllVouchers(page, size);
-        return ResponseEntity.ok(vouchers);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(vouchers)));
     }
 
     /**
@@ -91,10 +93,10 @@ public class VoucherAdminController {
      * GET /admin/vouchers/expired?page=0&size=10
      */
     @GetMapping("/expired")
-    public ResponseEntity<Page<VoucherResponse>> getExpiredVouchers(
+    public ResponseEntity<ApiResponse<PageResponse<VoucherResponse>>> getExpiredVouchers(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         Page<VoucherResponse> vouchers = voucherService.getExpiredVouchers(page, size);
-        return ResponseEntity.ok(vouchers);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(vouchers)));
     }
 }
