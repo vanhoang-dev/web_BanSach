@@ -44,7 +44,7 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> success(T data) {
-        return of(200, "Success", data);
+        return of(200, "Thành công", data);
     }
 
     public static <T> ApiResponse<T> success(String message, T data) {
@@ -52,7 +52,7 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> created(T data) {
-        return of(201, "Created", data);
+        return of(201, "Tạo mới thành công", data);
     }
 
     public static <T> ApiResponse<T> error(int statusCode, String message) {

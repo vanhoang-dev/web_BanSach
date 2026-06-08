@@ -31,14 +31,14 @@ public class UserAdminController {
 
     // Lấy người dùng theo ID người dùng
     @GetMapping("user/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<Users>> getUserId(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(userService.layNguoiDungTheoId(id)));
     }
 
     // Lấy tất cả người dùng từ dữ liệu
     @GetMapping("/all")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getAllUser(
             @RequestParam(defaultValue = "0") @Min(0) Integer page,
             @RequestParam(defaultValue = "10") @Min(1) Integer size) {
@@ -48,7 +48,7 @@ public class UserAdminController {
 
     // Xóa người dùng theo ID
     @DeleteMapping("/user/delete/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<?>> deleteUserId(@PathVariable Long id) {
         userService.xoaNguoiDungTheoId(id);
         return ResponseEntity.ok(ApiResponse.success("Đã xóa thành công người dùng", null));
@@ -56,7 +56,7 @@ public class UserAdminController {
 
     // Chỉnh sửa thông tin hoặc hoạt động của người dùng
     @PutMapping("/user/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<?>> updateUserForAdmin(
             @PathVariable Long id,
             @Valid @RequestBody AdminUpdateUserRequest request) {

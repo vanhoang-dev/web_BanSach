@@ -7,6 +7,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
+import com.example.web_bansach.common.constant.MessageConstants;
 import com.example.web_bansach.common.exception.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -26,8 +27,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
             AuthenticationException authException) throws IOException, ServletException {
 
         ErrorResponse errorResponse = ErrorResponse.authenticationError(
-                authException.getMessage() != null ? authException.getMessage()
-                        : "Bạn chưa đăng nhập hoặc token không hợp lệ",
+                MessageConstants.UNAUTHORIZED,
                 request.getRequestURI());
 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());

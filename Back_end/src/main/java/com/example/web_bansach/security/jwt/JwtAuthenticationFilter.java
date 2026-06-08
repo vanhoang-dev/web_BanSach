@@ -19,8 +19,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * JWT Authentication Filter
- * Validates JWT token in request header and sets authentication
+ * Filter đọc token trong header Authorization.
+ * Nếu token hợp lệ thì đưa thông tin user vào SecurityContext.
  */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -47,17 +47,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String username = jwtTokenProvider.extractUsername(token);
                 Set<String> roles = jwtTokenProvider.extractRoles(token);
 
-                // Load user from database to ensure latest data
                 Long userId = jwtTokenProvider.extractUserId(token);
 
-                // Build UserPrincipal from token claims
-                // Note: Full user data will be loaded when needed from UserQueryService
                 UserPrincipal userPrincipal = new UserPrincipal(
                         userId,
                         username,
-                        null, // Password not needed for token-based auth
-                        null, // Email can be fetched from token if needed
-                        true, // Assume active for now
+                        null,
+                        username,
+                        true,
                         roles);
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -69,15 +66,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception ex) {
-            logger.debug("JWT authentication error: {}", ex.getMessage());
+            logger.debug("Không xác thực được JWT: {}", ex.getMessage());
         }
 
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * Extract JWT token from request header
-     */
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
 

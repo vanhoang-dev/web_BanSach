@@ -57,7 +57,7 @@ public class ReviewService {
     public ReviewResponse createReview(String username, CreateReviewRequest request) {
         reviewValidationService.validateReviewRequest(request);
 
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
@@ -90,7 +90,7 @@ public class ReviewService {
     public ReviewResponse updateReview(String username, Long reviewId, CreateReviewRequest request) {
         reviewValidationService.validateReviewRequest(request);
 
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
@@ -119,7 +119,7 @@ public class ReviewService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteReview(String username, Long reviewId) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
@@ -147,7 +147,7 @@ public class ReviewService {
      */
     @Transactional(readOnly = true)
     public ReviewResponse getMyReview(String username, Long bookId) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }

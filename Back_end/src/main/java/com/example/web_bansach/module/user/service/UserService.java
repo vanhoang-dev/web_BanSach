@@ -1,5 +1,6 @@
 package com.example.web_bansach.module.user.service;
 
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ public class UserService {
         }
 
         PageRequest pageable = PageRequest.of(pageNumber, pageSize);
-        Page<Users> usersPage = userRepository.findAll(pageable);
+        Page<Users> usersPage = userRepository.findByDeletedAtIsNull(pageable);
 
         return usersPage.map(this::convertToUserResponse);
     }
@@ -78,7 +79,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse getCurrentUserProfile(String username) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Người dùng không tồn tại");
         }
@@ -87,7 +88,7 @@ public class UserService {
 
     @Transactional
     public void updateCurrentUserProfile(String username, UpdateUserRequest update) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Người dùng không tồn tại");
         }
@@ -96,7 +97,7 @@ public class UserService {
 
     @Transactional
     public void changeCurrentUserPassword(String username, ChangePasswordRequest request) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Người dùng không tồn tại");
         }
@@ -155,6 +156,7 @@ public class UserService {
         userRepository.save(userData);
     }
 
+    @Transactional
     public void xoaNguoiDungTheoId(Long id) {
         if (id == null || id <= 0) {
             throw new BusinessException("ID người dùng không hợp lệ");
@@ -163,7 +165,9 @@ public class UserService {
         Users user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
-        userRepository.deleteById(user.getId());
+        user.setIsActive(false);
+        user.setDeletedAt(LocalDateTime.now());
+        userRepository.save(user);
     }
 
     @Transactional

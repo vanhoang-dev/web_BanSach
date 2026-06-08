@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.web_bansach.common.response.ApiResponse;
 import com.example.web_bansach.module.auth.dto.request.ForgotPasswordRequest;
 import com.example.web_bansach.module.auth.dto.request.LoginRequest;
-import com.example.web_bansach.module.auth.dto.request.RefreshTokenRequest;
 import com.example.web_bansach.module.auth.dto.request.ResetPasswordRequest;
 import com.example.web_bansach.module.auth.dto.request.UserRequest;
 import com.example.web_bansach.module.auth.dto.response.LoginResponse;
@@ -28,30 +27,15 @@ public class AuthController {
     }
 
     @PostMapping("/dang-ky")
-    public ResponseEntity<ApiResponse<?>> createUser(@Valid @RequestBody UserRequest request) {
+    public ResponseEntity<ApiResponse<?>> dangKy(@Valid @RequestBody UserRequest request) {
         service.taoTaiKhoanMoi(request);
         return ResponseEntity.ok(ApiResponse.success("Tạo tài khoản thành công", null));
     }
 
     @PostMapping("/dang-nhap")
-    public ResponseEntity<ApiResponse<LoginResponse>> dangNhap(
-            @Valid @RequestBody LoginRequest request) {
-
+    public ResponseEntity<ApiResponse<LoginResponse>> dangNhap(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = service.dangNhap(request);
         return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", response));
-    }
-
-    @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(
-            @Valid @RequestBody RefreshTokenRequest request) {
-        LoginResponse response = service.refreshToken(request);
-        return ResponseEntity.ok(ApiResponse.success("Làm mới token thành công", response));
-    }
-
-    @PostMapping("/dang-xuat")
-    public ResponseEntity<ApiResponse<?>> dangXuat(@Valid @RequestBody RefreshTokenRequest request) {
-        service.dangXuat(request);
-        return ResponseEntity.ok(ApiResponse.success("Đăng xuất thành công", null));
     }
 
     @PostMapping("/quen-mat-khau")

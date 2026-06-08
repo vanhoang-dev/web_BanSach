@@ -15,6 +15,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.example.web_bansach.security.jwt.JwtAuthenticationFilter;
 import com.example.web_bansach.security.jwt.JwtTokenProvider;
+import com.example.web_bansach.security.handler.JwtAccessDeniedHandler;
+import com.example.web_bansach.security.handler.JwtAuthenticationEntryPoint;
 
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 
@@ -24,9 +26,15 @@ import org.springframework.security.config.annotation.authentication.configurati
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
-    public SecurityConfig(JwtTokenProvider jwtTokenProvider) {
+    public SecurityConfig(JwtTokenProvider jwtTokenProvider,
+            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+            JwtAccessDeniedHandler jwtAccessDeniedHandler) {
         this.jwtTokenProvider = jwtTokenProvider;
+        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
+        this.jwtAccessDeniedHandler = jwtAccessDeniedHandler;
     }
 
     @Bean
@@ -46,6 +54,9 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/ws/**", "/app/**", "/topic/**", "/queue/**").permitAll()
 
@@ -54,16 +65,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, Endpoints.PUBLIC_POST_ENDPOINTS).permitAll()
 
                         // ============ USER ENDPOINTS (USER or ADMIN role) ============
-                        .requestMatchers(HttpMethod.GET, Endpoints.USER_GET_ENDPOINTS).hasAnyRole("USER")
-                        .requestMatchers(HttpMethod.POST, Endpoints.USER_POST_ENDPOINTS).hasAnyRole("USER")
-                        .requestMatchers(HttpMethod.PUT, Endpoints.USER_PUT_ENDPOINTS).hasAnyRole("USER")
-                        .requestMatchers(HttpMethod.DELETE, Endpoints.USER_DELETE_ENDPOINTS).hasAnyRole("USER")
+                        .requestMatchers(HttpMethod.GET, Endpoints.USER_GET_ENDPOINTS).hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, Endpoints.USER_POST_ENDPOINTS).hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, Endpoints.USER_PUT_ENDPOINTS).hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, Endpoints.USER_DELETE_ENDPOINTS).hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
 
                         // ============ ADMIN ENDPOINTS (ADMIN role only) ============
-                        .requestMatchers(HttpMethod.GET, Endpoints.ADMIN_GET_ENDPOINTS).hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, Endpoints.ADMIN_POST_ENDPOINTS).hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, Endpoints.ADMIN_PUT_ENDPOINTS).hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, Endpoints.ADMIN_DELETE_ENDPOINTS).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, Endpoints.ADMIN_GET_ENDPOINTS).hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, Endpoints.ADMIN_POST_ENDPOINTS).hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, Endpoints.ADMIN_PUT_ENDPOINTS).hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, Endpoints.ADMIN_DELETE_ENDPOINTS).hasAuthority("ROLE_ADMIN")
 
                         // ============ ALL OTHER REQUESTS REQUIRE AUTHENTICATION ============
                         .anyRequest().authenticated())

@@ -25,7 +25,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/user/orders")
-@PreAuthorize("hasAnyAuthority('USER','ADMIN')")
+@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 public class OrderPublicController {
 
     @Autowired

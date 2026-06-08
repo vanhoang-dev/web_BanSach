@@ -47,6 +47,7 @@ public class OrderUserService {
     private final VoucherService voucherService;
     private final OrderMapper orderMapper;
     private final RealtimeNotificationService realtimeNotificationService;
+    private final OrderValidationService orderValidationService;
 
     public OrderUserService(UserRepository userRepository,
             OrderRepository orderRepository,
@@ -56,7 +57,8 @@ public class OrderUserService {
             InventoryRepository inventoryRepository,
             VoucherService voucherService,
             OrderMapper orderMapper,
-            RealtimeNotificationService realtimeNotificationService) {
+            RealtimeNotificationService realtimeNotificationService,
+            OrderValidationService orderValidationService) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
@@ -66,11 +68,14 @@ public class OrderUserService {
         this.voucherService = voucherService;
         this.orderMapper = orderMapper;
         this.realtimeNotificationService = realtimeNotificationService;
+        this.orderValidationService = orderValidationService;
     }
 
     @Transactional(rollbackFor = Exception.class)
     public OrderResponse createOrder(String username, CreateOrderRequest request) {
-        Users user = userRepository.findByUsername(username);
+        orderValidationService.validateCreateOrder(request);
+
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
@@ -110,28 +115,20 @@ public class OrderUserService {
 
         // Xử lý voucher nếu có
         if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
-            try {
-                var voucherResponse = voucherService.getVoucherByCode(request.getVoucherCode());
+            var voucherResponse = voucherService.getVoucherByCode(request.getVoucherCode());
 
-                // Tính tiền giảm: (discountPercent / 100) * itemsTotal, nhưng không vượt quá
-                // maxDiscount
-                BigDecimal discountAmount = itemsTotal.multiply(new BigDecimal(voucherResponse.getDiscountPercent()))
-                        .divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal discountAmount = itemsTotal.multiply(new BigDecimal(voucherResponse.getDiscountPercent()))
+                    .divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
 
-                if (discountAmount.compareTo(voucherResponse.getMaxDiscount()) > 0) {
-                    discountAmount = voucherResponse.getMaxDiscount();
-                }
+            if (discountAmount.compareTo(voucherResponse.getMaxDiscount()) > 0) {
+                discountAmount = voucherResponse.getMaxDiscount();
+            }
 
-                voucherDiscount = discountAmount;
-                totalAmount = totalAmount.subtract(voucherDiscount);
+            voucherDiscount = discountAmount;
+            totalAmount = totalAmount.subtract(voucherDiscount);
 
-                // Đảm bảo tổng không âm
-                if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
-                    totalAmount = BigDecimal.ZERO;
-                }
-            } catch (ResourceNotFoundException | BusinessException e) {
-                // Nếu voucher không hợp lệ, vẫn tạo order mà không giảm giá
-                // Có thể log warning ở đây nếu cần
+            if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
+                totalAmount = BigDecimal.ZERO;
             }
         }
 
@@ -153,6 +150,15 @@ public class OrderUserService {
 
         // Tạo OrderItems từ CartItems và giảm Inventory
         for (CartItem cartItem : cartItems) {
+            Inventory inventory = inventoryRepository.findByBookIdForUpdate(cartItem.getBook().getId())
+                    .orElseThrow(() -> new BusinessException(
+                            "Không tìm thấy bản ghi tồn kho cho sách: " + cartItem.getBook().getTitle()));
+            if (inventory.getQuantity() == null || inventory.getQuantity() < cartItem.getQuantity()) {
+                throw new BusinessException(
+                        "Số lượng sách '" + cartItem.getBook().getTitle() + "' không đủ. "
+                                + "Yêu cầu: " + cartItem.getQuantity() + ", Hiện còn: " + inventory.getQuantity());
+            }
+
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(savedOrder);
             orderItem.setBook(cartItem.getBook());
@@ -161,7 +167,6 @@ public class OrderUserService {
             orderItemRepository.save(orderItem);
 
             // Giảm Inventory quantity
-            Inventory inventory = inventoryRepository.findByBookId(cartItem.getBook().getId()).get();
             inventory.setQuantity(inventory.getQuantity() - cartItem.getQuantity());
             inventoryRepository.save(inventory);
         }
@@ -169,11 +174,7 @@ public class OrderUserService {
         // Sử dụng voucher nếu đã áp dụng thành công
         if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()
                 && voucherDiscount.compareTo(BigDecimal.ZERO) > 0) {
-            try {
-                voucherService.useVoucher(request.getVoucherCode());
-            } catch (Exception e) {
-                // Log warning nếu cần, nhưng không throw exception vì order đã tạo
-            }
+            voucherService.useVoucher(request.getVoucherCode());
         }
 
         cartItemRepository.deleteByCartId(cart.getId());
@@ -197,7 +198,9 @@ public class OrderUserService {
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> getMyOrders(String username, int page, int size) {
-        Users user = userRepository.findByUsername(username);
+        validatePageRequest(page, size);
+
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
@@ -209,7 +212,7 @@ public class OrderUserService {
 
     @Transactional(readOnly = true)
     public OrderResponse getMyOrderDetail(String username, Long orderId) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
@@ -222,9 +225,15 @@ public class OrderUserService {
         return orderMapper.mapToResponse(order);
     }
 
+    private void validatePageRequest(int page, int size) {
+        if (page < 0 || size <= 0) {
+            throw new BusinessException("Tham số phân trang không hợp lệ");
+        }
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void cancelMyOrder(String username, Long orderId) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }

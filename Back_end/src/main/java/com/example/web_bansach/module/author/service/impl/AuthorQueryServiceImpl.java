@@ -5,6 +5,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
 import com.example.web_bansach.module.author.dto.response.AuthorResponse;
 import com.example.web_bansach.module.author.entity.Author;
@@ -22,6 +23,7 @@ public class AuthorQueryServiceImpl implements AuthorQueryService {
 
     @Override
     public Page<AuthorResponse> getAllAuthorPagination(Integer page, Integer size) {
+        validatePagination(page, size);
         PageRequest pageable = PageRequest.of(page, size);
         Page<Author> authorPage = authorRepository.findAll(pageable);
 
@@ -33,6 +35,7 @@ public class AuthorQueryServiceImpl implements AuthorQueryService {
 
     @Override
     public Page<AuthorResponse> searchAuthors(String keyword, Integer page, Integer size) {
+        validatePagination(page, size);
         String searchKeyword = keyword == null ? "" : keyword.trim();
         PageRequest pageable = PageRequest.of(page, size, Sort.by("authorName").ascending());
         Page<Author> authorPage = searchKeyword.isEmpty()
@@ -50,5 +53,11 @@ public class AuthorQueryServiceImpl implements AuthorQueryService {
         Author author = authorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tác giả"));
         return new AuthorResponse(author.getId(), author.getAuthorName(), author.getBiography());
+    }
+
+    private void validatePagination(Integer page, Integer size) {
+        if (page == null || page < 0 || size == null || size <= 0) {
+            throw new BusinessException("Tham số phân trang không hợp lệ");
+        }
     }
 }

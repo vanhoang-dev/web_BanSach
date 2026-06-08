@@ -16,7 +16,7 @@ import com.example.web_bansach.module.book.service.BookQueryService;
 
 @RestController
 @RequestMapping("/user/books")
-@PreAuthorize("hasAuthority('USER')")
+@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 public class BookPublicController {
 
     private final BookQueryService bookQueryService;

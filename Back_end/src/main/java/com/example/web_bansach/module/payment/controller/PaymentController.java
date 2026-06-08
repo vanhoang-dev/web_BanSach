@@ -1,26 +1,25 @@
 package com.example.web_bansach.module.payment.controller;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.example.web_bansach.common.response.ApiResponse;
 import com.example.web_bansach.module.payment.dto.PaymentRequest;
 import com.example.web_bansach.module.payment.dto.PaymentResponse;
 import com.example.web_bansach.module.payment.service.PaymentService;
 
-/**
- * Payment Controller - REST endpoints cho payment operations
- * 
- * Endpoints:
- * POST /api/payment/initiate - Khởi tạo thanh toán
- * POST /api/payment/sepay-webhook - Callback từ SePay
- * GET /api/payment/status/{id} - Lấy trạng thái thanh toán
- */
 @RestController
 @RequestMapping("/api/payment")
 public class PaymentController {
@@ -32,161 +31,86 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
-    /**
-     * Khởi tạo thanh toán
-     * 
-     * @param request - PaymentRequest chứa: orderId, amount, returnUrl, description
-     * @return ResponseEntity<ApiResponse<PaymentResponse>>
-     */
     @PostMapping("/initiate")
     public ResponseEntity<ApiResponse<PaymentResponse>> initiatePayment(
-            @RequestBody PaymentRequest request) {
-        try {
-            logger.info("Initiating payment for order: {}", request.getOrderId());
-
-            PaymentResponse response = paymentService.initiatePayment(request);
-
-            return ResponseEntity.ok(ApiResponse.success("Khởi tạo thanh toán thành công", response));
-        } catch (IllegalArgumentException e) {
-            logger.warn("Invalid payment request: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(400, "Yêu cầu không hợp lệ: " + e.getMessage()));
-        } catch (Exception e) {
-            logger.error("Error initiating payment", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(500, "Lỗi khi khởi tạo thanh toán: " + e.getMessage()));
-        }
+            Authentication authentication,
+            @RequestBody PaymentRequest request) throws Exception {
+        logger.info("Initiating payment for order: {}", request.getOrderId());
+        PaymentResponse response = paymentService.initiatePayment(authentication.getName(), request);
+        return ResponseEntity.ok(ApiResponse.success("Khởi tạo thanh toán thành công", response));
     }
 
-    /**
-     * Callback từ SePay khi thanh toán hoàn tất
-     * 
-     * @param callbackData - Callback data từ SePay
-     * @return ResponseEntity
-     */
     @PostMapping("/sepay-webhook")
-    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> sepayWebhook(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> sepayWebhook(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestBody java.util.Map<String, Object> callbackData) {
-        try {
-            logger.info("Received SePay webhook");
+            @RequestBody Map<String, Object> callbackData) {
+        logger.info("Received SePay webhook");
 
-            String transactionId = (String) callbackData.getOrDefault("code", callbackData.get("transactionId"));
-            Object amountObj = callbackData.containsKey("transferAmount")
-                    ? callbackData.get("transferAmount")
-                    : callbackData.get("amount");
+        String transactionId = (String) callbackData.getOrDefault("code", callbackData.get("transactionId"));
+        BigDecimal amount = parseAmount(callbackData);
 
-            if (transactionId == null) {
-                logger.warn("SePay webhook missing transaction code");
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "Thiếu mã giao dịch"));
-            }
-
-            BigDecimal amount = null;
-            if (amountObj instanceof Number) {
-                amount = BigDecimal.valueOf(((Number) amountObj).doubleValue());
-            } else if (amountObj instanceof String) {
-                try {
-                    amount = new BigDecimal((String) amountObj);
-                } catch (NumberFormatException ex) {
-                    amount = null;
-                }
-            }
-
-            if (amount == null) {
-                logger.warn("SePay webhook missing amount for transaction {}", transactionId);
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "Thiếu số tiền giao dịch"));
-            }
-
-            // Verify callback signature
-            boolean isVerified = paymentService.verifyPaymentCallback(
-                    transactionId,
-                    amount,
-                    authorization);
-
-            if (!isVerified) {
-                logger.warn("SePay webhook verification failed");
-                return ResponseEntity.ok(ApiResponse.success(java.util.Map.of(
-                        "status", "FAILED",
-                        "message", "Webhook verification failed")));
-            }
-
-            // Update payment status
-            String status = "SUCCESS";
-            paymentService.updatePaymentStatus(
-                    transactionId,
-                    status,
-                    authorization);
-
-            logger.info("SePay payment processed: {}", status);
-
-            return ResponseEntity.ok(ApiResponse.success(java.util.Map.of(
-                    "status", "SUCCESS",
-                    "message", "Webhook processed")));
-        } catch (Exception e) {
-            logger.error("Error processing SePay webhook", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(500, e.getMessage()));
+        if (transactionId == null || transactionId.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Thiếu mã giao dịch"));
         }
+
+        if (amount == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Thiếu số tiền giao dịch"));
+        }
+
+        boolean verified = paymentService.verifyPaymentCallback(transactionId, amount, authorization);
+        if (!verified) {
+            logger.warn("SePay webhook verification failed for transaction {}", transactionId);
+            return ResponseEntity.ok(ApiResponse.success(Map.of(
+                    "status", "FAILED",
+                    "message", "Webhook verification failed")));
+        }
+
+        paymentService.updatePaymentStatus(transactionId, "SUCCESS", authorization);
+        return ResponseEntity.ok(ApiResponse.success(Map.of(
+                "status", "SUCCESS",
+                "message", "Webhook processed")));
     }
 
-    /**
-     * Lấy trạng thái thanh toán
-     * 
-     * @param paymentId - Payment ID
-     * @return ResponseEntity<ApiResponse<PaymentResponse>>
-     */
     @GetMapping("/status/{paymentId}")
-    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatus(
-            @PathVariable Long paymentId) {
-        try {
-            logger.info("Getting payment status for ID: {}", paymentId);
-
-            PaymentResponse response = paymentService.getPaymentStatus(paymentId);
-
-            return ResponseEntity.ok(ApiResponse.success("Lấy trạng thái thanh toán thành công", response));
-        } catch (Exception e) {
-            logger.error("Error getting payment status", e);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(404, "Không tìm thấy thông tin thanh toán"));
-        }
+    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatus(@PathVariable Long paymentId) {
+        PaymentResponse response = paymentService.getPaymentStatus(paymentId);
+        return ResponseEntity.ok(ApiResponse.success("Lấy trạng thái thanh toán thành công", response));
     }
 
-    /**
-     * Hoàn tiền (Refund)
-     * 
-     * @param paymentId     - Payment ID
-     * @param refundRequest - Chứa amount
-     * @return ResponseEntity
-     */
     @PostMapping("/refund/{paymentId}")
     public ResponseEntity<ApiResponse<?>> refundPayment(
             @PathVariable Long paymentId,
-            @RequestBody java.util.Map<String, Object> refundRequest) {
-        try {
-            logger.info("Processing refund for payment ID: {}", paymentId);
-
-            Object amountObj = refundRequest.get("amount");
-            if (amountObj == null) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error(400, "Số tiền hoàn không hợp lệ"));
-            }
-
-            BigDecimal amount = amountObj instanceof Number
-                    ? BigDecimal.valueOf(((Number) amountObj).doubleValue())
-                    : new BigDecimal(amountObj.toString());
-
-            boolean success = paymentService.refundPayment(paymentId, amount);
-
-            if (success) {
-                return ResponseEntity.ok(ApiResponse.success("Hoàn tiền thành công", null));
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(ApiResponse.error(400, "Hoàn tiền thất bại"));
-            }
-        } catch (Exception e) {
-            logger.error("Error processing refund", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(500, "Lỗi khi xử lý hoàn tiền: " + e.getMessage()));
+            @RequestBody Map<String, Object> refundRequest) throws Exception {
+        Object amountObj = refundRequest.get("amount");
+        if (amountObj == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Số tiền hoàn không hợp lệ"));
         }
+
+        BigDecimal amount = amountObj instanceof Number
+                ? BigDecimal.valueOf(((Number) amountObj).doubleValue())
+                : new BigDecimal(amountObj.toString());
+
+        paymentService.refundPayment(paymentId, amount);
+        return ResponseEntity.ok(ApiResponse.success("Hoàn tiền thành công", null));
+    }
+
+    private BigDecimal parseAmount(Map<String, Object> callbackData) {
+        Object amountObj = callbackData.containsKey("transferAmount")
+                ? callbackData.get("transferAmount")
+                : callbackData.get("amount");
+
+        if (amountObj instanceof Number) {
+            return BigDecimal.valueOf(((Number) amountObj).doubleValue());
+        }
+
+        if (amountObj instanceof String) {
+            try {
+                return new BigDecimal((String) amountObj);
+            } catch (NumberFormatException ex) {
+                return null;
+            }
+        }
+
+        return null;
     }
 }

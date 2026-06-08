@@ -15,6 +15,7 @@ import com.example.web_bansach.module.payment.entity.Payment;
 import com.example.web_bansach.module.payment.repository.PaymentRepository;
 import com.example.web_bansach.module.payment.service.PaymentService;
 import com.example.web_bansach.module.order.entity.Order;
+import com.example.web_bansach.module.order.entity.OrderStatus;
 import com.example.web_bansach.module.order.repository.OrderRepository;
 import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
 
@@ -42,7 +43,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public PaymentResponse initiatePayment(PaymentRequest request) throws Exception {
+    public PaymentResponse initiatePayment(String userEmail, PaymentRequest request) throws Exception {
         if (request == null) {
             throw new BusinessException("Thông tin thanh toán không hợp lệ");
         }
@@ -52,6 +53,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+        validateOrderCanBePaidByUser(order, userEmail, request.getAmount());
 
         // Initiate SePay payment
         String paymentUrl = paymentGateway.initiatePayment(
@@ -119,7 +121,7 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentGateway.verifyPayment(transactionId, amount, signature);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Override
     public PaymentResponse getPaymentStatus(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
@@ -174,9 +176,10 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         if (!refunded) {
-            // SePay hiện không công bố public refund API trong tài liệu mở,
-            // nên hệ thống vẫn lưu trạng thái hoàn tiền nội bộ để đồng bộ nghiệp vụ.
-            refunded = true;
+            payment.setStatus("REFUND_FAILED");
+            payment.setUpdatedAt(LocalDateTime.now());
+            paymentRepository.save(payment);
+            throw new BusinessException("Hoàn tiền thất bại hoặc chưa cấu hình cổng hoàn tiền");
         }
 
         payment.setStatus("REFUNDED");
@@ -199,6 +202,21 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
+    private void validateOrderCanBePaidByUser(Order order, String userEmail, BigDecimal amount) {
+        if (order.getUser() == null || order.getUser().getEmail() == null
+                || !order.getUser().getEmail().equals(userEmail)) {
+            throw new BusinessException("Bạn không có quyền thanh toán đơn hàng này");
+        }
+
+        if (order.getStatus() == null || !"PENDING".equals(order.getStatus().name())) {
+            throw new BusinessException("Chỉ có thể thanh toán đơn hàng đang chờ xử lý");
+        }
+
+        if (order.getTotalAmount() == null || order.getTotalAmount().compareTo(amount) != 0) {
+            throw new BusinessException("Số tiền thanh toán không khớp với tổng tiền đơn hàng");
+        }
+    }
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void updatePaymentStatus(String transactionId, String status, String signature) {
@@ -212,6 +230,12 @@ public class PaymentServiceImpl implements PaymentService {
 
         if ("SUCCESS".equals(status)) {
             payment.setPaidAt(java.time.LocalDateTime.now());
+            Order order = payment.getOrder();
+            if (order != null && order.getStatus() == OrderStatus.PENDING) {
+                order.setStatus(OrderStatus.CONFIRMED);
+                order.setUpdatedAt(java.time.LocalDateTime.now());
+                orderRepository.save(order);
+            }
         }
 
         paymentRepository.save(payment);

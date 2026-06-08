@@ -17,6 +17,8 @@ import com.example.web_bansach.module.book.repository.BookRepository;
 import com.example.web_bansach.module.book.service.BookAssemblyService;
 import com.example.web_bansach.module.book.service.BookCommandService;
 import com.example.web_bansach.module.book.service.BookValidationService;
+import com.example.web_bansach.module.inventory.entity.Inventory;
+import com.example.web_bansach.module.inventory.repository.InventoryRepository;
 
 /**
  * Service xử lý nghiệp vụ Book cho Admin
@@ -32,15 +34,18 @@ public class BookCommandServiceImpl implements BookCommandService {
     private final BookMapper bookMapper;
     private final BookValidationService bookValidationService;
     private final BookAssemblyService bookAssemblyService;
+    private final InventoryRepository inventoryRepository;
 
     public BookCommandServiceImpl(BookRepository bookRepository,
             BookMapper bookMapper,
             BookValidationService bookValidationService,
-            BookAssemblyService bookAssemblyService) {
+            BookAssemblyService bookAssemblyService,
+            InventoryRepository inventoryRepository) {
         this.bookRepository = bookRepository;
         this.bookMapper = bookMapper;
         this.bookValidationService = bookValidationService;
         this.bookAssemblyService = bookAssemblyService;
+        this.inventoryRepository = inventoryRepository;
     }
 
     /**
@@ -58,6 +63,7 @@ public class BookCommandServiceImpl implements BookCommandService {
 
         // Save
         Book savedBook = bookRepository.save(book);
+        createEmptyInventory(savedBook);
 
         // Map response
         return bookMapper.mapToAdminResponse(savedBook);
@@ -121,5 +127,12 @@ public class BookCommandServiceImpl implements BookCommandService {
     public Page<BookAdminResponse> getAllBooks(Pageable pageable) {
         Page<Book> page = bookRepository.findAllActiveBooks(pageable);
         return page.map(bookMapper::mapToAdminResponse);
+    }
+
+    private void createEmptyInventory(Book book) {
+        Inventory inventory = new Inventory();
+        inventory.setBook(book);
+        inventory.setQuantity(0);
+        inventoryRepository.save(inventory);
     }
 }

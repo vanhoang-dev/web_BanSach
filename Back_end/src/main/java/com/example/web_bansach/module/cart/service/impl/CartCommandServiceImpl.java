@@ -60,7 +60,7 @@ public class CartCommandServiceImpl implements CartCommandService {
 
     @Transactional
     public Cart getOrCreateCart(String username) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
@@ -132,6 +132,12 @@ public class CartCommandServiceImpl implements CartCommandService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm trong giỏ hàng"));
         if (!cartItem.getCart().getId().equals(cart.getId())) {
             throw new BusinessException("Sản phẩm không thuộc giỏ hàng của bạn");
+        }
+        Inventory inventory = inventoryRepository.findByBookId(cartItem.getBook().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bản ghi tồn kho"));
+        if (inventory.getQuantity() == null || quantity > inventory.getQuantity()) {
+            throw new BusinessException(
+                    "Số lượng sách không đủ. Hiện còn: " + inventory.getQuantity() + " cuốn");
         }
         cartItem.setQuantity(quantity);
         cartItemRepository.save(cartItem);

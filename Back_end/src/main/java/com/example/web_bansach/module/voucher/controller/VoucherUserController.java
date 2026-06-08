@@ -20,7 +20,7 @@ import com.example.web_bansach.module.voucher.service.VoucherService;
  */
 @RestController
 @RequestMapping("/user/vouchers")
-@PreAuthorize("hasAuthority('USER') or hasAuthority('ADMIN')")
+@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 public class VoucherUserController {
 
     @Autowired

@@ -1,5 +1,6 @@
 package com.example.web_bansach.module.user.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,7 +37,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     @Override
     public List<UserResponse> layDanhSachNguoiDung(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Users> users = userRepository.findAll(pageable);
+        Page<Users> users = userRepository.findByDeletedAtIsNull(pageable);
 
         return users.getContent().stream()
                 .map(userMapper::mapToResponse)
@@ -72,12 +73,12 @@ public class UserAdminServiceImpl implements UserAdminService {
     @Transactional
     @Override
     public void xoaNguoiDungTheoId(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Không tìm thấy user");
-        }
+        Users user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
 
-        // Soft delete
-        userRepository.deleteById(id);
+        user.setIsActive(false);
+        user.setDeletedAt(LocalDateTime.now());
+        userRepository.save(user);
     }
 
     @Transactional

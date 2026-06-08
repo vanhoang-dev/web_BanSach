@@ -38,13 +38,15 @@ public class VoucherService {
      */
     @Transactional(rollbackFor = Exception.class)
     public VoucherResponse createVoucher(CreateVoucherRequest request) {
+        String code = normalizeCode(request.getCode());
+
         // Kiểm tra mã voucher đã tồn tại chưa
-        if (voucherRepository.existsByCode(request.getCode())) {
+        if (voucherRepository.existsByCode(code)) {
             throw new BusinessException("Mã voucher này đã tồn tại");
         }
 
         Voucher voucher = new Voucher();
-        voucher.setCode(request.getCode().toUpperCase());
+        voucher.setCode(code);
         voucher.setDiscountPercent(request.getDiscountPercent());
         voucher.setMaxDiscount(request.getMaxDiscount());
         voucher.setQuantity(request.getQuantity());
@@ -63,13 +65,14 @@ public class VoucherService {
     public VoucherResponse updateVoucher(Long voucherId, CreateVoucherRequest request) {
         Voucher voucher = voucherRepository.findById(voucherId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy voucher"));
+        String code = normalizeCode(request.getCode());
 
         // Nếu thay đổi code, kiểm tra xem code mới đã tồn tại chưa
-        if (!voucher.getCode().equals(request.getCode()) && voucherRepository.existsByCode(request.getCode())) {
+        if (!voucher.getCode().equals(code) && voucherRepository.existsByCode(code)) {
             throw new BusinessException("Mã voucher này đã tồn tại");
         }
 
-        voucher.setCode(request.getCode().toUpperCase());
+        voucher.setCode(code);
         voucher.setDiscountPercent(request.getDiscountPercent());
         voucher.setMaxDiscount(request.getMaxDiscount());
         voucher.setQuantity(request.getQuantity());
@@ -95,7 +98,7 @@ public class VoucherService {
      */
     @Transactional(readOnly = true)
     public VoucherResponse getVoucherByCode(String code) {
-        Voucher voucher = voucherRepository.findByCode(code.toUpperCase())
+        Voucher voucher = voucherRepository.findByCode(normalizeCode(code))
                 .orElseThrow(() -> new ResourceNotFoundException("Mã voucher không hợp lệ"));
 
         // Kiểm tra voucher có hợp lệ không
@@ -157,7 +160,7 @@ public class VoucherService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void useVoucher(String code) {
-        Voucher voucher = voucherRepository.findByCode(code.toUpperCase())
+        Voucher voucher = voucherRepository.findByCodeForUpdate(normalizeCode(code))
                 .orElseThrow(() -> new ResourceNotFoundException("Mã voucher không hợp lệ"));
 
         if (voucher.getExpiredAt().isBefore(LocalDate.now())) {
@@ -171,5 +174,12 @@ public class VoucherService {
         voucher.setQuantity(voucher.getQuantity() - 1);
         voucher.setUpdatedAt(LocalDateTime.now());
         voucherRepository.save(voucher);
+    }
+
+    private String normalizeCode(String code) {
+        if (code == null || code.trim().isEmpty()) {
+            throw new BusinessException("Mã voucher không được để trống");
+        }
+        return code.trim().toUpperCase();
     }
 }

@@ -58,8 +58,8 @@ public class SePayGateway implements PaymentGateway {
     @Value("${sepay.request-timeout-ms:5000}")
     private long requestTimeoutMs;
 
-    @Value("${app.frontend-url:http://localhost:3000}")
-    private String frontendUrl;
+    @Value("${sepay.return-url}")
+    private String defaultReturnUrl;
 
     @Override
     public String initiatePayment(Long orderId, BigDecimal amount, String returnUrl, String description)
@@ -74,7 +74,7 @@ public class SePayGateway implements PaymentGateway {
                 : paymentCode;
         String finalReturnUrl = returnUrl != null && !returnUrl.trim().isEmpty()
                 ? returnUrl.trim()
-                : frontendUrl + "/payment-result";
+                : defaultReturnUrl;
 
         String paymentUrl = qrBaseUrl
                 + "?bank=" + encode(bankCode)
@@ -97,7 +97,8 @@ public class SePayGateway implements PaymentGateway {
         }
 
         if (webhookApiKey == null || webhookApiKey.trim().isEmpty()) {
-            return true;
+            logger.warn("SePay webhook API key is not configured");
+            return false;
         }
 
         if (signature == null || signature.trim().isEmpty()) {

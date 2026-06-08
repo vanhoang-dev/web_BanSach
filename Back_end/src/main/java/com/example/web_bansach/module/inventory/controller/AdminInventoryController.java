@@ -16,7 +16,7 @@ import com.example.web_bansach.module.inventory.service.InventoryService;
 
 @RestController
 @RequestMapping("/admin/inventory")
-@PreAuthorize("hasAuthority('ADMIN')")
+@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 public class AdminInventoryController {
 
     @Autowired

@@ -6,8 +6,7 @@ import org.springframework.stereotype.Component;
 import lombok.Data;
 
 /**
- * JWT configuration properties
- * Externalize JWT configuration from code
+ * Cấu hình JWT đọc từ application.properties.
  */
 @Data
 @Component
@@ -16,14 +15,4 @@ public class JwtProperties {
 
     private String secret;
     private long expiration;
-    private String refreshTokenSecret;
-    private long refreshTokenExpiration;
-
-    public long getExpirationInMillis() {
-        return expiration;
-    }
-
-    public long getRefreshTokenExpirationInMillis() {
-        return refreshTokenExpiration;
-    }
 }

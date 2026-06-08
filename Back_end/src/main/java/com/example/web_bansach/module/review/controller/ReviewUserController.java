@@ -29,7 +29,7 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/user/reviews")
-@PreAuthorize("hasAuthority('USER') or hasAuthority('ADMIN')")
+@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 public class ReviewUserController {
 
     @Autowired
@@ -113,7 +113,7 @@ public class ReviewUserController {
         Double avgRating = reviewService.getAverageRating(bookId);
         long reviewCount = reviewService.getReviewCount(bookId);
         return ResponseEntity.ok(ApiResponse.success(java.util.Map.of(
-                "averageRating", avgRating,
+                "averageRating", avgRating != null ? avgRating : 0.0,
                 "reviewCount", reviewCount
         )));
     }

@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.web_bansach.common.response.ApiResponse;
 import com.example.web_bansach.common.response.PageResponse;
+import com.example.web_bansach.common.exception.ResourceNotFoundException;
+import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.UserRepository;
 import com.example.web_bansach.module.wishlist.dto.response.WishlistResponse;
 import com.example.web_bansach.module.wishlist.service.WishlistCommandService;
@@ -25,7 +27,7 @@ import com.example.web_bansach.module.wishlist.service.WishlistQueryService;
  */
 @RestController
 @RequestMapping("/user/wishlist")
-@PreAuthorize("hasAuthority('USER') or hasAuthority('ADMIN')")
+@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 public class WishlistController {
 
     private final WishlistCommandService wishlistCommandService;
@@ -113,7 +115,11 @@ public class WishlistController {
     @DeleteMapping("/clear")
     public ResponseEntity<ApiResponse<?>> clearWishlist(Authentication auth) {
         String username = auth.getName();
-        Long userId = userRepository.findByUsername(username).getId();
+        Users user = userRepository.findByEmail(username);
+        if (user == null) {
+            throw new ResourceNotFoundException("Không tìm thấy người dùng");
+        }
+        Long userId = user.getId();
         wishlistCommandService.clearWishlist(userId);
         return ResponseEntity.ok(ApiResponse.success("Đã xóa toàn bộ danh sách yêu thích", null));
     }

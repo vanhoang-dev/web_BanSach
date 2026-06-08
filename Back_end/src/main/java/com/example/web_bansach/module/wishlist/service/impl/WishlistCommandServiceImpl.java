@@ -45,7 +45,7 @@ public class WishlistCommandServiceImpl implements WishlistCommandService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public WishlistResponse addToWishlist(String username, Long bookId) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
@@ -80,7 +80,7 @@ public class WishlistCommandServiceImpl implements WishlistCommandService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void removeFromWishlist(String username, Long bookId) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }

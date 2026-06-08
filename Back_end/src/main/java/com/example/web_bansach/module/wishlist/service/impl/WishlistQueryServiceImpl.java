@@ -39,7 +39,7 @@ public class WishlistQueryServiceImpl implements WishlistQueryService {
     @Transactional(readOnly = true)
     @Override
     public boolean isInWishlist(String username, Long bookId) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             return false;
         }
@@ -52,7 +52,7 @@ public class WishlistQueryServiceImpl implements WishlistQueryService {
     @Transactional(readOnly = true)
     @Override
     public Page<WishlistResponse> getMyWishlist(String username, int page, int size) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
@@ -68,7 +68,7 @@ public class WishlistQueryServiceImpl implements WishlistQueryService {
     @Transactional(readOnly = true)
     @Override
     public long getWishlistCount(String username) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }

@@ -16,26 +16,29 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
         boolean existsByIsbnAndIdNot(String isbn, Long id);
 
-        @Query("SELECT DISTINCT b FROM Book b " +
+        @Query(value = "SELECT DISTINCT b FROM Book b " +
                         "LEFT JOIN FETCH b.author " +
                         "LEFT JOIN FETCH b.category " +
                         "LEFT JOIN FETCH b.discount " +
-                        "WHERE b.deletedAt IS NULL")
+                        "WHERE b.deletedAt IS NULL",
+                        countQuery = "SELECT COUNT(b) FROM Book b WHERE b.deletedAt IS NULL")
         Page<Book> findAllActiveBooks(Pageable pageable);
 
-        @Query("SELECT DISTINCT b FROM Book b " +
+        @Query(value = "SELECT DISTINCT b FROM Book b " +
                         "LEFT JOIN FETCH b.author " +
                         "LEFT JOIN FETCH b.category c " +
                         "LEFT JOIN FETCH b.discount " +
-                        "WHERE c.id = :categoryId AND b.deletedAt IS NULL")
+                        "WHERE c.id = :categoryId AND b.deletedAt IS NULL",
+                        countQuery = "SELECT COUNT(b) FROM Book b WHERE b.category.id = :categoryId AND b.deletedAt IS NULL")
         Page<Book> findByCategoryIdWithJoin(@Param("categoryId") Long categoryId, Pageable pageable);
 
-        @Query("SELECT DISTINCT b FROM Book b " +
+        @Query(value = "SELECT DISTINCT b FROM Book b " +
                         "LEFT JOIN FETCH b.author " +
                         "LEFT JOIN FETCH b.category " +
                         "LEFT JOIN FETCH b.discount " +
                         "WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-                        "AND b.deletedAt IS NULL")
+                        "AND b.deletedAt IS NULL",
+                        countQuery = "SELECT COUNT(b) FROM Book b WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) AND b.deletedAt IS NULL")
         Page<Book> searchByTitleWithJoin(@Param("keyword") String keyword, Pageable pageable);
 
         @Query("SELECT b FROM Book b " +

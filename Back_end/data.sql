@@ -1,4 +1,4 @@
--- Sample data for web_bansach database
+﻿-- Sample data for web_bansach database
 
 -- ============ DISABLE FOREIGN KEY CHECKS ============
 SET FOREIGN_KEY_CHECKS = 0;
@@ -25,8 +25,8 @@ TRUNCATE TABLE roles;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============ ROLES ============
-INSERT INTO roles (roles_name) VALUES ('ADMIN');
-INSERT INTO roles (roles_name) VALUES ('USER');
+INSERT INTO roles (roles_name) VALUES ('ROLE_ADMIN');
+INSERT INTO roles (roles_name) VALUES ('ROLE_USER');
 
 -- ============ USERS ============
 INSERT INTO users (username, password, email, full_name, phone, address, is_active, created_at) VALUES 
@@ -69,17 +69,17 @@ INSERT INTO authors (author_name, biography, created_at) VALUES
 ('Vu Trong Phung', 'Tac gia truyen thong va tieu thuyet xa hoi', NOW());
 
 -- ============ CATEGORIES ============
-INSERT INTO categories (category_name, description, created_at) VALUES 
-('Trinh Tham', 'Cac cuon tieu thuyet trinh tham va ky bi', NOW()),
-('Tinh Yeu', 'Truyen yeu thuong va tinh cam', NOW()),
-('Ly Lịch Su', 'Sach ve lich su, lich su van de chinh tri', NOW()),
-('Khoa Hoc Vien Tuong', 'Sach khoa hoc giả tưởng, tương lai', NOW()),
-('Tieu Thuyet Hien Thuc', 'Tieu thuyet viet ve cuoc song hang ngay', NOW()),
-('Tieu Thuyet Nhu Lam', 'Tieu thuyet humoristic va vui nhon', NOW()),
-('Phat Trien Ca Nhan', 'Sach ve phat trien ban than va ky nang song', NOW()),
-('Kinh Te Va Doanh Nghiep', 'Sach ve kinh te, kinh doanh va tai chinh', NOW()),
-('Van Hoc Dien Tich', 'Cac tac pham van hoc kinh dien', NOW()),
-('Sach Cho Tre Em', 'Cac cuon sach dac biet cho tre em', NOW());
+INSERT INTO categories (category_name, description, is_active, created_at, updated_at, deleted_at) VALUES 
+('Trinh Tham', 'Cac cuon tieu thuyet trinh tham va ky bi', 1, NOW(), NOW(), NULL),
+('Tinh Yeu', 'Truyen yeu thuong va tinh cam', 1, NOW(), NOW(), NULL),
+('Ly Lá»‹ch Su', 'Sach ve lich su, lich su van de chinh tri', 1, NOW(), NOW(), NULL),
+('Khoa Hoc Vien Tuong', 'Sach khoa hoc giáº£ tÆ°á»Ÿng, tÆ°Æ¡ng lai', 1, NOW(), NOW(), NULL),
+('Tieu Thuyet Hien Thuc', 'Tieu thuyet viet ve cuoc song hang ngay', 1, NOW(), NOW(), NULL),
+('Tieu Thuyet Nhu Lam', 'Tieu thuyet humoristic va vui nhon', 1, NOW(), NOW(), NULL),
+('Phat Trien Ca Nhan', 'Sach ve phat trien ban than va ky nang song', 1, NOW(), NOW(), NULL),
+('Kinh Te Va Doanh Nghiep', 'Sach ve kinh te, kinh doanh va tai chinh', 1, NOW(), NOW(), NULL),
+('Van Hoc Dien Tich', 'Cac tac pham van hoc kinh dien', 1, NOW(), NOW(), NULL),
+('Sach Cho Tre Em', 'Cac cuon sach dac biet cho tre em', 1, NOW(), NOW(), NULL);
 
 -- ============ DISCOUNTS ============
 INSERT INTO discounts (name, discount_percent, start_date, end_date, is_active, created_at) VALUES 
@@ -173,17 +173,17 @@ INSERT INTO order_items (order_id, book_id, quantity, price) VALUES
 (8, 9, 2, 145000.00);
 
 -- ============ PAYMENTS ============
-INSERT INTO payments (order_id, amount, payment_method, status, provider, transaction_code, paid_at, created_at) VALUES 
-(1, 345000.00, 'CREDIT_CARD', 'SUCCESS', 'MoMo', 'MoMo-001', NOW(), NOW()),
-(2, 120000.00, 'MOMO', 'SUCCESS', 'MoMo', 'MoMo-002', NOW(), NOW()),
-(3, 365000.00, 'CREDIT_CARD', 'SUCCESS', 'SePay', 'SEP-001', NOW(), NOW()),
-(4, 255000.00, 'MOMO', 'PENDING', 'MoMo', 'MoMo-003', NULL, NOW()),
-(5, 130000.00, 'CREDIT_CARD', 'SUCCESS', 'SePay', 'SEP-002', NOW(), NOW()),
-(6, 180000.00, 'MOMO', 'SUCCESS', 'MoMo', 'MoMo-004', NOW(), NOW()),
-(7, 315000.00, 'CREDIT_CARD', 'SUCCESS', 'SePay', 'SEP-003', NOW(), NOW()),
-(8, 180000.00, 'CREDIT_CARD', 'SUCCESS', 'SePay', 'SEP-004', NOW(), NOW()),
-(9, 325000.00, 'MOMO', 'PENDING', 'MoMo', 'MoMo-005', NULL, NOW()),
-(10, 200000.00, 'CREDIT_CARD', 'SUCCESS', 'SePay', 'SEP-005', NOW(), NOW());
+INSERT INTO payments (order_id, amount, payment_method, status, transaction_id, paid_at, created_at, updated_at, callback_verified) VALUES 
+(1, 345000.00, 'SEPAY', 'SUCCESS', 'SEP-001', NOW(), NOW(), NOW(), 1),
+(2, 120000.00, 'SEPAY', 'SUCCESS', 'SEP-002', NOW(), NOW(), NOW(), 1),
+(3, 365000.00, 'SEPAY', 'SUCCESS', 'SEP-003', NOW(), NOW(), NOW(), 1),
+(4, 255000.00, 'SEPAY', 'PENDING', 'SEP-004', NULL, NOW(), NOW(), 0),
+(5, 130000.00, 'SEPAY', 'SUCCESS', 'SEP-005', NOW(), NOW(), NOW(), 1),
+(6, 180000.00, 'SEPAY', 'SUCCESS', 'SEP-006', NOW(), NOW(), NOW(), 1),
+(7, 315000.00, 'SEPAY', 'SUCCESS', 'SEP-007', NOW(), NOW(), NOW(), 1),
+(8, 180000.00, 'SEPAY', 'SUCCESS', 'SEP-008', NOW(), NOW(), NOW(), 1),
+(9, 325000.00, 'SEPAY', 'PENDING', 'SEP-009', NULL, NOW(), NOW(), 0),
+(10, 200000.00, 'SEPAY', 'SUCCESS', 'SEP-010', NOW(), NOW(), NOW(), 1);
 
 -- ============ REVIEWS ============
 INSERT INTO reviews (user_id, book_id, rating, comment, created_at) VALUES 

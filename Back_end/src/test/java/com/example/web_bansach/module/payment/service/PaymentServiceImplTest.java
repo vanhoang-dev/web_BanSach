@@ -1,0 +1,128 @@
+package com.example.web_bansach.module.payment.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.math.BigDecimal;
+import java.util.Optional;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.example.web_bansach.common.exception.BusinessException;
+import com.example.web_bansach.infrastructure.payment.PaymentGateway;
+import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
+import com.example.web_bansach.module.order.entity.Order;
+import com.example.web_bansach.module.order.entity.OrderStatus;
+import com.example.web_bansach.module.order.repository.OrderRepository;
+import com.example.web_bansach.module.payment.dto.PaymentRequest;
+import com.example.web_bansach.module.payment.dto.PaymentResponse;
+import com.example.web_bansach.module.payment.entity.Payment;
+import com.example.web_bansach.module.payment.repository.PaymentRepository;
+import com.example.web_bansach.module.payment.service.impl.PaymentServiceImpl;
+import com.example.web_bansach.module.user.entity.Users;
+
+@ExtendWith(MockitoExtension.class)
+class PaymentServiceImplTest {
+
+    @Mock private PaymentRepository paymentRepository;
+    @Mock private OrderRepository orderRepository;
+    @Mock private PaymentGateway paymentGateway;
+    @Mock private RealtimeNotificationService realtimeNotificationService;
+
+    @InjectMocks
+    private PaymentServiceImpl paymentService;
+
+    @Test
+    void initiatePayment_shouldRejectOrderOwnedByAnotherUser() {
+        Order order = order(1L, "owner@test.com", new BigDecimal("100000"));
+        PaymentRequest request = paymentRequest(1L, new BigDecimal("100000"));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> paymentService.initiatePayment("other@test.com", request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("không có quyền");
+    }
+
+    @Test
+    void initiatePayment_shouldRejectWrongAmount() {
+        Order order = order(1L, "user@test.com", new BigDecimal("100000"));
+        PaymentRequest request = paymentRequest(1L, new BigDecimal("90000"));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> paymentService.initiatePayment("user@test.com", request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("không khớp");
+    }
+
+    @Test
+    void initiatePayment_shouldCreatePendingPaymentWhenRequestIsValid() throws Exception {
+        Order order = order(1L, "user@test.com", new BigDecimal("100000"));
+        PaymentRequest request = paymentRequest(1L, new BigDecimal("100000"));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(paymentGateway.initiatePayment(1L, new BigDecimal("100000"), "http://return", "order 1"))
+                .thenReturn("http://pay");
+        when(paymentRepository.findByOrder_Id(1L)).thenReturn(Optional.empty());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> {
+            Payment payment = invocation.getArgument(0);
+            payment.setId(99L);
+            return payment;
+        });
+
+        PaymentResponse response = paymentService.initiatePayment("user@test.com", request);
+
+        assertThat(response.getPaymentId()).isEqualTo(99L);
+        assertThat(response.getPaymentUrl()).isEqualTo("http://pay");
+        assertThat(response.getStatus()).isEqualTo("PENDING");
+    }
+
+    @Test
+    void refundPayment_shouldMarkRefundFailedWhenGatewayFails() throws Exception {
+        Payment payment = new Payment();
+        payment.setId(10L);
+        payment.setAmount(new BigDecimal("100000"));
+        payment.setStatus("SUCCESS");
+        payment.setTransactionId("SEP-1");
+
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+        when(paymentGateway.refund("SEP-1", new BigDecimal("50000"))).thenReturn(false);
+
+        assertThatThrownBy(() -> paymentService.refundPayment(10L, new BigDecimal("50000")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Hoàn tiền thất bại");
+
+        assertThat(payment.getStatus()).isEqualTo("REFUND_FAILED");
+        verify(paymentRepository).save(payment);
+    }
+
+    private Order order(Long id, String email, BigDecimal totalAmount) {
+        Users user = new Users();
+        user.setId(1L);
+        user.setEmail(email);
+
+        Order order = new Order();
+        order.setId(id);
+        order.setUser(user);
+        order.setStatus(OrderStatus.PENDING);
+        order.setTotalAmount(totalAmount);
+        return order;
+    }
+
+    private PaymentRequest paymentRequest(Long orderId, BigDecimal amount) {
+        PaymentRequest request = new PaymentRequest();
+        request.setOrderId(orderId);
+        request.setAmount(amount);
+        request.setReturnUrl("http://return");
+        request.setDescription("order " + orderId);
+        return request;
+    }
+}

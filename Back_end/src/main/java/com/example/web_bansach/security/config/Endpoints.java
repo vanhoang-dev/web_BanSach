@@ -17,8 +17,6 @@ public class Endpoints {
     public static final String[] PUBLIC_POST_ENDPOINTS = {
             "/tai-khoan/dang-ky",
             "/tai-khoan/dang-nhap",
-            "/tai-khoan/refresh-token",
-            "/tai-khoan/dang-xuat",
             "/tai-khoan/quen-mat-khau",
             "/tai-khoan/dat-lai-mat-khau",
             "/api/payment/sepay-webhook",

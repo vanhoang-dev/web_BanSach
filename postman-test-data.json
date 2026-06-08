@@ -1,0 +1,487 @@
+{
+  "baseUrl": "http://localhost:8080",
+  "headers": {
+    "json": {
+      "Content-Type": "application/json"
+    },
+    "auth": {
+      "Authorization": "Bearer {{accessToken}}",
+      "Content-Type": "application/json"
+    }
+  },
+  "seedAccounts": {
+    "admin": {
+      "email": "admin@bookstore.com",
+      "password": "password"
+    },
+    "user": {
+      "email": "user001@example.com",
+      "password": "password"
+    }
+  },
+  "seedIds": {
+    "userId": 2,
+    "bookId": 1,
+    "authorId": 1,
+    "categoryId": 1,
+    "discountId": 1,
+    "orderId": 4,
+    "paymentId": 4,
+    "reviewId": 1,
+    "cartItemId": 3,
+    "voucherCode": "WELCOME10"
+  },
+  "auth": [
+    {
+      "name": "Dang ky tai khoan",
+      "method": "POST",
+      "url": "{{baseUrl}}/tai-khoan/dang-ky",
+      "body": {
+        "username": "tester006",
+        "password": "123456",
+        "fullName": "Nguyen Test User",
+        "email": "tester006@example.com",
+        "phone": "0987654321",
+        "address": "123 Nguyen Trai, Quan 1, TP HCM"
+      }
+    },
+    {
+      "name": "Dang nhap user",
+      "method": "POST",
+      "url": "{{baseUrl}}/tai-khoan/dang-nhap",
+      "body": {
+        "email": "user001@example.com",
+        "password": "password"
+      },
+      "saveResponse": {
+        "accessToken": "data.accessToken",
+        "refreshToken": "data.refreshToken"
+      }
+    },
+    {
+      "name": "Dang nhap admin",
+      "method": "POST",
+      "url": "{{baseUrl}}/tai-khoan/dang-nhap",
+      "body": {
+        "email": "admin@bookstore.com",
+        "password": "password"
+      }
+    },
+    {
+      "name": "Refresh token",
+      "method": "POST",
+      "url": "{{baseUrl}}/tai-khoan/refresh-token",
+      "body": {
+        "refreshToken": "{{refreshToken}}"
+      }
+    },
+    {
+      "name": "Quen mat khau",
+      "method": "POST",
+      "url": "{{baseUrl}}/tai-khoan/quen-mat-khau",
+      "body": {
+        "email": "user001@example.com"
+      }
+    },
+    {
+      "name": "Dat lai mat khau",
+      "method": "POST",
+      "url": "{{baseUrl}}/tai-khoan/dat-lai-mat-khau",
+      "body": {
+        "resetToken": "{{resetToken}}",
+        "newPassword": "newpass123",
+        "confirmPassword": "newpass123"
+      }
+    },
+    {
+      "name": "Dang xuat",
+      "method": "POST",
+      "url": "{{baseUrl}}/tai-khoan/dang-xuat",
+      "auth": true
+    }
+  ],
+  "userProfile": [
+    {
+      "name": "Cap nhat profile",
+      "method": "PUT",
+      "url": "{{baseUrl}}/user/update-profile",
+      "auth": true,
+      "body": {
+        "fullName": "Nguyen Van A Updated",
+        "phone": "0912345678",
+        "address": "456 Le Loi, Quan 3, TP HCM"
+      }
+    },
+    {
+      "name": "Doi mat khau",
+      "method": "POST",
+      "url": "{{baseUrl}}/user/change-password",
+      "auth": true,
+      "body": {
+        "currentPassword": "password",
+        "newPassword": "1234567",
+        "confirmPassword": "1234567"
+      }
+    }
+  ],
+  "adminUsers": [
+    {
+      "name": "Admin cap nhat user",
+      "method": "PUT",
+      "url": "{{baseUrl}}/user_for_admin/user/2",
+      "auth": true,
+      "body": {
+        "fullName": "Nguyen Van A Admin Edit",
+        "email": "user001@example.com",
+        "phone": "0901111111",
+        "address": "Ha Noi",
+        "isActive": true
+      }
+    }
+  ],
+  "categories": [
+    {
+      "name": "Tao danh muc",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/admin/categories",
+      "auth": true,
+      "body": {
+        "name": "Sach Ky Nang",
+        "description": "Sach ve ky nang hoc tap, lam viec va phat trien ban than"
+      }
+    },
+    {
+      "name": "Cap nhat danh muc",
+      "method": "PUT",
+      "url": "{{baseUrl}}/api/admin/categories/1",
+      "auth": true,
+      "body": {
+        "name": "Trinh Tham Va Ky Bi",
+        "description": "Cac cuon tieu thuyet trinh tham, pha an va bi an",
+        "isActive": true
+      }
+    }
+  ],
+  "authors": [
+    {
+      "name": "Tao tac gia",
+      "method": "POST",
+      "url": "{{baseUrl}}/admin/authors",
+      "auth": true,
+      "body": {
+        "authorName": "Nguyen Tac Gia Test",
+        "biography": "Tac gia viet sach van hoc hien dai va sach thieu nhi."
+      }
+    },
+    {
+      "name": "Cap nhat tac gia",
+      "method": "PUT",
+      "url": "{{baseUrl}}/admin/authors/1",
+      "auth": true,
+      "body": {
+        "authorName": "Nguyen Nhat Anh Updated",
+        "biography": "Tac gia noi tieng voi nhieu tac pham danh cho tuoi hoc tro."
+      }
+    }
+  ],
+  "books": [
+    {
+      "name": "Tao sach multipart/form-data",
+      "method": "POST",
+      "url": "{{baseUrl}}/admin/books/create-book",
+      "auth": true,
+      "contentType": "multipart/form-data",
+      "formData": {
+        "title": "Sach Test Postman",
+        "isbn": "978-TEST-0001",
+        "publisher": "NXB Test",
+        "publicationYear": 2026,
+        "price": 99000,
+        "description": "Mo ta sach dung de test API trong Postman.",
+        "authorId": 1,
+        "categoryId": 1,
+        "discountId": 1,
+        "image": "chon file anh tu may neu API yeu cau"
+      }
+    },
+    {
+      "name": "Cap nhat sach multipart/form-data",
+      "method": "PUT",
+      "url": "{{baseUrl}}/admin/books/update-book/1",
+      "auth": true,
+      "contentType": "multipart/form-data",
+      "formData": {
+        "title": "Tro Choi Hoang Vuong Updated",
+        "isbn": "978-0000001",
+        "publisher": "NXB Tre",
+        "publicationYear": 2020,
+        "price": 89000,
+        "description": "Mo ta sach da cap nhat.",
+        "authorId": 1,
+        "categoryId": 1,
+        "discountId": 1,
+        "image": "optional"
+      }
+    }
+  ],
+  "cart": [
+    {
+      "name": "Them sach vao gio hang",
+      "method": "POST",
+      "url": "{{baseUrl}}/user/cart/items",
+      "auth": true,
+      "body": {
+        "bookId": 1,
+        "quantity": 2
+      }
+    },
+    {
+      "name": "Cap nhat so luong item gio hang",
+      "method": "PUT",
+      "url": "{{baseUrl}}/user/cart/items/3",
+      "auth": true,
+      "body": {
+        "quantity": 4
+      }
+    }
+  ],
+  "orders": [
+    {
+      "name": "Tao don hang tu gio hang",
+      "method": "POST",
+      "url": "{{baseUrl}}/user/orders",
+      "auth": true,
+      "body": {
+        "receiverName": "Nguyen Van A",
+        "receiverPhone": "0901111111",
+        "shippingAddress": "So 12 Nguyen Hue, Quan 1, TP HCM",
+        "shippingMethod": "Standard",
+        "shippingFee": 30000,
+        "voucherCode": "WELCOME10"
+      }
+    },
+    {
+      "name": "Tao don hang khong voucher",
+      "method": "POST",
+      "url": "{{baseUrl}}/user/orders",
+      "auth": true,
+      "body": {
+        "receiverName": "Tran Thi Test",
+        "receiverPhone": "+84901234567",
+        "shippingAddress": "25 Ly Thuong Kiet, Ha Noi",
+        "shippingMethod": "Express",
+        "shippingFee": 45000,
+        "voucherCode": null
+      }
+    },
+    {
+      "name": "Admin cap nhat trang thai don hang",
+      "method": "PUT",
+      "url": "{{baseUrl}}/admin/orders/4/status",
+      "auth": true,
+      "body": {
+        "status": "CONFIRMED"
+      },
+      "allowedStatus": [
+        "PENDING",
+        "CONFIRMED",
+        "SHIPPING",
+        "COMPLETED",
+        "CANCELLED"
+      ]
+    }
+  ],
+  "payments": [
+    {
+      "name": "Khoi tao thanh toan",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/payment/initiate",
+      "auth": true,
+      "body": {
+        "orderId": 4,
+        "amount": 255000,
+        "returnUrl": "http://localhost:5173/payment-result",
+        "description": "Thanh toan don hang #4"
+      }
+    },
+    {
+      "name": "SePay webhook thanh cong",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/payment/sepay-webhook",
+      "headers": {
+        "Authorization": "{{sepayWebhookSecret}}",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "code": "SEP-004",
+        "transactionId": "SEP-004",
+        "transferAmount": 255000,
+        "amount": 255000,
+        "description": "Thanh toan don hang #4"
+      }
+    },
+    {
+      "name": "Hoan tien",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/payment/refund/4",
+      "auth": true,
+      "body": {
+        "amount": 50000
+      }
+    }
+  ],
+  "vouchers": [
+    {
+      "name": "Tao voucher",
+      "method": "POST",
+      "url": "{{baseUrl}}/admin/vouchers",
+      "auth": true,
+      "body": {
+        "code": "POSTMAN15",
+        "discountPercent": 15,
+        "maxDiscount": 150000,
+        "quantity": 100,
+        "expiredAt": "2026-12-31"
+      }
+    },
+    {
+      "name": "Cap nhat voucher",
+      "method": "PUT",
+      "url": "{{baseUrl}}/admin/vouchers/1",
+      "auth": true,
+      "body": {
+        "code": "WELCOME10",
+        "discountPercent": 10,
+        "maxDiscount": 120000,
+        "quantity": 80,
+        "expiredAt": "2026-12-31"
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "name": "Tao danh gia sach",
+      "method": "POST",
+      "url": "{{baseUrl}}/user/reviews",
+      "auth": true,
+      "body": {
+        "bookId": 1,
+        "rating": 5,
+        "comment": "Sach hay, dong goi dep, noi dung phu hop de test review."
+      }
+    },
+    {
+      "name": "Cap nhat danh gia",
+      "method": "PUT",
+      "url": "{{baseUrl}}/user/reviews/1",
+      "auth": true,
+      "body": {
+        "bookId": 1,
+        "rating": 4,
+        "comment": "Cap nhat danh gia sau khi doc lai sach."
+      }
+    }
+  ],
+  "wishlist": [
+    {
+      "name": "Them vao yeu thich",
+      "method": "POST",
+      "url": "{{baseUrl}}/user/wishlist/books/1",
+      "auth": true
+    },
+    {
+      "name": "Xoa khoi yeu thich",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/user/wishlist/books/1",
+      "auth": true
+    }
+  ],
+  "inventory": [
+    {
+      "name": "Admin set ton kho",
+      "method": "PUT",
+      "url": "{{baseUrl}}/admin/inventory/1/set/50",
+      "auth": true
+    },
+    {
+      "name": "Admin dieu chinh ton kho",
+      "method": "POST",
+      "url": "{{baseUrl}}/admin/inventory/1/adjust/5",
+      "auth": true
+    },
+    {
+      "name": "Admin doi soat ton kho",
+      "method": "PUT",
+      "url": "{{baseUrl}}/admin/inventory/1/reconcile/45",
+      "auth": true
+    }
+  ],
+  "validationCases": [
+    {
+      "name": "Dang ky sai email va password ngan",
+      "method": "POST",
+      "url": "{{baseUrl}}/tai-khoan/dang-ky",
+      "expected": "400 Bad Request",
+      "body": {
+        "username": "ab",
+        "password": "123",
+        "fullName": "",
+        "email": "email-sai",
+        "phone": "12345",
+        "address": "Dia chi test"
+      }
+    },
+    {
+      "name": "Them gio hang quantity bang 0",
+      "method": "POST",
+      "url": "{{baseUrl}}/user/cart/items",
+      "auth": true,
+      "expected": "400 Bad Request",
+      "body": {
+        "bookId": 1,
+        "quantity": 0
+      }
+    },
+    {
+      "name": "Tao order sai so dien thoai",
+      "method": "POST",
+      "url": "{{baseUrl}}/user/orders",
+      "auth": true,
+      "expected": "400 Bad Request",
+      "body": {
+        "receiverName": "Nguyen Van A",
+        "receiverPhone": "123456",
+        "shippingAddress": "Ha Noi",
+        "shippingMethod": "Standard",
+        "shippingFee": 30000,
+        "voucherCode": "WELCOME10"
+      }
+    },
+    {
+      "name": "Tao voucher discountPercent vuot 100",
+      "method": "POST",
+      "url": "{{baseUrl}}/admin/vouchers",
+      "auth": true,
+      "expected": "400 Bad Request",
+      "body": {
+        "code": "BAD101",
+        "discountPercent": 101,
+        "maxDiscount": 100000,
+        "quantity": 10,
+        "expiredAt": "2026-12-31"
+      }
+    },
+    {
+      "name": "Tao review rating ngoai khoang",
+      "method": "POST",
+      "url": "{{baseUrl}}/user/reviews",
+      "auth": true,
+      "expected": "400 Bad Request",
+      "body": {
+        "bookId": 1,
+        "rating": 6,
+        "comment": "Rating khong hop le"
+      }
+    }
+  ]
+}

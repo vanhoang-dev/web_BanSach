@@ -8,6 +8,7 @@ import com.example.web_bansach.module.user.entity.Roles;
 @Repository
 public interface RolesRepository extends JpaRepository<Roles, Long> {
 
+    Roles findByName(String name);
 }
 
 

@@ -8,12 +8,13 @@
         ],
         "jsx": "react-jsx",
         "module": "ESNext",
-        "moduleResolution": "node",
+        "moduleResolution": "Bundler",
         "resolveJsonModule": true,
         "allowJs": true,
         "types": [
             "node",
-            "jest",
+            "vitest/globals",
+            "vite/client",
             "react",
             "react-dom"
         ],
@@ -32,10 +33,16 @@
         "noUnusedLocals": false,
         "noUnusedParameters": false,
         "noImplicitReturns": false,
-        "baseUrl": "src"
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "src/*"
+            ]
+        }
     },
     "include": [
-        "src"
+        "src",
+        "vite.config.ts"
     ],
     "exclude": [
         "node_modules",

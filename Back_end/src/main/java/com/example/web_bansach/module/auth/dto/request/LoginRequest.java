@@ -9,9 +9,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LoginRequest {
-    @NotBlank(message = "Không được để trống email")
+
+    @NotBlank(message = "Email không được để trống")
     private String email;
 
-    @NotBlank(message = "Không được để trống mật khẩu")
+    @NotBlank(message = "Mật khẩu không được để trống")
     private String password;
 }

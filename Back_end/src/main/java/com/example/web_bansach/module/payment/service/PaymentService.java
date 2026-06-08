@@ -17,7 +17,7 @@ public interface PaymentService {
      * @return PaymentResponse với URL thanh toán
      * @throws Exception nếu có lỗi
      */
-    PaymentResponse initiatePayment(PaymentRequest request) throws Exception;
+    PaymentResponse initiatePayment(String userEmail, PaymentRequest request) throws Exception;
 
     /**
      * Verify callback từ payment gateway

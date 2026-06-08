@@ -28,7 +28,7 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/admin/vouchers")
-@PreAuthorize("hasAuthority('ADMIN')")
+@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 public class VoucherAdminController {
 
     @Autowired

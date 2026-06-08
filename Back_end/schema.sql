@@ -55,9 +55,12 @@ CREATE TABLE IF NOT EXISTS authors (
 
 CREATE TABLE IF NOT EXISTS categories (
   category_id BIGINT NOT NULL AUTO_INCREMENT,
-  category_name VARCHAR(255),
+  category_name VARCHAR(255) NOT NULL,
   description TEXT,
-  created_at DATETIME,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME,
+  deleted_at DATETIME,
   PRIMARY KEY (category_id),
   UNIQUE KEY uk_categories_category_name (category_name)
 ) ENGINE=InnoDB;
@@ -200,11 +203,14 @@ CREATE TABLE IF NOT EXISTS payments (
   amount DECIMAL(19, 2),
   payment_method VARCHAR(255),
   status VARCHAR(255),
-  provider VARCHAR(255),
-  transaction_code VARCHAR(255),
-  failure_reason TEXT,
+  transaction_id VARCHAR(255),
+  payment_url VARCHAR(1000),
+  callback_signature VARCHAR(255),
+  callback_received_at DATETIME,
+  callback_verified TINYINT(1) DEFAULT 0,
   paid_at DATETIME,
   created_at DATETIME,
+  updated_at DATETIME,
   order_id BIGINT,
   PRIMARY KEY (id),
   UNIQUE KEY uk_payments_order_id (order_id),
@@ -242,6 +248,7 @@ CREATE TABLE IF NOT EXISTS vouchers (
   quantity INT,
   expired_at DATE,
   created_at DATETIME,
+  updated_at DATETIME,
   PRIMARY KEY (voucher_id),
   UNIQUE KEY uk_vouchers_code (code)
 ) ENGINE=InnoDB;

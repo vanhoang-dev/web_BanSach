@@ -23,7 +23,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/user/cart")
-@PreAuthorize("hasAnyAuthority('USER','ADMIN')")
+@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 public class CartController {
 
     private final CartCommandService cartCommandService;

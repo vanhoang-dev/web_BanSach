@@ -8,19 +8,20 @@ import lombok.Data;
 
 @Data
 public class UserRequest {
-    @NotBlank(message = "Không được để trống username")
-    @Size(min = 3, max = 50, message = "Username phải từ 3 đến 50 ký tự")
+
+    @NotBlank(message = "Tên đăng nhập không được để trống")
+    @Size(min = 3, max = 50, message = "Tên đăng nhập phải từ 3 đến 50 ký tự")
     private String username;
 
-    @NotBlank(message = "Không được để trống password")
-    @Size(min = 6, max = 50, message = "Mật khẩu phải có ít nhất 6 ký tự")
+    @NotBlank(message = "Mật khẩu không được để trống")
+    @Size(min = 6, max = 50, message = "Mật khẩu phải từ 6 đến 50 ký tự")
     private String password;
 
-    @NotBlank(message = "Không được để trống họ tên")
+    @NotBlank(message = "Họ tên không được để trống")
     private String fullName;
 
     @Email(message = "Email không đúng định dạng")
-    @NotBlank(message = "Không được để trống email")
+    @NotBlank(message = "Email không được để trống")
     private String email;
 
     @Pattern(regexp = "^(0[0-9]{9})?$", message = "Số điện thoại không hợp lệ")

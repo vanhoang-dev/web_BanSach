@@ -35,7 +35,7 @@ public class CartQueryServiceImpl implements CartQueryService {
     @Transactional(readOnly = true)
     @Override
     public CartResponse getCart(String username) {
-        Users user = userRepository.findByUsername(username);
+        Users user = userRepository.findByEmail(username);
         if (user == null) {
             CartResponse empty = new CartResponse();
             empty.setTotalItems(0);

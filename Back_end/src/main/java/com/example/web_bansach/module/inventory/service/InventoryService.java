@@ -40,7 +40,7 @@ public class InventoryService {
             throw new BusinessException("Số lượng tồn kho không được âm");
         }
 
-        Inventory inv = inventoryRepository.findById(inventoryId)
+        Inventory inv = inventoryRepository.findByIdForUpdate(inventoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy inventory"));
         inv.setQuantity(quantity);
         return inventoryRepository.save(inv);
@@ -48,7 +48,7 @@ public class InventoryService {
 
     @Transactional
     public Inventory adjustQuantity(Long inventoryId, int delta) {
-        Inventory inv = inventoryRepository.findById(inventoryId)
+        Inventory inv = inventoryRepository.findByIdForUpdate(inventoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy inventory"));
         int newQty = (inv.getQuantity() == null ? 0 : inv.getQuantity()) + delta;
         if (newQty < 0) {
@@ -64,7 +64,7 @@ public class InventoryService {
             throw new BusinessException("Số lượng đối soát không được âm");
         }
 
-        Inventory inv = inventoryRepository.findById(inventoryId)
+        Inventory inv = inventoryRepository.findByIdForUpdate(inventoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy inventory"));
         inv.setQuantity(actualQuantity);
         return inventoryRepository.save(inv);

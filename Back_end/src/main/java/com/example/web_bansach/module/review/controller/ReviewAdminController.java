@@ -21,7 +21,7 @@ import com.example.web_bansach.module.review.service.ReviewService;
  */
 @RestController
 @RequestMapping("/admin/reviews")
-@PreAuthorize("hasAuthority('ADMIN')")
+@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 public class ReviewAdminController {
 
     @Autowired

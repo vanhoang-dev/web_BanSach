@@ -1,112 +1,121 @@
-src/
+├── public/
+│   ├── favicon.ico
+│   └── images/
 │
-├── assets/
-│   ├── images/
-│   ├── icons/
-│   └── styles/
-│
-├── components/
-│   ├── common/
-│   │   ├── Button.jsx
-│   │   ├── Input.jsx
-│   │   ├── Modal.jsx
-│   │   ├── Pagination.jsx
-│   │   ├── StatusBadge.jsx
-│   │   ├── Loading.jsx
-│   │   └── EmptyState.jsx
+├── src/
+│   ├── app/
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   ├── providers/
+│   │   │   ├── AppProvider.tsx
+│   │   │   ├── QueryProvider.tsx
+│   │   │   └── RouterProvider.tsx
+│   │   └── routes/
+│   │       ├── index.tsx
+│   │       ├── publicRoutes.tsx
+│   │       ├── userRoutes.tsx
+│   │       ├── adminRoutes.tsx
+│   │       └── protectedRoutes.tsx
 │   │
-│   ├── user/
-│   │   ├── BookCard.jsx
-│   │   ├── BookFilter.jsx
-│   │   ├── CartItem.jsx
-│   │   ├── WishlistItem.jsx
-│   │   ├── OrderCard.jsx
-│   │   └── PriceSummary.jsx
+│   ├── assets/
+│   │   ├── images/
+│   │   ├── icons/
+│   │   └── styles/
+│   │       ├── globals.css
+│   │       └── variables.css
 │   │
-│   └── admin/
-│       ├── AdminSidebar.jsx
-│       ├── AdminTopbar.jsx
-│       ├── StatCard.jsx
-│       ├── DataTable.jsx
-│       ├── BookForm.jsx
-│       ├── CategoryForm.jsx
-│       ├── UserForm.jsx
-│       └── VoucherForm.jsx
-│
-├── layouts/
-│   ├── UserLayout.jsx
-│   ├── AdminLayout.jsx
-│   └── AuthLayout.jsx
-│
-├── pages/
-│   ├── auth/
-│   │   ├── LoginPage.jsx
-│   │   ├── RegisterPage.jsx
-│   │   ├── ForgotPasswordPage.jsx
-│   │   └── ResetPasswordPage.jsx
+│   ├── components/
+│   │   ├── common/
+│   │   │   ├── Button/
+│   │   │   ├── Input/
+│   │   │   ├── Modal/
+│   │   │   ├── Pagination/
+│   │   │   ├── Loading/
+│   │   │   ├── EmptyState/
+│   │   │   └── ConfirmDialog/
+│   │   │
+│   │   ├── layout/
+│   │   │   ├── Header/
+│   │   │   ├── Footer/
+│   │   │   ├── Sidebar/
+│   │   │   ├── UserLayout.tsx
+│   │   │   ├── AdminLayout.tsx
+│   │   │   └── AuthLayout.tsx
+│   │   │
+│   │   └── ui/
+│   │       ├── Card.tsx
+│   │       ├── Badge.tsx
+│   │       ├── Table.tsx
+│   │       ├── Tabs.tsx
+│   │       └── Dropdown.tsx
 │   │
-│   ├── user/
-│   │   ├── HomePage.jsx
-│   │   ├── BookListPage.jsx
-│   │   ├── BookDetailPage.jsx
-│   │   ├── CartPage.jsx
-│   │   ├── WishlistPage.jsx
-│   │   ├── CheckoutPage.jsx
-│   │   ├── PaymentQRPage.jsx
-│   │   ├── PaymentResultPage.jsx
-│   │   ├── MyOrdersPage.jsx
-│   │   ├── OrderDetailPage.jsx
-│   │   ├── ProfilePage.jsx
-│   │   └── UpdateProfilePage.jsx
+│   ├── features/
+│   │   ├── auth/
+│   │   ├── books/
+│   │   ├── categories/
+│   │   ├── authors/
+│   │   ├── cart/
+│   │   ├── orders/
+│   │   ├── payment/
+│   │   ├── reviews/
+│   │   ├── wishlist/
+│   │   ├── vouchers/
+│   │   ├── inventory/
+│   │   └── admin/
 │   │
-│   └── admin/
-│       ├── DashboardPage.jsx
-│       ├── BookManagementPage.jsx
-│       ├── CreateBookPage.jsx
-│       ├── EditBookPage.jsx
-│       ├── CategoryManagementPage.jsx
-│       ├── AuthorManagementPage.jsx
-│       ├── UserManagementPage.jsx
-│       ├── OrderManagementPage.jsx
-│       ├── AdminOrderDetailPage.jsx
-│       ├── InventoryManagementPage.jsx
-│       ├── VoucherManagementPage.jsx
-│       ├── ReviewManagementPage.jsx
-│       └── PaymentManagementPage.jsx
+│   ├── services/
+│   │   ├── api/
+│   │   │   ├── axiosClient.ts
+│   │   │   ├── endpoints.ts
+│   │   │   └── interceptors.ts
+│   │   ├── storage/
+│   │   │   ├── tokenStorage.ts
+│   │   │   └── localStorage.ts
+│   │   └── websocket/
+│   │       └── socketClient.ts
+│   │
+│   ├── stores/
+│   │   ├── authStore.ts
+│   │   ├── cartStore.ts
+│   │   └── uiStore.ts
+│   │
+│   ├── hooks/
+│   │   ├── useAuth.ts
+│   │   ├── useDebounce.ts
+│   │   ├── usePagination.ts
+│   │   └── useDisclosure.ts
+│   │
+│   ├── types/
+│   │   ├── api.types.ts
+│   │   ├── auth.types.ts
+│   │   ├── book.types.ts
+│   │   ├── cart.types.ts
+│   │   ├── order.types.ts
+│   │   ├── payment.types.ts
+│   │   ├── user.types.ts
+│   │   └── common.types.ts
+│   │
+│   ├── utils/
+│   │   ├── formatCurrency.ts
+│   │   ├── formatDate.ts
+│   │   ├── buildQueryString.ts
+│   │   ├── validateFile.ts
+│   │   └── constants.ts
+│   │
+│   ├── config/
+│   │   ├── env.ts
+│   │   ├── appConfig.ts
+│   │   └── routePaths.ts
+│   │
+│   └── tests/
+│       ├── setup.ts
+│       └── mocks/
 │
-├── routes/
-│   ├── AppRoutes.jsx
-│   ├── UserRoutes.jsx
-│   ├── AdminRoutes.jsx
-│   └── ProtectedRoute.jsx
-│
-├── services/
-│   ├── api.js
-│   ├── authService.js
-│   ├── bookService.js
-│   ├── categoryService.js
-│   ├── authorService.js
-│   ├── cartService.js
-│   ├── wishlistService.js
-│   ├── orderService.js
-│   ├── paymentService.js
-│   ├── inventoryService.js
-│   ├── voucherService.js
-│   └── reviewService.js
-│
-├── hooks/
-│   ├── useAuth.js
-│   ├── useFetch.js
-│   └── useDebounce.js
-│
-├── contexts/
-│   ├── AuthContext.jsx
-│   └── CartContext.jsx
-│
-├── utils/
-│   ├── formatCurrency.js
-│   ├── formatDate.js
-│   └── constants.js
-│
-├── App.jsx
-└── main.jsx
+├── .env
+├── .env.example
+├── .gitignore
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── README.md
