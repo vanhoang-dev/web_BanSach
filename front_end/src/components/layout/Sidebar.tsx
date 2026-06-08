@@ -17,7 +17,6 @@ const Sidebar = ({ isOpen = true }: SidebarProps) => {
         { icon: 'inventory', label: 'Kho hàng', to: '/admin/inventory' },
         { icon: 'confirmation_number', label: 'Voucher', to: '/admin/vouchers' },
         { icon: 'person', label: 'Tác giả', to: '/admin/authors' },
-        { icon: 'shield', label: 'Hoàn trả', to: '/admin/refunds' },
     ];
 
     const linkClassName = ({ isActive }: { isActive: boolean }) =>

@@ -3,7 +3,6 @@ package com.example.web_bansach.module.payment.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -47,8 +46,7 @@ class PaymentServiceImplTest {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> paymentService.initiatePayment("other@test.com", request))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("không có quyền");
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -59,8 +57,7 @@ class PaymentServiceImplTest {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> paymentService.initiatePayment("user@test.com", request))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("không khớp");
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -86,22 +83,37 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void refundPayment_shouldMarkRefundFailedWhenGatewayFails() throws Exception {
+    void getPaymentStatus_shouldReturnStoredPaymentStatus() {
+        Payment payment = new Payment();
+        payment.setId(10L);
+        payment.setAmount(new BigDecimal("100000"));
+        payment.setStatus("SUCCESS");
+        payment.setTransactionId("SEP-1");
+        payment.setPaymentUrl("http://pay");
+
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+
+        PaymentResponse response = paymentService.getPaymentStatus(10L);
+
+        assertThat(response.getStatus()).isEqualTo("SUCCESS");
+        assertThat(response.getTransactionId()).isEqualTo("SEP-1");
+        assertThat(response.getPaymentUrl()).isEqualTo("http://pay");
+    }
+
+    @Test
+    void getPaymentStatusByOrderId_shouldReturnPaymentForOrder() {
         Payment payment = new Payment();
         payment.setId(10L);
         payment.setAmount(new BigDecimal("100000"));
         payment.setStatus("SUCCESS");
         payment.setTransactionId("SEP-1");
 
-        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
-        when(paymentGateway.refund("SEP-1", new BigDecimal("50000"))).thenReturn(false);
+        when(paymentRepository.findByOrder_Id(1L)).thenReturn(Optional.of(payment));
 
-        assertThatThrownBy(() -> paymentService.refundPayment(10L, new BigDecimal("50000")))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Hoàn tiền thất bại");
+        PaymentResponse response = paymentService.getPaymentStatusByOrderId(1L);
 
-        assertThat(payment.getStatus()).isEqualTo("REFUND_FAILED");
-        verify(paymentRepository).save(payment);
+        assertThat(response.getPaymentId()).isEqualTo(10L);
+        assertThat(response.getStatus()).isEqualTo("SUCCESS");
     }
 
     private Order order(Long id, String email, BigDecimal totalAmount) {

@@ -9,7 +9,6 @@ import AdminCategoryManagementPage from '@/features/admin/pages/AdminCategoryMan
 import AdminDashboard from '@/features/admin/pages/AdminDashboard';
 import AdminInventoryPage from '@/features/admin/pages/AdminInventoryPage';
 import AdminOrderManagementPage from '@/features/admin/pages/AdminOrderManagementPage';
-import AdminRefundPage from '@/features/admin/pages/AdminRefundPage';
 import AdminUserManagementPage from '@/features/admin/pages/AdminUserManagementPage';
 import AdminVoucherManagementPage from '@/features/admin/pages/AdminVoucherManagementPage';
 
@@ -30,6 +29,5 @@ export const adminRoutes = (
     <Route path="/admin/inventory" element={adminRoute(<AdminInventoryPage />)} />
     <Route path="/admin/vouchers" element={adminRoute(<AdminVoucherManagementPage />)} />
     <Route path="/admin/authors" element={adminRoute(<AdminAuthorManagementPage />)} />
-    <Route path="/admin/refunds" element={adminRoute(<AdminRefundPage />)} />
   </>
 );

@@ -77,21 +77,10 @@ public class PaymentController {
         return ResponseEntity.ok(ApiResponse.success("Lấy trạng thái thanh toán thành công", response));
     }
 
-    @PostMapping("/refund/{paymentId}")
-    public ResponseEntity<ApiResponse<?>> refundPayment(
-            @PathVariable Long paymentId,
-            @RequestBody Map<String, Object> refundRequest) throws Exception {
-        Object amountObj = refundRequest.get("amount");
-        if (amountObj == null) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Số tiền hoàn không hợp lệ"));
-        }
-
-        BigDecimal amount = amountObj instanceof Number
-                ? BigDecimal.valueOf(((Number) amountObj).doubleValue())
-                : new BigDecimal(amountObj.toString());
-
-        paymentService.refundPayment(paymentId, amount);
-        return ResponseEntity.ok(ApiResponse.success("Hoàn tiền thành công", null));
+    @GetMapping("/status/order/{orderId}")
+    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatusByOrderId(@PathVariable Long orderId) {
+        PaymentResponse response = paymentService.getPaymentStatusByOrderId(orderId);
+        return ResponseEntity.ok(ApiResponse.success("Lấy trạng thái thanh toán thành công", response));
     }
 
     private BigDecimal parseAmount(Map<String, Object> callbackData) {

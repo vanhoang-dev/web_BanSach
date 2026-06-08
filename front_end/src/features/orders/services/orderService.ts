@@ -127,7 +127,7 @@ const orderService = {
   // Kiểm tra thanh toán
   checkPaymentStatus: async (orderId: number): Promise<any> => {
     try {
-      const response = await api.get(`/api/payment/status/${orderId}`);
+      const response = await api.get(`/api/payment/status/order/${orderId}`);
       return response;
     } catch (error: any) {
       throw error;

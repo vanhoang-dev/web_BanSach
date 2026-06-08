@@ -1,7 +1,6 @@
 package com.example.web_bansach.module.payment.service.impl;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,20 +8,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
 import com.example.web_bansach.infrastructure.payment.PaymentGateway;
+import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
+import com.example.web_bansach.module.order.entity.Order;
+import com.example.web_bansach.module.order.entity.OrderStatus;
+import com.example.web_bansach.module.order.repository.OrderRepository;
 import com.example.web_bansach.module.payment.dto.PaymentRequest;
 import com.example.web_bansach.module.payment.dto.PaymentResponse;
 import com.example.web_bansach.module.payment.entity.Payment;
 import com.example.web_bansach.module.payment.repository.PaymentRepository;
 import com.example.web_bansach.module.payment.service.PaymentService;
-import com.example.web_bansach.module.order.entity.Order;
-import com.example.web_bansach.module.order.entity.OrderStatus;
-import com.example.web_bansach.module.order.repository.OrderRepository;
-import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
 
-/**
- * Service xử lý payment operations
- * Chỉ hỗ trợ SePay
- */
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
@@ -48,14 +43,12 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BusinessException("Thông tin thanh toán không hợp lệ");
         }
 
-        // Validate request
         validatePaymentRequest(request);
 
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
         validateOrderCanBePaidByUser(order, userEmail, request.getAmount());
 
-        // Initiate SePay payment
         String paymentUrl = paymentGateway.initiatePayment(
                 request.getOrderId(),
                 request.getAmount(),
@@ -64,7 +57,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         String transactionId = "SEP-" + order.getId();
 
-        // Save payment record
         Payment payment = paymentRepository.findByOrder_Id(order.getId()).orElseGet(Payment::new);
         payment.setOrder(order);
         payment.setAmount(request.getAmount());
@@ -76,19 +68,18 @@ public class PaymentServiceImpl implements PaymentService {
         Payment savedPayment = paymentRepository.save(payment);
 
         realtimeNotificationService.publishPaymentEvent(
-            "PAYMENT_INITIATED",
-            savedPayment.getId(),
-            order.getId(),
-            "Thanh toán đã được khởi tạo",
-            "PENDING",
-            java.util.Map.of(
-                "paymentId", savedPayment.getId(),
-                "orderId", order.getId(),
-                "transactionId", transactionId,
-                "amount", request.getAmount(),
-                "status", "PENDING"));
+                "PAYMENT_INITIATED",
+                savedPayment.getId(),
+                order.getId(),
+                "Thanh toán đã được khởi tạo",
+                "PENDING",
+                java.util.Map.of(
+                        "paymentId", savedPayment.getId(),
+                        "orderId", order.getId(),
+                        "transactionId", transactionId,
+                        "amount", request.getAmount(),
+                        "status", "PENDING"));
 
-        // Return response
         PaymentResponse response = new PaymentResponse();
         response.setPaymentId(savedPayment.getId());
         response.setPaymentUrl(paymentUrl);
@@ -121,71 +112,33 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentGateway.verifyPayment(transactionId, amount, signature);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public PaymentResponse getPaymentStatus(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin thanh toán"));
 
-        String status = payment.getStatus() != null ? payment.getStatus() : "PENDING";
+        return toPaymentResponse(payment);
+    }
 
-        if (payment.getTransactionId() != null && !payment.getTransactionId().trim().isEmpty()) {
-            String gatewayStatus = paymentGateway.getPaymentStatus(payment.getTransactionId());
-            if (gatewayStatus != null && !gatewayStatus.trim().isEmpty() && !gatewayStatus.equals(status)) {
-                payment.setStatus(gatewayStatus);
-                paymentRepository.save(payment);
-                status = gatewayStatus;
-            }
-        }
+    @Transactional(readOnly = true)
+    @Override
+    public PaymentResponse getPaymentStatusByOrderId(Long orderId) {
+        Payment payment = paymentRepository.findByOrder_Id(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin thanh toán"));
 
+        return toPaymentResponse(payment);
+    }
+
+    private PaymentResponse toPaymentResponse(Payment payment) {
         PaymentResponse response = new PaymentResponse();
         response.setPaymentId(payment.getId());
         response.setAmount(payment.getAmount());
         response.setTransactionId(payment.getTransactionId());
         response.setPaymentUrl(payment.getPaymentUrl());
-        response.setStatus(status);
+        response.setStatus(payment.getStatus() != null ? payment.getStatus() : "PENDING");
 
         return response;
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    @Override
-    public boolean refundPayment(Long paymentId, BigDecimal amount) throws Exception {
-        if (paymentId == null || paymentId <= 0) {
-            throw new BusinessException("ID thanh toán không hợp lệ");
-        }
-
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("Số tiền hoàn phải lớn hơn 0");
-        }
-
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin thanh toán"));
-
-        if (payment.getAmount() == null || amount.compareTo(payment.getAmount()) > 0) {
-            throw new BusinessException("Số tiền hoàn không được lớn hơn số tiền đã thanh toán");
-        }
-
-        if (!"SUCCESS".equals(payment.getStatus())) {
-            throw new BusinessException("Chỉ có thể hoàn tiền cho giao dịch đã thanh toán thành công");
-        }
-
-        boolean refunded = false;
-        if (payment.getTransactionId() != null && !payment.getTransactionId().trim().isEmpty()) {
-            refunded = paymentGateway.refund(payment.getTransactionId(), amount);
-        }
-
-        if (!refunded) {
-            payment.setStatus("REFUND_FAILED");
-            payment.setUpdatedAt(LocalDateTime.now());
-            paymentRepository.save(payment);
-            throw new BusinessException("Hoàn tiền thất bại hoặc chưa cấu hình cổng hoàn tiền");
-        }
-
-        payment.setStatus("REFUNDED");
-        payment.setUpdatedAt(LocalDateTime.now());
-        paymentRepository.save(payment);
-        return refunded;
     }
 
     private void validatePaymentRequest(PaymentRequest request) {

@@ -86,7 +86,6 @@ public class Endpoints {
             "/admin/authors",
             "/api/admin/categories",
             "/admin/inventory/*/adjust/*",
-            "/api/payment/refund/*",
             "/admin/vouchers",
     };
 
