@@ -2,6 +2,8 @@ package com.example.web_bansach.module.payment.controller;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,7 @@ import com.example.web_bansach.module.payment.service.PaymentService;
 @RequestMapping("/api/payment")
 public class PaymentController {
     private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
+    private static final Pattern PAYMENT_CODE_PATTERN = Pattern.compile("(?i)SEP-?\\d+");
 
     private final PaymentService paymentService;
 
@@ -46,7 +49,7 @@ public class PaymentController {
             @RequestBody Map<String, Object> callbackData) {
         logger.info("Received SePay webhook");
 
-        String transactionId = (String) callbackData.getOrDefault("code", callbackData.get("transactionId"));
+        String transactionId = extractTransactionId(callbackData);
         BigDecimal amount = parseAmount(callbackData);
 
         if (transactionId == null || transactionId.trim().isEmpty()) {
@@ -100,6 +103,34 @@ public class PaymentController {
             }
         }
 
+        return null;
+    }
+
+    private String extractTransactionId(Map<String, Object> callbackData) {
+        String direct = firstText(callbackData, "code", "transactionId", "referenceCode", "paymentCode");
+        if (direct != null && !direct.isBlank()) {
+            return direct;
+        }
+
+        String content = firstText(callbackData, "content", "description", "transferContent", "transactionContent");
+        if (content == null || content.isBlank()) {
+            return null;
+        }
+
+        Matcher matcher = PAYMENT_CODE_PATTERN.matcher(content);
+        return matcher.find() ? matcher.group() : null;
+    }
+
+    private String firstText(Map<String, Object> data, String... keys) {
+        for (String key : keys) {
+            Object value = data.get(key);
+            if (value != null) {
+                String text = value.toString().trim();
+                if (!text.isEmpty() && !"-".equals(text)) {
+                    return text;
+                }
+            }
+        }
         return null;
     }
 }

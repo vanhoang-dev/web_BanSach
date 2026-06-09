@@ -116,6 +116,22 @@ class PaymentServiceImplTest {
         assertThat(response.getStatus()).isEqualTo("SUCCESS");
     }
 
+    @Test
+    void verifyPaymentCallback_shouldAcceptSepCodeWithoutDashForLegacyPayment() {
+        Payment payment = new Payment();
+        payment.setAmount(new BigDecimal("5000"));
+        payment.setTransactionId("SEP-4");
+
+        when(paymentRepository.findByTransactionId("SEP4")).thenReturn(Optional.empty());
+        when(paymentRepository.findByTransactionId("SEP-4")).thenReturn(Optional.of(payment));
+        when(paymentGateway.verifyPayment("SEP-4", new BigDecimal("5000"), "Apikey test"))
+                .thenReturn(true);
+
+        boolean verified = paymentService.verifyPaymentCallback("SEP4", new BigDecimal("5000"), "Apikey test");
+
+        assertThat(verified).isTrue();
+    }
+
     private Order order(Long id, String email, BigDecimal totalAmount) {
         Users user = new Users();
         user.setId(1L);

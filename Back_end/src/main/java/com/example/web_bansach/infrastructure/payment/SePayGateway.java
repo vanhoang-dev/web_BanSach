@@ -89,7 +89,7 @@ public class SePayGateway implements PaymentGateway {
     }
 
     private String buildPaymentCode(Long orderId) {
-        return "SEP-" + orderId;
+        return "SEP" + orderId;
     }
 
     private String encode(String value) {

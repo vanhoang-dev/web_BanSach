@@ -55,7 +55,7 @@ public class PaymentServiceImpl implements PaymentService {
                 request.getReturnUrl(),
                 request.getDescription());
 
-        String transactionId = "SEP-" + order.getId();
+        String transactionId = buildPaymentCode(order.getId());
 
         Payment payment = paymentRepository.findByOrder_Id(order.getId()).orElseGet(Payment::new);
         payment.setOrder(order);
@@ -98,7 +98,7 @@ public class PaymentServiceImpl implements PaymentService {
             return false;
         }
 
-        Payment payment = paymentRepository.findByTransactionId(transactionId)
+        Payment payment = findPaymentByTransactionId(transactionId)
                 .orElse(null);
 
         if (payment == null) {
@@ -109,7 +109,7 @@ public class PaymentServiceImpl implements PaymentService {
             return false;
         }
 
-        return paymentGateway.verifyPayment(transactionId, amount, signature);
+        return paymentGateway.verifyPayment(payment.getTransactionId(), amount, signature);
     }
 
     @Transactional(readOnly = true)
@@ -173,7 +173,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void updatePaymentStatus(String transactionId, String status, String signature) {
-        Payment payment = paymentRepository.findByTransactionId(transactionId)
+        Payment payment = findPaymentByTransactionId(transactionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin thanh toán"));
 
         payment.setStatus(status);
@@ -204,5 +204,35 @@ public class PaymentServiceImpl implements PaymentService {
                         "transactionId", transactionId,
                         "status", status,
                         "signatureVerified", true));
+    }
+
+    private java.util.Optional<Payment> findPaymentByTransactionId(String transactionId) {
+        String normalized = normalizePaymentCode(transactionId);
+        java.util.Optional<Payment> payment = paymentRepository.findByTransactionId(normalized);
+        if (payment.isPresent()) {
+            return payment;
+        }
+
+        String legacy = toLegacyPaymentCode(normalized);
+        if (!legacy.equals(normalized)) {
+            return paymentRepository.findByTransactionId(legacy);
+        }
+
+        return java.util.Optional.empty();
+    }
+
+    private String buildPaymentCode(Long orderId) {
+        return "SEP" + orderId;
+    }
+
+    private String normalizePaymentCode(String transactionId) {
+        return transactionId == null ? "" : transactionId.trim().toUpperCase().replace("-", "");
+    }
+
+    private String toLegacyPaymentCode(String normalizedCode) {
+        if (normalizedCode != null && normalizedCode.startsWith("SEP") && normalizedCode.length() > 3) {
+            return "SEP-" + normalizedCode.substring(3);
+        }
+        return normalizedCode;
     }
 }
