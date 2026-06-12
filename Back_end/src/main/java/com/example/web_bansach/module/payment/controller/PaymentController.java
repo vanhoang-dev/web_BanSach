@@ -107,18 +107,31 @@ public class PaymentController {
     }
 
     private String extractTransactionId(Map<String, Object> callbackData) {
-        String direct = firstText(callbackData, "code", "transactionId", "referenceCode", "paymentCode");
-        if (direct != null && !direct.isBlank()) {
+        String direct = firstPaymentCode(callbackData, "code", "transactionId", "paymentCode");
+        if (direct != null) {
             return direct;
         }
 
-        String content = firstText(callbackData, "content", "description", "transferContent", "transactionContent");
+        String content = firstText(callbackData, "content", "description", "transferContent", "transactionContent", "referenceCode");
         if (content == null || content.isBlank()) {
             return null;
         }
 
         Matcher matcher = PAYMENT_CODE_PATTERN.matcher(content);
         return matcher.find() ? matcher.group() : null;
+    }
+
+    private String firstPaymentCode(Map<String, Object> data, String... keys) {
+        for (String key : keys) {
+            Object value = data.get(key);
+            if (value != null) {
+                Matcher matcher = PAYMENT_CODE_PATTERN.matcher(value.toString());
+                if (matcher.find()) {
+                    return matcher.group();
+                }
+            }
+        }
+        return null;
     }
 
     private String firstText(Map<String, Object> data, String... keys) {

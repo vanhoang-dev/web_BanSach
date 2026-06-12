@@ -81,6 +81,35 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(400));
     }
 
+    @Test
+    void sepayWebhook_shouldExtractPaymentCodeFromRealTransferContent() throws Exception {
+        Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("gateway", "MBBank");
+        payload.put("transactionDate", "2026-06-12 15:25:00");
+        payload.put("accountNumber", "82000444213546");
+        payload.put("subAccount", null);
+        payload.put("code", null);
+        payload.put("content", "133153544486-SEP4-CHUYEN TIEN-OQCH000DN0Z4-MOMO133153544486MOMO");
+        payload.put("transferType", "in");
+        payload.put("description", "BankAPINotify 133153544486-SEP4-CHUYEN TIEN-OQCH000DN0Z4-MOMO133153544486MOMO");
+        payload.put("transferAmount", 5000);
+        payload.put("referenceCode", "FT26163080353409");
+        payload.put("accumulated", 0);
+        payload.put("id", 62985170);
+
+        when(paymentService.verifyPaymentCallback(eq("SEP4"), any(BigDecimal.class), eq("Apikey test-key")))
+                .thenReturn(true);
+
+        mockMvc.perform(post("/api/payment/sepay-webhook")
+                        .header("Authorization", "Apikey test-key")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+
+        verify(paymentService).updatePaymentStatus("SEP4", "SUCCESS", "Apikey test-key");
+    }
+
     private PaymentRequest paymentRequest() {
         PaymentRequest request = new PaymentRequest();
         request.setOrderId(1L);
