@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.web_bansach.common.response.ApiResponse;
 import com.example.web_bansach.common.response.PageResponse;
+import com.example.web_bansach.module.order.dto.request.BuyNowOrderRequest;
 import com.example.web_bansach.module.order.dto.request.CreateOrderRequest;
 import com.example.web_bansach.module.order.dto.response.OrderResponse;
 import com.example.web_bansach.module.order.service.OrderUserService;
@@ -35,6 +36,12 @@ public class OrderPublicController {
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(orderUserService.createOrder(username, request)));
+    }
+
+    @PostMapping("/buy-now")
+    public ResponseEntity<ApiResponse<OrderResponse>> buyNow(@Valid @RequestBody BuyNowOrderRequest request) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(orderUserService.buyNow(username, request)));
     }
 
     @GetMapping

@@ -10,12 +10,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -52,7 +54,7 @@ class PaymentControllerTest {
         when(paymentService.initiatePayment(eq("user@test.com"), any(PaymentRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/payment/initiate")
-                        .principal(new UsernamePasswordAuthenticationToken("user@test.com", null))
+                        .principal(userPrincipal())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(paymentRequest())))
                 .andExpect(status().isOk())
@@ -63,11 +65,12 @@ class PaymentControllerTest {
     }
 
     @Test
-    void getPaymentStatus_shouldReturn404WhenPaymentMissing() throws Exception {
-        when(paymentService.getPaymentStatus(999L))
-                .thenThrow(new ResourceNotFoundException("Không tìm thấy thông tin thanh toán"));
+    void getPaymentStatus_shouldUseAuthenticatedUserAndReturn404WhenPaymentMissing() throws Exception {
+        when(paymentService.getPaymentStatus("user@test.com", false, 999L))
+                .thenThrow(new ResourceNotFoundException("Khong tim thay thong tin thanh toan"));
 
-        mockMvc.perform(get("/api/payment/status/999"))
+        mockMvc.perform(get("/api/payment/status/999")
+                        .principal(userPrincipal()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404));
     }
@@ -117,5 +120,12 @@ class PaymentControllerTest {
         request.setReturnUrl("http://return");
         request.setDescription("order 1");
         return request;
+    }
+
+    private UsernamePasswordAuthenticationToken userPrincipal() {
+        return new UsernamePasswordAuthenticationToken(
+                "user@test.com",
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
     }
 }

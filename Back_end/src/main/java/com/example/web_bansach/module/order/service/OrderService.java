@@ -117,12 +117,14 @@ public class OrderService {
             throw new BusinessException("Đơn hàng đã bị hủy trước đó");
         }
 
-        List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
-        for (OrderItem item : orderItems) {
-            Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId()).orElse(null);
-            if (inventory != null) {
-                inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
-                inventoryRepository.save(inventory);
+        if (order.getStatus() != OrderStatus.PENDING) {
+            List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
+            for (OrderItem item : orderItems) {
+                Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId()).orElse(null);
+                if (inventory != null) {
+                    inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
+                    inventoryRepository.save(inventory);
+                }
             }
         }
 

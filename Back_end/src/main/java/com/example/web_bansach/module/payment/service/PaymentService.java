@@ -11,9 +11,9 @@ public interface PaymentService {
 
     boolean verifyPaymentCallback(String transactionId, BigDecimal amount, String signature);
 
-    PaymentResponse getPaymentStatus(Long paymentId);
+    PaymentResponse getPaymentStatus(String userEmail, boolean admin, Long paymentId);
 
-    PaymentResponse getPaymentStatusByOrderId(Long orderId);
+    PaymentResponse getPaymentStatusByOrderId(String userEmail, boolean admin, Long orderId);
 
     void updatePaymentStatus(String transactionId, String status, String signature);
 }

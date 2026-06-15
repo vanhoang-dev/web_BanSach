@@ -1,6 +1,7 @@
 package com.example.web_bansach.module.payment.repository;
 
 import java.util.Optional;
+import java.math.BigDecimal;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -22,4 +23,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
      * Tìm payment theo transaction ID từ gateway
      */
     Optional<Payment> findByTransactionId(String transactionId);
+
+    long countByStatus(String status);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = :status")
+    BigDecimal sumAmountByStatus(@Param("status") String status);
 }

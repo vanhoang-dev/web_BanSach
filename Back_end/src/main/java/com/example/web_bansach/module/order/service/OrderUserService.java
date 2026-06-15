@@ -13,11 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
+import com.example.web_bansach.module.book.repository.BookRepository;
+import com.example.web_bansach.module.book.entity.Book;
 import com.example.web_bansach.module.cart.entity.CartItem;
 import com.example.web_bansach.module.cart.repository.CartItemRepository;
 import com.example.web_bansach.module.cart.repository.CartRepository;
 import com.example.web_bansach.module.inventory.entity.Inventory;
 import com.example.web_bansach.module.inventory.repository.InventoryRepository;
+import com.example.web_bansach.module.order.dto.request.BuyNowOrderRequest;
 import com.example.web_bansach.module.order.dto.request.CreateOrderRequest;
 import com.example.web_bansach.module.order.dto.response.OrderResponse;
 import com.example.web_bansach.module.order.entity.Order;
@@ -44,6 +47,7 @@ public class OrderUserService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final InventoryRepository inventoryRepository;
+    private final BookRepository bookRepository;
     private final VoucherService voucherService;
     private final OrderMapper orderMapper;
     private final RealtimeNotificationService realtimeNotificationService;
@@ -55,6 +59,7 @@ public class OrderUserService {
             CartRepository cartRepository,
             CartItemRepository cartItemRepository,
             InventoryRepository inventoryRepository,
+            BookRepository bookRepository,
             VoucherService voucherService,
             OrderMapper orderMapper,
             RealtimeNotificationService realtimeNotificationService,
@@ -65,6 +70,7 @@ public class OrderUserService {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.inventoryRepository = inventoryRepository;
+        this.bookRepository = bookRepository;
         this.voucherService = voucherService;
         this.orderMapper = orderMapper;
         this.realtimeNotificationService = realtimeNotificationService;
@@ -167,8 +173,6 @@ public class OrderUserService {
             orderItemRepository.save(orderItem);
 
             // Giảm Inventory quantity
-            inventory.setQuantity(inventory.getQuantity() - cartItem.getQuantity());
-            inventoryRepository.save(inventory);
         }
 
         // Sử dụng voucher nếu đã áp dụng thành công
@@ -186,6 +190,82 @@ public class OrderUserService {
             savedOrder.getId(),
             user.getUsername(),
             "Đơn hàng mới đã được tạo",
+            "PENDING",
+            java.util.Map.of(
+                "orderId", savedOrder.getId(),
+                "username", user.getUsername(),
+                "totalAmount", savedOrder.getTotalAmount(),
+                "status", savedOrder.getStatus().name()));
+
+        return orderMapper.mapToResponse(savedOrder);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public OrderResponse buyNow(String username, BuyNowOrderRequest request) {
+        orderValidationService.validateCreateOrder(request);
+        validateBuyNowRequest(request);
+
+        Users user = userRepository.findByEmail(username);
+        if (user == null) {
+            throw new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng");
+        }
+
+        Book book = bookRepository.findById(request.getBookId())
+                .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y sÃ¡ch"));
+
+        if (book.getDeletedAt() != null) {
+            throw new BusinessException("SÃ¡ch khÃ´ng kháº£ dá»¥ng");
+        }
+
+        Inventory inventory = inventoryRepository.findByBookIdForUpdate(book.getId())
+                .orElseThrow(() -> new BusinessException("KhÃ´ng tÃ¬m tháº¥y báº£n ghi tá»“n kho cho sÃ¡ch: " + book.getTitle()));
+
+        if (inventory.getQuantity() == null || inventory.getQuantity() < request.getQuantity()) {
+            throw new BusinessException("Sá»‘ lÆ°á»£ng sÃ¡ch '" + book.getTitle() + "' khÃ´ng Ä‘á»§");
+        }
+
+        BigDecimal itemsTotal = book.getPrice().multiply(new BigDecimal(request.getQuantity()));
+        BigDecimal shippingFee = request.getShippingFee() == null ? BigDecimal.ZERO : request.getShippingFee();
+        BigDecimal totalAmount = itemsTotal.add(shippingFee);
+        BigDecimal voucherDiscount = calculateVoucherDiscount(request.getVoucherCode(), itemsTotal);
+        totalAmount = totalAmount.subtract(voucherDiscount);
+        if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
+            totalAmount = BigDecimal.ZERO;
+        }
+
+        Order order = new Order();
+        order.setUser(user);
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus(OrderStatus.PENDING);
+        order.setReceiverName(request.getReceiverName().trim());
+        order.setReceiverPhone(request.getReceiverPhone().trim());
+        order.setShippingAddress(request.getShippingAddress().trim());
+        order.setShippingMethod(request.getShippingMethod());
+        order.setShippingFee(shippingFee);
+        order.setVoucherCode(request.getVoucherCode() != null ? request.getVoucherCode().toUpperCase() : null);
+        order.setVoucherDiscount(voucherDiscount);
+        order.setTotalAmount(totalAmount);
+        order.setUpdatedAt(LocalDateTime.now());
+
+        Order savedOrder = orderRepository.save(order);
+
+        OrderItem orderItem = new OrderItem();
+        orderItem.setOrder(savedOrder);
+        orderItem.setBook(book);
+        orderItem.setQuantity(request.getQuantity());
+        orderItem.setPrice(book.getPrice());
+        orderItemRepository.save(orderItem);
+
+        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()
+                && voucherDiscount.compareTo(BigDecimal.ZERO) > 0) {
+            voucherService.useVoucher(request.getVoucherCode());
+        }
+
+        realtimeNotificationService.publishOrderEvent(
+            "ORDER_CREATED",
+            savedOrder.getId(),
+            user.getUsername(),
+            "ÄÆ¡n hÃ ng má»›i Ä‘Ã£ Ä‘Æ°á»£c táº¡o",
             "PENDING",
             java.util.Map.of(
                 "orderId", savedOrder.getId(),
@@ -231,6 +311,30 @@ public class OrderUserService {
         }
     }
 
+    private void validateBuyNowRequest(BuyNowOrderRequest request) {
+        if (request.getBookId() == null || request.getBookId() <= 0) {
+            throw new BusinessException("ID sach khong hop le");
+        }
+        if (request.getQuantity() == null || request.getQuantity() <= 0) {
+            throw new BusinessException("So luong phai lon hon 0");
+        }
+    }
+
+    private BigDecimal calculateVoucherDiscount(String voucherCode, BigDecimal itemsTotal) {
+        if (voucherCode == null || voucherCode.trim().isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        var voucherResponse = voucherService.getVoucherByCode(voucherCode);
+        BigDecimal discountAmount = itemsTotal.multiply(new BigDecimal(voucherResponse.getDiscountPercent()))
+                .divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+
+        if (discountAmount.compareTo(voucherResponse.getMaxDiscount()) > 0) {
+            return voucherResponse.getMaxDiscount();
+        }
+        return discountAmount;
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void cancelMyOrder(String username, Long orderId) {
         Users user = userRepository.findByEmail(username);
@@ -254,11 +358,13 @@ public class OrderUserService {
         }
 
         // Hoàn lại inventory
-        List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
-        for (OrderItem item : orderItems) {
-            Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId()).get();
-            inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
-            inventoryRepository.save(inventory);
+        if (order.getStatus() != OrderStatus.PENDING) {
+            List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
+            for (OrderItem item : orderItems) {
+                Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId()).get();
+                inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
+                inventoryRepository.save(inventory);
+            }
         }
 
         order.setStatus(OrderStatus.CANCELLED);

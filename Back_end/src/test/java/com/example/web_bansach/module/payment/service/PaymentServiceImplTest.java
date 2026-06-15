@@ -17,8 +17,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.infrastructure.payment.PaymentGateway;
 import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
+import com.example.web_bansach.module.book.entity.Book;
+import com.example.web_bansach.module.inventory.entity.Inventory;
+import com.example.web_bansach.module.inventory.repository.InventoryRepository;
 import com.example.web_bansach.module.order.entity.Order;
+import com.example.web_bansach.module.order.entity.OrderItem;
 import com.example.web_bansach.module.order.entity.OrderStatus;
+import com.example.web_bansach.module.order.repository.OrderItemRepository;
 import com.example.web_bansach.module.order.repository.OrderRepository;
 import com.example.web_bansach.module.payment.dto.PaymentRequest;
 import com.example.web_bansach.module.payment.dto.PaymentResponse;
@@ -32,6 +37,8 @@ class PaymentServiceImplTest {
 
     @Mock private PaymentRepository paymentRepository;
     @Mock private OrderRepository orderRepository;
+    @Mock private OrderItemRepository orderItemRepository;
+    @Mock private InventoryRepository inventoryRepository;
     @Mock private PaymentGateway paymentGateway;
     @Mock private RealtimeNotificationService realtimeNotificationService;
 
@@ -91,9 +98,11 @@ class PaymentServiceImplTest {
         payment.setTransactionId("SEP-1");
         payment.setPaymentUrl("http://pay");
 
+        payment.setOrder(order(1L, "user@test.com", new BigDecimal("100000")));
+
         when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
 
-        PaymentResponse response = paymentService.getPaymentStatus(10L);
+        PaymentResponse response = paymentService.getPaymentStatus("user@test.com", false, 10L);
 
         assertThat(response.getStatus()).isEqualTo("SUCCESS");
         assertThat(response.getTransactionId()).isEqualTo("SEP-1");
@@ -108,9 +117,11 @@ class PaymentServiceImplTest {
         payment.setStatus("SUCCESS");
         payment.setTransactionId("SEP-1");
 
+        payment.setOrder(order(1L, "user@test.com", new BigDecimal("100000")));
+
         when(paymentRepository.findByOrder_Id(1L)).thenReturn(Optional.of(payment));
 
-        PaymentResponse response = paymentService.getPaymentStatusByOrderId(1L);
+        PaymentResponse response = paymentService.getPaymentStatusByOrderId("user@test.com", false, 1L);
 
         assertThat(response.getPaymentId()).isEqualTo(10L);
         assertThat(response.getStatus()).isEqualTo("SUCCESS");
@@ -130,6 +141,49 @@ class PaymentServiceImplTest {
         boolean verified = paymentService.verifyPaymentCallback("SEP4", new BigDecimal("5000"), "Apikey test");
 
         assertThat(verified).isTrue();
+    }
+
+    @Test
+    void getPaymentStatus_shouldRejectPaymentOwnedByAnotherUser() {
+        Payment payment = new Payment();
+        payment.setId(10L);
+        payment.setOrder(order(1L, "owner@test.com", new BigDecimal("100000")));
+
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.getPaymentStatus("other@test.com", false, 10L))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void updatePaymentStatus_shouldDeductInventoryOnceWhenPaymentSucceeds() {
+        Order order = order(1L, "user@test.com", new BigDecimal("100000"));
+        Payment payment = new Payment();
+        payment.setId(10L);
+        payment.setAmount(new BigDecimal("100000"));
+        payment.setTransactionId("SEP1");
+        payment.setOrder(order);
+
+        Book book = new Book();
+        book.setId(20L);
+        book.setTitle("Book");
+
+        OrderItem item = new OrderItem();
+        item.setBook(book);
+        item.setQuantity(2);
+
+        Inventory inventory = new Inventory();
+        inventory.setBook(book);
+        inventory.setQuantity(5);
+
+        when(paymentRepository.findByTransactionId("SEP1")).thenReturn(Optional.of(payment));
+        when(orderItemRepository.findByOrderIdWithBook(1L)).thenReturn(java.util.List.of(item));
+        when(inventoryRepository.findByBookIdForUpdate(20L)).thenReturn(Optional.of(inventory));
+
+        paymentService.updatePaymentStatus("SEP1", "SUCCESS", "Apikey test");
+
+        assertThat(inventory.getQuantity()).isEqualTo(3);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
     }
 
     private Order order(Long id, String email, BigDecimal totalAmount) {

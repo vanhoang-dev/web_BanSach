@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,7 +41,7 @@ public class PaymentController {
             @RequestBody PaymentRequest request) throws Exception {
         logger.info("Initiating payment for order: {}", request.getOrderId());
         PaymentResponse response = paymentService.initiatePayment(authentication.getName(), request);
-        return ResponseEntity.ok(ApiResponse.success("Khởi tạo thanh toán thành công", response));
+        return ResponseEntity.ok(ApiResponse.success("Khoi tao thanh toan thanh cong", response));
     }
 
     @PostMapping("/sepay-webhook")
@@ -53,11 +54,11 @@ public class PaymentController {
         BigDecimal amount = parseAmount(callbackData);
 
         if (transactionId == null || transactionId.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Thiếu mã giao dịch"));
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Thieu ma giao dich"));
         }
 
         if (amount == null) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Thiếu số tiền giao dịch"));
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Thieu so tien giao dich"));
         }
 
         boolean verified = paymentService.verifyPaymentCallback(transactionId, amount, authorization);
@@ -75,15 +76,32 @@ public class PaymentController {
     }
 
     @GetMapping("/status/{paymentId}")
-    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatus(@PathVariable Long paymentId) {
-        PaymentResponse response = paymentService.getPaymentStatus(paymentId);
-        return ResponseEntity.ok(ApiResponse.success("Lấy trạng thái thanh toán thành công", response));
+    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatus(
+            Authentication authentication,
+            @PathVariable Long paymentId) {
+        PaymentResponse response = paymentService.getPaymentStatus(
+                authentication.getName(),
+                isAdmin(authentication),
+                paymentId);
+        return ResponseEntity.ok(ApiResponse.success("Lay trang thai thanh toan thanh cong", response));
     }
 
     @GetMapping("/status/order/{orderId}")
-    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatusByOrderId(@PathVariable Long orderId) {
-        PaymentResponse response = paymentService.getPaymentStatusByOrderId(orderId);
-        return ResponseEntity.ok(ApiResponse.success("Lấy trạng thái thanh toán thành công", response));
+    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatusByOrderId(
+            Authentication authentication,
+            @PathVariable Long orderId) {
+        PaymentResponse response = paymentService.getPaymentStatusByOrderId(
+                authentication.getName(),
+                isAdmin(authentication),
+                orderId);
+        return ResponseEntity.ok(ApiResponse.success("Lay trang thai thanh toan thanh cong", response));
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication != null
+                && authentication.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .anyMatch("ROLE_ADMIN"::equals);
     }
 
     private BigDecimal parseAmount(Map<String, Object> callbackData) {
@@ -112,7 +130,8 @@ public class PaymentController {
             return direct;
         }
 
-        String content = firstText(callbackData, "content", "description", "transferContent", "transactionContent", "referenceCode");
+        String content = firstText(callbackData, "content", "description", "transferContent", "transactionContent",
+                "referenceCode");
         if (content == null || content.isBlank()) {
             return null;
         }

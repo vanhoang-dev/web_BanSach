@@ -14,6 +14,8 @@ public interface UserRepository extends JpaRepository<Users, Long> {
     public Users findByEmail(String email);
 
     Page<Users> findByDeletedAtIsNull(Pageable pageable);
+
+    long countByDeletedAtIsNull();
 }
 
 

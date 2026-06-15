@@ -47,4 +47,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
                         "LEFT JOIN FETCH b.discount " +
                         "WHERE b.id = :id")
         Book findByIdWithJoin(@Param("id") Long id);
+
+        long countByDeletedAtIsNull();
 }

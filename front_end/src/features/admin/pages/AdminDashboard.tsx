@@ -1,71 +1,84 @@
+import { useEffect, useState } from 'react';
+
+import adminService from '@/features/admin/services';
+
+type RecentOrder = {
+    id: number;
+    receiverName?: string;
+    totalAmount?: number;
+    orderDate?: string;
+    status?: string;
+};
+
+type DashboardStats = {
+    totalOrders: number;
+    totalPaidPayments: number;
+    totalRevenue: number;
+    totalBooks: number;
+    totalUsers: number;
+    totalBooksSold: number;
+    recentOrders: RecentOrder[];
+};
+
+const currency = new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+});
+
+const emptyStats: DashboardStats = {
+    totalOrders: 0,
+    totalPaidPayments: 0,
+    totalRevenue: 0,
+    totalBooks: 0,
+    totalUsers: 0,
+    totalBooksSold: 0,
+    recentOrders: [],
+};
 
 const AdminDashboard = () => {
+    const [dashboard, setDashboard] = useState<DashboardStats>(emptyStats);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let active = true;
+
+        adminService.getDashboardStats()
+            .then((response) => {
+                if (active) {
+                    setDashboard(response.data ?? emptyStats);
+                }
+            })
+            .finally(() => {
+                if (active) {
+                    setLoading(false);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
     const stats = [
-        {
-            title: 'Tổng đơn hàng',
-            value: '1,234',
-            change: '+12% từ tuần trước',
-            icon: 'shopping_bag',
-        },
-        {
-            title: 'Doanh thu',
-            value: '₫45.2M',
-            change: '+8% từ tuần trước',
-            icon: 'trending_up',
-        },
-        {
-            title: 'Sách bán ra',
-            value: '5,678',
-            change: '+15% từ tuần trước',
-            icon: 'book',
-        },
-        {
-            title: 'Người dùng mới',
-            value: '234',
-            change: '+5% từ tuần trước',
-            icon: 'group',
-        },
+        { title: 'Tổng đơn hàng', value: dashboard.totalOrders.toLocaleString('vi-VN'), icon: 'shopping_bag' },
+        { title: 'Thanh toán thành công', value: dashboard.totalPaidPayments.toLocaleString('vi-VN'), icon: 'paid' },
+        { title: 'Doanh thu', value: currency.format(dashboard.totalRevenue), icon: 'trending_up' },
+        { title: 'Sách bán ra', value: dashboard.totalBooksSold.toLocaleString('vi-VN'), icon: 'book' },
+        { title: 'Đầu sách', value: dashboard.totalBooks.toLocaleString('vi-VN'), icon: 'library' },
+        { title: 'Người dùng', value: dashboard.totalUsers.toLocaleString('vi-VN'), icon: 'group' },
     ];
 
-    const recentOrders = [
-        {
-            id: '#ORD-001',
-            customer: 'Nguyễn Văn A',
-            amount: '₫250.000',
-            date: '2024-05-09',
-            status: 'Completed',
-        },
-        {
-            id: '#ORD-002',
-            customer: 'Trần Thị B',
-            amount: '₫180.000',
-            date: '2024-05-08',
-            status: 'Processing',
-        },
-        {
-            id: '#ORD-003',
-            customer: 'Lê Văn C',
-            amount: '₫420.000',
-            date: '2024-05-08',
-            status: 'Pending',
-        },
-        {
-            id: '#ORD-004',
-            customer: 'Phạm Thị D',
-            amount: '₫95.000',
-            date: '2024-05-07',
-            status: 'Completed',
-        },
-    ];
-
-    const getStatusColor = (status) => {
+    const getStatusColor = (status?: string) => {
         switch (status) {
-            case 'Completed':
+            case 'COMPLETED':
                 return 'bg-green-100 text-green-800';
-            case 'Processing':
+            case 'CONFIRMED':
+            case 'SHIPPING':
                 return 'bg-blue-100 text-blue-800';
-            case 'Pending':
+            case 'PENDING':
                 return 'bg-yellow-100 text-yellow-800';
+            case 'CANCELLED':
+                return 'bg-red-100 text-red-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -73,57 +86,30 @@ const AdminDashboard = () => {
 
     return (
         <div className="w-full">
-            {/* Header */}
             <div className="mb-section-gap">
                 <h1 className="font-h1 text-h1 text-primary mb-unit">Tổng quan</h1>
                 <p className="font-body-md text-body-md text-on-surface-variant">
-                    Chào mừng trở lại! Đây là bảng điều khiển quản trị cửa hàng của bạn.
+                    Theo dõi đơn hàng, thanh toán thành công và doanh thu thực tế từ SePay.
                 </p>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-section-gap">
-                {stats.map((stat, idx) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-gutter mb-section-gap">
+                {stats.map((stat) => (
                     <div
-                        key={idx}
-                        className="bg-surface-container-lowest rounded-xl p-stack-lg border border-surface-variant hover:shadow-md transition-all"
+                        key={stat.title}
+                        className="bg-surface-container-lowest rounded-xl p-stack-lg border border-surface-variant"
                     >
                         <div className="flex items-center justify-between mb-stack-md">
-                            <h3 className="font-label-md text-label-md text-on-surface-variant">
-                                {stat.title}
-                            </h3>
+                            <h3 className="font-label-md text-label-md text-on-surface-variant">{stat.title}</h3>
                             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                                <svg
-                                    className="w-6 h-6 text-primary"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    {stat.icon === 'shopping_bag' && (
-                                        <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
-                                    )}
-                                    {stat.icon === 'trending_up' && (
-                                        <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12v-6z" />
-                                    )}
-                                    {stat.icon === 'book' && (
-                                        <path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z" />
-                                    )}
-                                    {stat.icon === 'group' && (
-                                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.64 2.2 1.56 2.97 2.54.6.81 1.23 1.6 2 2.1h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-                                    )}
-                                </svg>
+                                <span className="text-primary font-bold">{stat.icon === 'trending_up' ? '₫' : stat.value.slice(0, 1)}</span>
                             </div>
                         </div>
-                        <div className="flex flex-col gap-unit">
-                            <h2 className="font-h2 text-h2 text-primary">{stat.value}</h2>
-                            <p className="font-caption text-caption text-on-surface-variant">
-                                {stat.change}
-                            </p>
-                        </div>
+                        <h2 className="font-h2 text-h2 text-primary">{loading ? '...' : stat.value}</h2>
                     </div>
                 ))}
             </div>
 
-            {/* Recent Orders Table */}
             <div className="bg-surface-container-lowest rounded-xl border border-surface-variant overflow-hidden">
                 <div className="p-stack-lg border-b border-surface-variant">
                     <h2 className="font-h2 text-h2 text-primary">Đơn hàng gần đây</h2>
@@ -133,57 +119,40 @@ const AdminDashboard = () => {
                     <table className="w-full">
                         <thead className="bg-surface-container border-b border-surface-variant">
                             <tr>
-                                <th className="px-stack-lg py-stack-md text-left font-label-md text-label-md text-on-surface-variant">
-                                    Mã đơn
-                                </th>
-                                <th className="px-stack-lg py-stack-md text-left font-label-md text-label-md text-on-surface-variant">
-                                    Khách hàng
-                                </th>
-                                <th className="px-stack-lg py-stack-md text-left font-label-md text-label-md text-on-surface-variant">
-                                    Số tiền
-                                </th>
-                                <th className="px-stack-lg py-stack-md text-left font-label-md text-label-md text-on-surface-variant">
-                                    Ngày đặt
-                                </th>
-                                <th className="px-stack-lg py-stack-md text-left font-label-md text-label-md text-on-surface-variant">
-                                    Trạng thái
-                                </th>
+                                <th className="px-stack-lg py-stack-md text-left font-label-md text-label-md text-on-surface-variant">Mã đơn</th>
+                                <th className="px-stack-lg py-stack-md text-left font-label-md text-label-md text-on-surface-variant">Người nhận</th>
+                                <th className="px-stack-lg py-stack-md text-left font-label-md text-label-md text-on-surface-variant">Số tiền</th>
+                                <th className="px-stack-lg py-stack-md text-left font-label-md text-label-md text-on-surface-variant">Ngày đặt</th>
+                                <th className="px-stack-lg py-stack-md text-left font-label-md text-label-md text-on-surface-variant">Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {recentOrders.map((order, idx) => (
-                                <tr key={idx} className="border-b border-surface-variant hover:bg-surface-container-low transition-colors">
-                                    <td className="px-stack-lg py-stack-md font-body-md text-body-md text-primary font-bold">
-                                        {order.id}
-                                    </td>
-                                    <td className="px-stack-lg py-stack-md font-body-md text-body-md text-on-surface">
-                                        {order.customer}
-                                    </td>
+                            {dashboard.recentOrders.map((order) => (
+                                <tr key={order.id} className="border-b border-surface-variant hover:bg-surface-container-low transition-colors">
+                                    <td className="px-stack-lg py-stack-md font-body-md text-body-md text-primary font-bold">#{order.id}</td>
+                                    <td className="px-stack-lg py-stack-md font-body-md text-body-md text-on-surface">{order.receiverName}</td>
                                     <td className="px-stack-lg py-stack-md font-body-md text-body-md text-on-surface font-bold">
-                                        {order.amount}
+                                        {currency.format(order.totalAmount ?? 0)}
                                     </td>
                                     <td className="px-stack-lg py-stack-md font-caption text-caption text-on-surface-variant">
-                                        {order.date}
+                                        {order.orderDate ? new Date(order.orderDate).toLocaleString('vi-VN') : ''}
                                     </td>
                                     <td className="px-stack-lg py-stack-md">
-                                        <span
-                                            className={`inline-block px-3 py-1 rounded-full font-caption text-caption font-bold ${getStatusColor(
-                                                order.status
-                                            )}`}
-                                        >
+                                        <span className={`inline-block px-3 py-1 rounded-full font-caption text-caption font-bold ${getStatusColor(order.status)}`}>
                                             {order.status}
                                         </span>
                                     </td>
                                 </tr>
                             ))}
+                            {!loading && dashboard.recentOrders.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-stack-lg py-stack-lg text-center text-on-surface-variant">
+                                        Chưa có đơn hàng.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
-                </div>
-
-                <div className="px-stack-lg py-stack-md border-t border-surface-variant">
-                    <button className="text-primary font-label-md text-label-md hover:underline">
-                        Xem tất cả đơn hàng →
-                    </button>
                 </div>
             </div>
         </div>

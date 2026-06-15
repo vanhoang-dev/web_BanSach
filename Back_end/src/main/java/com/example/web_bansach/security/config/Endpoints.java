@@ -11,8 +11,6 @@ public class Endpoints {
             "/api/authors",
             "/api/authors/*",
             "/api/authors/search",
-            "/api/payment/status/*",
-            "/api/payment/status/order/*",
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {
@@ -24,6 +22,7 @@ public class Endpoints {
     };
 
     public static final String[] USER_GET_ENDPOINTS = {
+            "/user/me",
             "/user/books",
             "/user/books/*",
             "/user/cart",
@@ -38,19 +37,22 @@ public class Endpoints {
             "/user/vouchers",
             "/user/vouchers/code/*",
             "/user/inventory/book/*",
+            "/api/payment/status/*",
+            "/api/payment/status/order/*",
     };
 
     public static final String[] USER_POST_ENDPOINTS = {
             "/user/cart/items",
             "/user/wishlist/books/*",
             "/user/orders",
+            "/user/orders/buy-now",
             "/user/reviews",
             "/api/payment/initiate",
+            "/user/change-password",
     };
 
     public static final String[] USER_PUT_ENDPOINTS = {
             "/user/update-profile",
-            "/user/change-password",
             "/user/cart/items/*",
             "/user/orders/*/cancel",
             "/user/reviews/*",
@@ -65,6 +67,7 @@ public class Endpoints {
     };
 
     public static final String[] ADMIN_GET_ENDPOINTS = {
+            "/admin/dashboard",
             "/admin/books",
             "/admin/books/*",
             "/admin/authors",

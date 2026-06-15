@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.module.book.entity.Book;
+import com.example.web_bansach.module.book.repository.BookRepository;
 import com.example.web_bansach.module.cart.entity.Cart;
 import com.example.web_bansach.module.cart.entity.CartItem;
 import com.example.web_bansach.module.cart.repository.CartItemRepository;
@@ -24,6 +25,8 @@ import com.example.web_bansach.module.cart.repository.CartRepository;
 import com.example.web_bansach.module.inventory.entity.Inventory;
 import com.example.web_bansach.module.inventory.repository.InventoryRepository;
 import com.example.web_bansach.module.order.dto.request.CreateOrderRequest;
+import com.example.web_bansach.module.order.dto.request.BuyNowOrderRequest;
+import com.example.web_bansach.module.order.dto.response.OrderResponse;
 import com.example.web_bansach.module.order.entity.Order;
 import com.example.web_bansach.module.order.mapper.OrderMapper;
 import com.example.web_bansach.module.order.repository.OrderItemRepository;
@@ -42,6 +45,7 @@ class OrderUserServiceTest {
     @Mock private CartRepository cartRepository;
     @Mock private CartItemRepository cartItemRepository;
     @Mock private InventoryRepository inventoryRepository;
+    @Mock private BookRepository bookRepository;
     @Mock private VoucherService voucherService;
     @Mock private OrderMapper orderMapper;
     @Mock private RealtimeNotificationService realtimeNotificationService;
@@ -92,5 +96,50 @@ class OrderUserServiceTest {
                 .hasMessageContaining("voucher");
 
         verify(orderRepository, never()).save(org.mockito.ArgumentMatchers.any(Order.class));
+    }
+
+    @Test
+    void buyNow_shouldCreatePendingOrderWithoutDecreasingInventoryBeforePayment() {
+        Users user = new Users();
+        user.setId(1L);
+        user.setUsername("user001");
+        user.setEmail("user@test.com");
+
+        Book book = new Book();
+        book.setId(100L);
+        book.setTitle("Book");
+        book.setPrice(new BigDecimal("5000"));
+
+        Inventory inventory = new Inventory();
+        inventory.setBook(book);
+        inventory.setQuantity(5);
+
+        BuyNowOrderRequest request = new BuyNowOrderRequest();
+        request.setBookId(100L);
+        request.setQuantity(2);
+        request.setReceiverName("Nguyen Van A");
+        request.setReceiverPhone("0901234567");
+        request.setShippingAddress("Ha Noi");
+        request.setShippingFee(BigDecimal.ZERO);
+
+        OrderResponse mappedResponse = new OrderResponse();
+        mappedResponse.setId(99L);
+
+        when(userRepository.findByEmail("user@test.com")).thenReturn(user);
+        when(bookRepository.findById(100L)).thenReturn(Optional.of(book));
+        when(inventoryRepository.findByBookIdForUpdate(100L)).thenReturn(Optional.of(inventory));
+        when(orderRepository.save(org.mockito.ArgumentMatchers.any(Order.class))).thenAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            order.setId(99L);
+            return order;
+        });
+        when(orderMapper.mapToResponse(org.mockito.ArgumentMatchers.any(Order.class))).thenReturn(mappedResponse);
+
+        OrderResponse response = orderUserService.buyNow("user@test.com", request);
+
+        org.assertj.core.api.Assertions.assertThat(response.getId()).isEqualTo(99L);
+        org.assertj.core.api.Assertions.assertThat(inventory.getQuantity()).isEqualTo(5);
+        verify(orderItemRepository).save(org.mockito.ArgumentMatchers.any());
+        verify(cartItemRepository, never()).deleteByCartId(org.mockito.ArgumentMatchers.anyLong());
     }
 }
