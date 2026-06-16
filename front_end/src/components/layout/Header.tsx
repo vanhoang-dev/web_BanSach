@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 
 import { AccentButton, Icon, IconButton } from '@/components/ui/staticUi';
+import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
   { label: 'Danh mục', to: '/categories' },
@@ -12,8 +13,13 @@ const navItems = [
 
 const Header = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+
+  const displayName = user?.fullName || 'Tài khoản';
+  const avatarText = displayName.trim().charAt(0).toUpperCase() || 'U';
 
   const onSearch = (event: FormEvent) => {
     event.preventDefault();
@@ -22,6 +28,13 @@ const Header = () => {
       navigate(`/search?keyword=${encodeURIComponent(keyword)}`);
       setOpen(false);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    setAccountOpen(false);
+    setOpen(false);
+    navigate('/');
   };
 
   return (
@@ -70,12 +83,37 @@ const Header = () => {
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-secondary-container" />
             </IconButton>
           </Link>
-          <Link to="/profile" className="hidden sm:block" aria-label="Tài khoản">
-            <IconButton><Icon name="user" /></IconButton>
-          </Link>
-          <Link to="/login" className="hidden xl:block">
-            <AccentButton>Đăng nhập</AccentButton>
-          </Link>
+          {isAuthenticated ? (
+            <div className="relative hidden sm:block">
+              <button
+                type="button"
+                onClick={() => setAccountOpen((value) => !value)}
+                className="flex h-11 items-center gap-2 rounded-lg border border-outline-variant bg-surface px-2.5 text-sm font-bold text-primary shadow-sm transition hover:bg-surface-container"
+                aria-label="Tài khoản"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">
+                  {avatarText}
+                </span>
+                <span className="hidden max-w-28 truncate xl:block">{displayName}</span>
+              </button>
+              {accountOpen ? (
+                <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-lg border border-outline-variant bg-surface shadow-lg">
+                  <div className="border-b border-outline-variant px-4 py-3">
+                    <p className="truncate text-sm font-bold text-primary">{displayName}</p>
+                    <p className="truncate text-xs text-on-surface-variant">{user?.role === 'ADMIN' ? 'Quản trị viên' : 'Khách hàng'}</p>
+                  </div>
+                  <Link to="/profile" onClick={() => setAccountOpen(false)} className="block px-4 py-3 text-sm font-semibold text-on-surface-variant hover:bg-surface-container">Hồ sơ của tôi</Link>
+                  <Link to="/orders" onClick={() => setAccountOpen(false)} className="block px-4 py-3 text-sm font-semibold text-on-surface-variant hover:bg-surface-container">Đơn hàng của tôi</Link>
+                  {user?.role === 'ADMIN' ? <Link to="/admin" onClick={() => setAccountOpen(false)} className="block px-4 py-3 text-sm font-semibold text-on-surface-variant hover:bg-surface-container">Trang quản trị</Link> : null}
+                  <button type="button" onClick={handleLogout} className="block w-full px-4 py-3 text-left text-sm font-semibold text-error hover:bg-error-container">Đăng xuất</button>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <Link to="/login" className="hidden xl:block">
+              <AccentButton>Đăng nhập</AccentButton>
+            </Link>
+          )}
           <IconButton className="lg:hidden" onClick={() => setOpen((value) => !value)} aria-label="Mở menu">
             <Icon name={open ? 'x' : 'menu'} />
           </IconButton>
@@ -101,6 +139,25 @@ const Header = () => {
             <Link to="/orders" onClick={() => setOpen(false)} className="rounded-lg px-3 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container">
               Đơn hàng của tôi
             </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/profile" onClick={() => setOpen(false)} className="rounded-lg px-3 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container">
+                  Hồ sơ của tôi
+                </Link>
+                {user?.role === 'ADMIN' ? (
+                  <Link to="/admin" onClick={() => setOpen(false)} className="rounded-lg px-3 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container">
+                    Trang quản trị
+                  </Link>
+                ) : null}
+                <button type="button" onClick={handleLogout} className="rounded-lg px-3 py-3 text-left text-sm font-bold text-error hover:bg-error-container">
+                  Đăng xuất
+                </button>
+              </>
+            ) : (
+              <Link to="/login" onClick={() => setOpen(false)} className="rounded-lg px-3 py-3 text-sm font-bold text-secondary hover:bg-surface-container">
+                Đăng nhập
+              </Link>
+            )}
           </nav>
         </div>
       ) : null}

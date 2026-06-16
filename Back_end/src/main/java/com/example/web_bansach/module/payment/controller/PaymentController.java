@@ -1,6 +1,8 @@
 package com.example.web_bansach.module.payment.controller;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,13 +17,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.example.web_bansach.common.response.ApiResponse;
+import com.example.web_bansach.infrastructure.realtime.RealtimeNotification;
+import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
 import com.example.web_bansach.module.payment.dto.PaymentRequest;
 import com.example.web_bansach.module.payment.dto.PaymentResponse;
 import com.example.web_bansach.module.payment.service.PaymentService;
+import com.example.web_bansach.security.jwt.JwtTokenProvider;
 
 @RestController
 @RequestMapping("/api/payment")
@@ -30,9 +37,15 @@ public class PaymentController {
     private static final Pattern PAYMENT_CODE_PATTERN = Pattern.compile("(?i)SEP-?\\d+");
 
     private final PaymentService paymentService;
+    private final RealtimeNotificationService realtimeNotificationService;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public PaymentController(PaymentService paymentService) {
+    public PaymentController(PaymentService paymentService,
+            RealtimeNotificationService realtimeNotificationService,
+            JwtTokenProvider jwtTokenProvider) {
         this.paymentService = paymentService;
+        this.realtimeNotificationService = realtimeNotificationService;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @PostMapping("/initiate")
@@ -95,6 +108,40 @@ public class PaymentController {
                 isAdmin(authentication),
                 orderId);
         return ResponseEntity.ok(ApiResponse.success("Lay trang thai thanh toan thanh cong", response));
+    }
+
+    @GetMapping("/sse/order/{orderId}")
+    public SseEmitter streamPaymentStatusByOrderId(
+            @PathVariable Long orderId,
+            @RequestParam("token") String token) {
+        if (token == null || token.isBlank() || !jwtTokenProvider.validateToken(token)) {
+            throw new org.springframework.security.access.AccessDeniedException("Token khong hop le");
+        }
+
+        String userEmail = jwtTokenProvider.extractUsername(token);
+        boolean admin = jwtTokenProvider.extractRoles(token).stream()
+                .anyMatch(role -> "ROLE_ADMIN".equals(role) || "ADMIN".equals(role));
+        PaymentResponse currentStatus = paymentService.getPaymentStatusByOrderId(userEmail, admin, orderId);
+
+        SseEmitter emitter = realtimeNotificationService.subscribePaymentOrder(orderId);
+        Map<String, Object> data = new HashMap<>();
+        data.put("paymentId", currentStatus.getPaymentId());
+        data.put("orderId", orderId);
+        data.put("transactionId", currentStatus.getTransactionId());
+        data.put("amount", currentStatus.getAmount());
+        data.put("status", currentStatus.getStatus());
+
+        realtimeNotificationService.sendPaymentSnapshot(emitter, new RealtimeNotification(
+                "PAYMENT_STATUS_SNAPSHOT",
+                "PAYMENT",
+                currentStatus.getPaymentId(),
+                "Thanh toan",
+                "Trang thai thanh toan hien tai",
+                currentStatus.getStatus(),
+                data,
+                LocalDateTime.now()));
+
+        return emitter;
     }
 
     private boolean isAdmin(Authentication authentication) {
