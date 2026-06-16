@@ -11,6 +11,8 @@ public class Endpoints {
             "/api/authors",
             "/api/authors/*",
             "/api/authors/search",
+            "/user/books",
+            "/user/books/*",
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {
@@ -23,8 +25,6 @@ public class Endpoints {
 
     public static final String[] USER_GET_ENDPOINTS = {
             "/user/me",
-            "/user/books",
-            "/user/books/*",
             "/user/cart",
             "/user/wishlist",
             "/user/wishlist/count",

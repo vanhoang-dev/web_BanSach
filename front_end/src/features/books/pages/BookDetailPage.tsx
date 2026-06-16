@@ -1,230 +1,247 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import bookService from '@/features/books/services/bookService';
-import type { Book } from '@/features/books/services/bookService';
+﻿import { FormEvent, useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+
+import { AccentButton, Container, Field, formatVnd, Icon, IconButton, Panel, PrimaryButton, SecondaryButton, StatusBadge } from '@/components/ui/staticUi';
+import bookService, { Book } from '@/features/books/services/bookService';
 import cartService from '@/features/cart/services/cartService';
+import inventoryService from '@/features/inventory/services/inventoryService';
+import reviewService, { Review } from '@/features/reviews/services/reviewService';
 import wishlistService from '@/features/wishlist/services/wishlistService';
 import { useAuth } from '@/hooks/useAuth';
 
 const BookDetailPage = () => {
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
-    const [book, setBook] = useState<Book | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [quantity, setQuantity] = useState(1);
-    const [isInWishlist, setIsInWishlist] = useState(false);
-    const [adding, setAdding] = useState(false);
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const bookId = Number(id);
+  const [book, setBook] = useState<Book | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewStats, setReviewStats] = useState({ averageRating: 0, reviewCount: 0 });
+  const [myReview, setMyReview] = useState<Review | null>(null);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [adding, setAdding] = useState(false);
 
-    useEffect(() => {
-        const fetchBook = async () => {
-            try {
-                setLoading(true);
-                setError('');
-                const bookData = await bookService.getBookById(Number(id));
-                setBook(bookData);
+  const fetchBook = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const [bookData, reviewPage, stats] = await Promise.all([
+        bookService.getBookById(bookId),
+        reviewService.getReviewsByBook(bookId, 0, 6).catch(() => ({ data: { content: [] } })),
+        reviewService.getReviewStats(bookId).catch(() => ({ averageRating: 0, reviewCount: 0 })),
+      ]);
+      setBook(bookData);
+      setReviews(reviewPage.data.content || []);
+      setReviewStats(stats);
 
-                // Kiểm tra wishlist
-                if (isAuthenticated) {
-                    const inWishlist = await wishlistService.isInWishlist(Number(id));
-                    setIsInWishlist(inWishlist);
-                }
-            } catch (err: any) {
-                setError('Không thể tải chi tiết sách');
-            } finally {
-                setLoading(false);
-            }
-        };
+      inventoryService.getBookInventory(bookId).then((inventory) => {
+        const stock = inventory?.availableQuantity ?? inventory?.quantity ?? inventory?.stock;
+        if (stock !== undefined) setBook((current) => current ? { ...current, stock } : current);
+      }).catch(() => undefined);
 
-        if (id) fetchBook();
-    }, [id, isAuthenticated]);
-
-    const handleAddToCart = async () => {
-        try {
-            setAdding(true);
-            await cartService.addToCart(Number(id), quantity);
-            alert('Đã thêm vào giỏ hàng');
-            setQuantity(1);
-        } catch (err) {
-            alert('Lỗi khi thêm vào giỏ hàng');
-        } finally {
-            setAdding(false);
-        }
-    };
-
-    const handleToggleWishlist = async () => {
-        if (!isAuthenticated) {
-            navigate('/login');
-            return;
-        }
-
-        try {
-            if (isInWishlist) {
-                await wishlistService.removeFromWishlist(Number(id));
-            } else {
-                await wishlistService.addToWishlist(Number(id));
-            }
-            setIsInWishlist(!isInWishlist);
-        } catch (err) {
-            alert('Lỗi khi cập nhật wishlist');
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-        );
+      if (isAuthenticated) {
+        const [inWishlist, currentReview] = await Promise.all([
+          wishlistService.isInWishlist(bookId).catch(() => false),
+          reviewService.getMyReview(bookId).catch(() => null),
+        ]);
+        setIsInWishlist(inWishlist);
+        setMyReview(currentReview);
+        if (currentReview) setReviewForm({ rating: currentReview.rating, comment: currentReview.comment || '' });
+      }
+    } catch {
+      setError('Không thể tải chi tiết sách.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (error) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <p className="text-error font-body-lg mb-4">{error}</p>
-                    <Link to="/catalog" className="text-primary hover:underline">← Quay lại danh sách</Link>
-                </div>
-            </div>
-        );
+  useEffect(() => {
+    if (bookId) fetchBook();
+  }, [bookId, isAuthenticated]);
+
+  const handleAddToCart = async () => {
+    try {
+      setAdding(true);
+      await cartService.addToCart(bookId, quantity);
+      alert('Đã thêm vào giỏ hàng');
+      setQuantity(1);
+    } catch {
+      alert('Không thể thêm vào giỏ hàng');
+    } finally {
+      setAdding(false);
     }
+  };
 
-    if (!book) return null;
+  const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    navigate(`/checkout?bookId=${bookId}&quantity=${quantity}`);
+  };
 
+  const handleToggleWishlist = async () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    try {
+      if (isInWishlist) await wishlistService.removeFromWishlist(bookId);
+      else await wishlistService.addToWishlist(bookId);
+      setIsInWishlist(!isInWishlist);
+    } catch {
+      alert('Không thể cập nhật danh sách yêu thích');
+    }
+  };
+
+  const handleSubmitReview = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    try {
+      if (myReview?.id) {
+        await reviewService.updateReview(myReview.id, { bookId, rating: reviewForm.rating, comment: reviewForm.comment });
+      } else {
+        await reviewService.addReview({ bookId, rating: reviewForm.rating, comment: reviewForm.comment });
+      }
+      await fetchBook();
+      alert('Đã lưu đánh giá');
+    } catch {
+      alert('Không thể lưu đánh giá');
+    }
+  };
+
+  const handleDeleteReview = async () => {
+    if (!myReview?.id) return;
+    try {
+      await reviewService.deleteReview(myReview.id);
+      setMyReview(null);
+      setReviewForm({ rating: 5, comment: '' });
+      await fetchBook();
+    } catch {
+      alert('Không thể xóa đánh giá');
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="w-full">
-            {/* Breadcrumb */}
-            <div className="max-w-container-max mx-auto px-gutter py-stack-md">
-                <nav className="flex gap-unit text-body-md text-on-surface-variant">
-                    <Link to="/" className="hover:text-primary transition-colors">Trang chủ</Link>
-                    <span>/</span>
-                    <Link to="/catalog" className="hover:text-primary transition-colors">Sách</Link>
-                    <span>/</span>
-                    <span className="text-on-surface font-bold">{book.title}</span>
-                </nav>
+      <Container className="py-16">
+        <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
+          <div className="h-[560px] animate-pulse rounded-xl bg-surface-container" />
+          <div className="space-y-4">
+            <div className="h-12 w-3/4 animate-pulse rounded bg-surface-container" />
+            <div className="h-6 w-1/2 animate-pulse rounded bg-surface-container" />
+            <div className="h-40 animate-pulse rounded bg-surface-container" />
+          </div>
+        </div>
+      </Container>
+    );
+  }
+
+  if (error || !book) {
+    return (
+      <Container className="py-16">
+        <Panel className="p-10 text-center">
+          <p className="mb-4 font-semibold text-error">{error || 'Không tìm thấy sách.'}</p>
+          <Link to="/catalog" className="font-bold text-primary hover:underline">Quay lại danh mục sách</Link>
+        </Panel>
+      </Container>
+    );
+  }
+
+  return (
+    <Container className="py-10">
+      <nav className="mb-8 flex flex-wrap gap-2 text-sm text-on-surface-variant">
+        <Link to="/" className="hover:text-secondary">Trang chủ</Link><span>/</span>
+        <Link to="/catalog" className="hover:text-secondary">Sách</Link><span>/</span>
+        <span className="font-semibold text-primary">{book.title}</span>
+      </nav>
+
+      <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
+        <Panel className="overflow-hidden bg-surface-container-low p-5">
+          <img alt={book.title} className="mx-auto aspect-[3/4] max-h-[620px] w-full rounded-xl object-cover shadow-lg" src={book.cover || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=720&q=80'} />
+        </Panel>
+
+        <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+          <div>
+            <div className="mb-4 flex flex-wrap gap-2">
+              <StatusBadge>{book.category?.name || 'Sách'}</StatusBadge>
+              {book.discount ? <StatusBadge status="PENDING">Giảm {book.discount}%</StatusBadge> : null}
+            </div>
+            <h1 className="text-4xl font-bold leading-tight text-primary">{book.title}</h1>
+            <p className="mt-3 text-lg text-on-surface-variant">Tác giả: <span className="font-bold text-on-surface">{book.author?.name || 'Đang cập nhật'}</span></p>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <Panel className="p-4"><p className="text-xs font-bold uppercase text-on-surface-variant">Danh mục</p><p className="mt-2 font-bold text-primary">{book.category?.name || 'N/A'}</p></Panel>
+              <Panel className="p-4"><p className="text-xs font-bold uppercase text-on-surface-variant">Đánh giá</p><p className="mt-2 font-bold text-primary">{reviewStats.averageRating ? `${reviewStats.averageRating.toFixed(1)}/5` : 'Chưa có'} ({reviewStats.reviewCount})</p></Panel>
+              <Panel className="p-4"><p className="text-xs font-bold uppercase text-on-surface-variant">Tồn kho</p><p className={`mt-2 font-bold ${book.stock === 0 ? 'text-error' : 'text-primary'}`}>{book.stock !== undefined ? `${book.stock} cuốn` : 'Có sẵn'}</p></Panel>
             </div>
 
-            {/* Main Content */}
-            <section className="max-w-container-max mx-auto px-gutter py-section-gap">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-                    {/* Book Image & Actions */}
-                    <div className="md:col-span-1">
-                        <div className="relative bg-surface-container-lowest rounded-xl overflow-hidden shadow-lg mb-stack-lg">
-                            <img
-                                alt={book.title}
-                                className="w-full aspect-[3/4] object-cover"
-                                src={book.cover || 'https://via.placeholder.com/300x400'}
-                            />
-                            {book.discount && book.discount > 0 && (
-                                <div className="absolute top-stack-lg right-stack-lg bg-secondary-container text-on-secondary-container font-label-md text-label-md px-3 py-1 rounded-full">
-                                    -{book.discount}%
-                                </div>
-                            )}
-                        </div>
+            <div className="mt-8">
+              <h2 className="border-l-4 border-secondary pl-4 text-2xl font-bold text-primary">Mô tả sách</h2>
+              <p className="mt-4 text-base leading-8 text-on-surface-variant">{book.description || 'Chưa có mô tả cho sách này.'}</p>
+            </div>
+          </div>
 
-                        {/* Action Buttons */}
-                        <div className="space-y-stack-md">
-                            <button
-                                disabled={adding}
-                                onClick={handleAddToCart}
-                                className="w-full bg-primary text-on-primary font-label-md text-label-md py-3 px-4 rounded-lg hover:bg-primary-container transition-colors shadow-sm flex items-center justify-center gap-unit disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {adding ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
-                            </button>
-
-                            <button
-                                onClick={handleToggleWishlist}
-                                className={`w-full font-label-md text-label-md py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-unit ${isInWishlist
-                                    ? 'bg-secondary-container text-on-secondary-container'
-                                    : 'bg-surface-container-low text-primary border border-outline-variant hover:bg-surface-container'
-                                    }`}
-                            >
-                                {isInWishlist ? '♥ Đã lưu' : '♡ Lưu sách'}
-                            </button>
-                        </div>
-
-                        {/* Quantity */}
-                        <div className="mt-stack-lg border border-outline-variant rounded-lg p-stack-md">
-                            <label className="block mb-unit font-label-md text-label-md text-on-surface">Số lượng</label>
-                            <div className="flex items-center gap-unit">
-                                <button
-                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                    className="w-10 h-10 border border-outline-variant rounded hover:bg-surface-container"
-                                >
-                                    −
-                                </button>
-                                <span className="flex-1 text-center">{quantity}</span>
-                                <button
-                                    onClick={() => setQuantity(quantity + 1)}
-                                    className="w-10 h-10 border border-outline-variant rounded hover:bg-surface-container"
-                                >
-                                    +
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Book Details */}
-                    <div className="md:col-span-2">
-                        <h1 className="font-h2 text-h2 text-primary mb-stack-md">{book.title}</h1>
-
-                        {/* Author & Category */}
-                        <div className="grid grid-cols-2 gap-gutter mb-stack-lg">
-                            <div>
-                                <p className="font-caption text-caption text-on-surface-variant mb-unit">Tác giả</p>
-                                <p className="font-body-lg text-body-lg">{book.author?.name || 'N/A'}</p>
-                            </div>
-                            <div>
-                                <p className="font-caption text-caption text-on-surface-variant mb-unit">Danh mục</p>
-                                <p className="font-body-lg text-body-lg">{book.category?.name || 'N/A'}</p>
-                            </div>
-                        </div>
-
-                        {/* Rating */}
-                        {book.rating !== undefined && (
-                            <div className="mb-stack-lg">
-                                <p className="font-label-md text-label-md text-on-surface-variant mb-unit">Đánh giá</p>
-                                <div className="flex items-center gap-unit">
-                                    <span className="font-h3 text-h3 text-primary">{book.rating?.toFixed(1)}/5</span>
-                                    <span className="font-body-md text-body-md text-on-surface-variant">({book.reviews || 0} bình luận)</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Price */}
-                        <div className="bg-surface-container-low rounded-xl p-stack-lg mb-stack-lg">
-                            <p className="font-h1 text-h1 text-[#f97316]">
-                                {book.price?.toLocaleString('vi-VN')} ₫
-                            </p>
-                            {book.discount && book.discount > 0 && (
-                                <p className="font-caption text-caption text-on-surface-variant mt-unit">
-                                    Tiết kiệm {book.discount}%
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Description */}
-                        <div>
-                            <h3 className="font-h3 text-h3 text-on-surface mb-stack-md">Mô tả sách</h3>
-                            <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                                {book.description || 'Chưa có mô tả cho sách này.'}
-                            </p>
-                        </div>
-
-                        {/* Stock Info */}
-                        {book.stock !== undefined && (
-                            <div className="mt-stack-lg pt-stack-lg border-t border-outline-variant">
-                                <p className={`font-body-md ${book.stock > 0 ? 'text-green-600' : 'text-error'}`}>
-                                    {book.stock > 0 ? `Còn ${book.stock} cuốn` : 'Hết hàng'}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </section>
+          <Panel className="h-fit p-5 xl:sticky xl:top-28">
+            <p className="text-sm font-bold uppercase text-secondary">Giá bán</p>
+            <p className="mt-2 text-4xl font-bold text-secondary">{formatVnd(book.price)}</p>
+            <div className="mt-6">
+              <p className="mb-2 text-sm font-semibold text-on-surface">Số lượng</p>
+              <div className="flex items-center gap-2">
+                <IconButton onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</IconButton>
+                <span className="flex h-10 min-w-16 items-center justify-center rounded-lg border border-outline-variant bg-surface font-bold">{quantity}</span>
+                <IconButton onClick={() => setQuantity(quantity + 1)}>+</IconButton>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-3">
+              <AccentButton disabled={adding || book.stock === 0} onClick={handleAddToCart} className="w-full"><Icon name="cart" /> {adding ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}</AccentButton>
+              <PrimaryButton disabled={book.stock === 0} onClick={handleBuyNow} className="w-full">Mua ngay</PrimaryButton>
+              <SecondaryButton onClick={handleToggleWishlist} className="w-full"><Icon name="heart" /> {isInWishlist ? 'Đã lưu' : 'Lưu sách'}</SecondaryButton>
+            </div>
+          </Panel>
         </div>
-    );
+      </div>
+
+      <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_380px]">
+        <Panel className="p-5">
+          <h2 className="text-2xl font-bold text-primary">Đánh giá từ độc giả</h2>
+          <div className="mt-5 space-y-4">
+            {reviews.length === 0 ? <p className="text-sm text-on-surface-variant">Chưa có đánh giá nào cho sách này.</p> : reviews.map((review) => (
+              <div key={review.id} className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="font-bold text-primary">{review.userName || 'Độc giả'}</p>
+                  <span className="text-sm font-bold text-secondary">{review.rating}/5</span>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-on-surface-variant">{review.comment || 'Không có bình luận.'}</p>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel className="p-5">
+          <h2 className="text-xl font-bold text-primary">{myReview ? 'Cập nhật đánh giá' : 'Viết đánh giá'}</h2>
+          <form className="mt-4 grid gap-4" onSubmit={handleSubmitReview}>
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-on-surface">Số sao</span>
+              <select value={reviewForm.rating} onChange={(event) => setReviewForm((current) => ({ ...current, rating: Number(event.target.value) }))} className="h-11 w-full rounded-lg border-outline-variant bg-surface text-sm">
+                {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} sao</option>)}
+              </select>
+            </label>
+            <Field label="Bình luận" textarea value={reviewForm.comment} onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))} placeholder="Cảm nhận của bạn về cuốn sách..." />
+            <PrimaryButton type="submit">{myReview ? 'Cập nhật đánh giá' : 'Gửi đánh giá'}</PrimaryButton>
+            {myReview ? <SecondaryButton onClick={handleDeleteReview}>Xóa đánh giá của tôi</SecondaryButton> : null}
+          </form>
+        </Panel>
+      </div>
+    </Container>
+  );
 };
 
 export default BookDetailPage;

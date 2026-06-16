@@ -1,164 +1,111 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { FormEvent, useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+
+import { AccentButton, Icon, IconButton } from '@/components/ui/staticUi';
+
+const navItems = [
+  { label: 'Danh mục', to: '/categories' },
+  { label: 'Sách mới', to: '/new-books' },
+  { label: 'Tác giả', to: '/authors' },
+  { label: 'Khuyến mãi', to: '/promotions' },
+];
 
 const Header = () => {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
 
-    return (
-        <header className="bg-surface dark:bg-background w-full top-0 sticky z-50 shadow-md shadow-sm dark:bg-surface-container transition-all duration-200 ease-in-out">
-            <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between h-20">
-                {/* Brand */}
-                <div className="flex-shrink-0">
-                    <Link
-                        to="/"
-                        className="font-h2 text-h2 text-primary dark:text-primary-fixed-dim tracking-tight text-2xl font-bold"
-                    >
-                        BookStore
-                    </Link>
-                </div>
+  const onSearch = (event: FormEvent) => {
+    event.preventDefault();
+    const keyword = query.trim();
+    if (keyword) {
+      navigate(`/search?keyword=${encodeURIComponent(keyword)}`);
+      setOpen(false);
+    }
+  };
 
-                {/* Search (hidden on mobile) */}
-                <div className="hidden md:flex flex-1 max-w-md mx-6 relative">
-                    <input
-                        className="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pl-4 pr-10 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface transition-colors"
-                        placeholder="Tìm kiếm sách, tác giả..."
-                        type="text"
-                    />
-                    <svg
-                        className="absolute right-3 top-2.5 text-on-surface-variant pointer-events-none"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        width="20"
-                        height="20"
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
+  return (
+    <header className="sticky top-0 z-50 border-b border-outline-variant bg-surface/95 backdrop-blur">
+      <div className="mx-auto flex h-20 max-w-container-max items-center gap-5 px-4 sm:px-6 lg:px-8">
+        <Link to="/" className="flex shrink-0 items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-on-primary">
+            <Icon name="book" />
+          </span>
+          <span className="text-lg font-bold text-primary">Nhà Sách Tri Thức</span>
+        </Link>
 
-                {/* Navigation Links (hidden on mobile) */}
-                <nav className="hidden md:flex items-center gap-6">
-                    <Link
-                        to="/new-books"
-                        className="font-body-md text-body-md text-secondary dark:text-secondary-fixed font-bold border-b-2 border-secondary hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors px-2 py-1"
-                    >
-                        Sách mới
-                    </Link>
-                    <Link
-                        to="/categories"
-                        className="font-body-md text-body-md text-on-surface-variant dark:text-outline hover:text-primary hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors px-2 py-1"
-                    >
-                        Danh mục
-                    </Link>
-                    <Link
-                        to="/authors"
-                        className="font-body-md text-body-md text-on-surface-variant dark:text-outline hover:text-primary hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors px-2 py-1"
-                    >
-                        Tác giả
-                    </Link>
-                    <Link
-                        to="/promotions"
-                        className="font-body-md text-body-md text-on-surface-variant dark:text-outline hover:text-primary hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors px-2 py-1"
-                    >
-                        Khuyến mãi
-                    </Link>
-                </nav>
+        <nav className="hidden items-center gap-6 lg:flex">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `text-sm font-semibold transition ${isActive ? 'text-secondary' : 'text-on-surface-variant hover:text-secondary'}`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
 
-                {/* Trailing Icons */}
-                <div className="flex items-center gap-4 text-primary dark:text-primary-fixed-dim">
-                    <Link to="/wishlist" title="Wishlist" aria-label="Wishlist">
-                        <button
-                            className="p-2 rounded-full hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors flex items-center justify-center"
-                        >
-                            <svg
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                                width="24"
-                                height="24"
-                            >
-                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                            </svg>
-                        </button>
-                    </Link>
+        <form onSubmit={onSearch} className="ml-auto hidden flex-1 justify-end md:flex">
+          <div className="relative w-full max-w-xs">
+            <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-outline" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="h-11 w-full rounded-full border-0 bg-surface-container pl-10 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-primary/25"
+              placeholder="Tìm kiếm sách..."
+            />
+          </div>
+        </form>
 
-                    <Link to="/cart" title="Shopping Cart" aria-label="Shopping Cart" className="relative">
-                        <button
-                            className="p-2 rounded-full hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors flex items-center justify-center"
-                        >
-                            <svg
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                width="24"
-                                height="24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 8m10 0l2-8m0 0h2m-2 0h-2m0 8h-4m0 0h4"
-                                />
-                            </svg>
-                        </button>
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-secondary-container rounded-full"></span>
-                    </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/wishlist" aria-label="Yêu thích">
+            <IconButton><Icon name="heart" /></IconButton>
+          </Link>
+          <Link to="/cart" aria-label="Giỏ hàng">
+            <IconButton className="relative">
+              <Icon name="cart" />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-secondary-container" />
+            </IconButton>
+          </Link>
+          <Link to="/profile" className="hidden sm:block" aria-label="Tài khoản">
+            <IconButton><Icon name="user" /></IconButton>
+          </Link>
+          <Link to="/login" className="hidden xl:block">
+            <AccentButton>Đăng nhập</AccentButton>
+          </Link>
+          <IconButton className="lg:hidden" onClick={() => setOpen((value) => !value)} aria-label="Mở menu">
+            <Icon name={open ? 'x' : 'menu'} />
+          </IconButton>
+        </div>
+      </div>
 
-                    <Link to="/profile" title="Profile" aria-label="Profile">
-                        <button
-                            className="p-2 rounded-full hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors flex items-center justify-center"
-                        >
-                            <svg
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                                width="24"
-                                height="24"
-                            >
-                                <circle cx="12" cy="8" r="4" />
-                                <path d="M12 14c-6 0-8 3-8 3v3h16v-3s-2-3-8-3z" />
-                            </svg>
-                        </button>
-                    </Link>
-
-                    {/* Mobile Menu Toggle */}
-                    <button
-                        className="md:hidden p-2 rounded-full hover:bg-surface-container-low transition-colors flex items-center justify-center"
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        title="Menu"
-                        aria-label="Menu"
-                    >
-                        <svg
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                            width="24"
-                            height="24"
-                        >
-                            <path d="M3 5h18v2H3V5zm0 7h18v2H3v-2zm0 7h18v2H3v-2z" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            {/* Mobile Menu */}
-            {isMobileMenuOpen && (
-                <div className="md:hidden bg-surface-container-low border-t border-surface-variant">
-                    <div className="px-6 py-4 flex flex-col gap-4">
-                        <Link className="font-body-md text-on-surface hover:text-primary transition-colors" to="/new-books">
-                            Sách mới
-                        </Link>
-                        <Link className="font-body-md text-on-surface hover:text-primary transition-colors" to="/categories">
-                            Danh mục
-                        </Link>
-                        <Link className="font-body-md text-on-surface hover:text-primary transition-colors" to="/authors">
-                            Tác giả
-                        </Link>
-                        <Link className="font-body-md text-on-surface hover:text-primary transition-colors" to="/promotions">
-                            Khuyến mãi
-                        </Link>
-                    </div>
-                </div>
-            )}
-        </header>
-    );
+      {open ? (
+        <div className="border-t border-outline-variant bg-surface px-4 py-4 lg:hidden">
+          <form onSubmit={onSearch} className="mb-4">
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="h-11 w-full rounded-full border-0 bg-surface-container px-4 text-sm outline-none focus:ring-2 focus:ring-primary/25"
+              placeholder="Tìm kiếm sách"
+            />
+          </form>
+          <nav className="grid gap-1">
+            {navItems.map((item) => (
+              <Link key={item.to} to={item.to} onClick={() => setOpen(false)} className="rounded-lg px-3 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container">
+                {item.label}
+              </Link>
+            ))}
+            <Link to="/orders" onClick={() => setOpen(false)} className="rounded-lg px-3 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container">
+              Đơn hàng của tôi
+            </Link>
+          </nav>
+        </div>
+      ) : null}
+    </header>
+  );
 };
 
 export default Header;

@@ -1,198 +1,92 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Panel } from '@/components/ui/staticUi';
+
+import { AccentButton, Container, EmptyState, formatVnd, Icon, IconButton, Panel, PrimaryButton, SecondaryButton, SectionHeading } from '@/components/ui/staticUi';
 import cartService from '@/features/cart/services/cartService';
 
 const CartPage = () => {
-    const [cartData, setCartData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+  const [cartData, setCartData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-    const loadCart = async () => {
-        try {
-            setLoading(true);
-            setError('');
-            const data = await cartService.getCart();
-            setCartData(data);
-        } catch (err: any) {
-            setError('Không thể tải giỏ hàng');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        loadCart();
-    }, []);
-
-    const handleUpdateQuantity = async (bookId: number, quantity: number) => {
-        if (quantity < 1) return;
-        try {
-            const updated = await cartService.updateCartItem(bookId, quantity);
-            setCartData(updated);
-        } catch (err) {
-            alert('Lỗi khi cập nhật số lượng');
-        }
-    };
-
-    const handleRemoveItem = async (bookId: number) => {
-        try {
-            const updated = await cartService.removeFromCart(bookId);
-            setCartData(updated);
-        } catch (err) {
-            alert('Lỗi khi xóa sản phẩm');
-        }
-    };
-
-    const handleClearCart = async () => {
-        if (window.confirm('Bạn chắc chắn muốn xóa toàn bộ giỏ hàng?')) {
-            try {
-                await cartService.clearCart();
-                setCartData({ items: [], totalPrice: 0 });
-            } catch (err) {
-                alert('Lỗi khi xóa giỏ hàng');
-            }
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-        );
+  const loadCart = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setCartData(await cartService.getCart());
+    } catch {
+      setError('Không thể tải giỏ hàng. Vui lòng đăng nhập hoặc thử lại.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const items = cartData?.items || [];
-    const total = cartData?.totalPrice || 0;
+  useEffect(() => { loadCart(); }, []);
 
-    return (
-        <div className="max-w-container-max mx-auto px-gutter py-section-gap">
-            <h1 className="font-h1 text-h1 text-primary mb-stack-lg">Giỏ hàng của bạn</h1>
+  const updateQuantity = async (bookId: number, quantity: number) => {
+    if (quantity < 1) return;
+    setCartData(await cartService.updateCartItem(bookId, quantity));
+  };
 
-            {error && (
-                <div className="bg-error/10 border border-error rounded-lg p-stack-md mb-stack-lg">
-                    <p className="font-body-md text-error">{error}</p>
-                </div>
-            )}
+  const removeItem = async (bookId: number) => {
+    setCartData(await cartService.removeFromCart(bookId));
+  };
 
-            {items.length === 0 ? (
-                <Panel className="p-stack-lg text-center">
-                    <p className="font-body-lg text-body-lg text-on-surface-variant mb-stack-md">Giỏ hàng của bạn trống</p>
-                    <Link to="/catalog" className="text-primary hover:underline">
-                        ← Tiếp tục mua sắm
-                    </Link>
-                </Panel>
-            ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
-                    <div className="lg:col-span-2 space-y-stack-md">
-                        {items.map((item: any) => (
-                            <Panel key={item.bookId || item.id} className="p-stack-md">
-                                <div className="grid grid-cols-4 gap-gutter items-start">
-                                    {/* Book Image */}
-                                    <div className="col-span-1">
-                                        <div className="bg-surface-container rounded-lg h-32 flex items-center justify-center">
-                                            <img
-                                                alt={item.book?.title || 'Book'}
-                                                className="h-full object-contain rounded"
-                                                src={item.book?.cover || 'https://via.placeholder.com/100x150'}
-                                            />
-                                        </div>
-                                    </div>
+  const items = cartData?.items || [];
+  const total = cartData?.totalPrice || 0;
 
-                                    {/* Book Info */}
-                                    <div className="col-span-2">
-                                        <Link to={`/books/${item.bookId}`}>
-                                            <h3 className="font-body-lg text-body-lg text-primary font-bold hover:underline mb-unit">
-                                                {item.book?.title || 'N/A'}
-                                            </h3>
-                                        </Link>
-                                        <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
-                                            {item.book?.price?.toLocaleString('vi-VN')} ₫
-                                        </p>
+  return (
+    <Container className="py-10">
+      <SectionHeading eyebrow="Giỏ hàng" title="Giỏ hàng của bạn" description="Kiểm tra sản phẩm, điều chỉnh số lượng và chuyển sang thanh toán." />
 
-                                        {/* Quantity Controls */}
-                                        <div className="flex items-center gap-unit">
-                                            <button
-                                                onClick={() => handleUpdateQuantity(item.bookId, item.quantity - 1)}
-                                                className="w-8 h-8 border border-outline-variant rounded hover:bg-surface-container text-sm"
-                                            >
-                                                −
-                                            </button>
-                                            <span className="w-12 text-center">{item.quantity}</span>
-                                            <button
-                                                onClick={() => handleUpdateQuantity(item.bookId, item.quantity + 1)}
-                                                className="w-8 h-8 border border-outline-variant rounded hover:bg-surface-container text-sm"
-                                            >
-                                                +
-                                            </button>
-                                        </div>
-                                    </div>
+      {error ? <div className="mb-5 rounded-lg border border-error-container bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
 
-                                    {/* Price & Remove */}
-                                    <div className="col-span-1 text-right">
-                                        <p className="font-h3 text-h3 text-primary mb-stack-md">
-                                            {(item.price * item.quantity)?.toLocaleString('vi-VN') || 0} ₫
-                                        </p>
-                                        <button
-                                            onClick={() => handleRemoveItem(item.bookId)}
-                                            className="text-error hover:text-error-container text-sm font-body-md"
-                                        >
-                                            Xóa
-                                        </button>
-                                    </div>
-                                </div>
-                            </Panel>
-                        ))}
+      {loading ? (
+        <div className="h-64 animate-pulse rounded-xl bg-surface-container" />
+      ) : items.length === 0 ? (
+        <EmptyState title="Giỏ hàng đang trống" description="Chọn vài cuốn sách yêu thích để bắt đầu đơn hàng." action={<Link to="/catalog"><PrimaryButton>Tiếp tục mua sắm</PrimaryButton></Link>} />
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          <div className="space-y-4">
+            {items.map((item: any) => (
+              <Panel key={item.bookId || item.id} className="p-4">
+                <div className="grid gap-4 sm:grid-cols-[96px_1fr_auto] sm:items-center">
+                  <img src={item.book?.cover || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=240&q=80'} alt={item.book?.title || 'Sách'} className="h-32 w-24 rounded-lg object-cover shadow" />
+                  <div>
+                    <Link to={`/books/${item.bookId}`} className="text-lg font-bold text-primary hover:text-secondary">{item.book?.title || 'Sách'}</Link>
+                    <p className="mt-1 text-sm text-on-surface-variant">{formatVnd(item.price || item.book?.price)}</p>
+                    <div className="mt-4 flex items-center gap-2">
+                      <IconButton onClick={() => updateQuantity(item.bookId, item.quantity - 1)}>-</IconButton>
+                      <span className="w-10 text-center text-sm font-bold">{item.quantity}</span>
+                      <IconButton onClick={() => updateQuantity(item.bookId, item.quantity + 1)}>+</IconButton>
                     </div>
-
-                    {/* Checkout Summary */}
-                    <div className="lg:col-span-1">
-                        <Panel className="p-stack-lg sticky top-24">
-                            <h3 className="font-h3 text-h3 text-on-surface mb-stack-md">Tóm tắt đơn hàng</h3>
-
-                            <div className="space-y-unit mb-stack-lg pb-stack-lg border-b border-outline-variant">
-                                <div className="flex justify-between font-body-md text-body-md">
-                                    <span>Tạm tính:</span>
-                                    <span>{total?.toLocaleString('vi-VN')} ₫</span>
-                                </div>
-                                <div className="flex justify-between font-body-md text-body-md">
-                                    <span>Phí vận chuyển:</span>
-                                    <span>Miễn phí</span>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-between font-h3 text-h3 text-primary mb-stack-lg">
-                                <span>Tổng cộng:</span>
-                                <span>{total?.toLocaleString('vi-VN')} ₫</span>
-                            </div>
-
-                            <Link
-                                to="/checkout"
-                                className="block w-full text-center bg-primary text-on-primary font-label-md text-label-md py-3 rounded-lg hover:bg-primary-container transition-colors mb-unit"
-                            >
-                                Tiến hành thanh toán
-                            </Link>
-
-                            <button
-                                onClick={handleClearCart}
-                                className="w-full border border-outline-variant text-on-surface font-label-md text-label-md py-3 rounded-lg hover:bg-surface-container transition-colors"
-                            >
-                                Xóa giỏ hàng
-                            </button>
-
-                            <Link
-                                to="/catalog"
-                                className="block text-center text-primary hover:underline mt-stack-md font-body-md"
-                            >
-                                ← Tiếp tục mua sắm
-                            </Link>
-                        </Panel>
-                    </div>
+                  </div>
+                  <div className="text-left sm:text-right">
+                    <p className="text-lg font-bold text-primary">{formatVnd((item.price || 0) * item.quantity)}</p>
+                    <button onClick={() => removeItem(item.bookId)} className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-error hover:underline">
+                      <Icon name="trash" className="h-4 w-4" /> Xóa
+                    </button>
+                  </div>
                 </div>
-            )}
+              </Panel>
+            ))}
+          </div>
+
+          <Panel className="h-fit p-5 lg:sticky lg:top-28">
+            <h2 className="text-lg font-bold text-primary">Tóm tắt đơn hàng</h2>
+            <div className="mt-5 space-y-3 border-b border-outline-variant pb-5 text-sm">
+              <div className="flex justify-between"><span className="text-on-surface-variant">Tạm tính</span><span className="font-bold text-primary">{formatVnd(total)}</span></div>
+              <div className="flex justify-between"><span className="text-on-surface-variant">Phí vận chuyển</span><span className="font-bold text-emerald-700">Miễn phí</span></div>
+              <div className="flex justify-between"><span className="text-on-surface-variant">Voucher</span><button className="font-bold text-secondary hover:underline">Áp dụng mã</button></div>
+            </div>
+            <div className="mt-5 flex justify-between text-lg font-bold text-primary"><span>Tổng cộng</span><span>{formatVnd(total)}</span></div>
+            <Link to="/checkout" className="mt-5 block"><AccentButton className="w-full">Thanh toán</AccentButton></Link>
+            <Link to="/catalog" className="mt-3 block"><SecondaryButton className="w-full">Tiếp tục mua sắm</SecondaryButton></Link>
+          </Panel>
         </div>
-    );
+      )}
+    </Container>
+  );
 };
 
 export default CartPage;

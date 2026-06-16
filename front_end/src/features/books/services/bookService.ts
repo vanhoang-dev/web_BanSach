@@ -1,4 +1,5 @@
 import api from '@/services/api/axiosClient';
+import { unwrapApiData, unwrapPage } from '@/services/api/response';
 
 export interface Book {
   id?: number;
@@ -33,22 +34,14 @@ const mapBookFromBackend = (book: any): Book => ({
   id: book?.id,
   title: book?.title,
   description: book?.description,
-  author: book?.authorName ? { id: 0, name: book.authorName } : undefined,
-  category: book?.categoryName ? { id: 0, name: book.categoryName } : undefined,
+  author: book?.authorName ? { id: Number(book.authorId || 0), name: book.authorName } : undefined,
+  category: book?.categoryName ? { id: Number(book.categoryId || 0), name: book.categoryName } : undefined,
   price: Number(book?.price || 0),
   discount: book?.discountPercent,
   cover: book?.coverImage,
+  createdAt: book?.createdAt,
+  updatedAt: book?.updatedAt,
 });
-
-const unwrapPage = (response: any) => {
-  if (response?.data?.content) {
-    return response.data;
-  }
-  if (response?.content) {
-    return response;
-  }
-  return { content: [], totalPages: 0, totalElements: 0, number: 0, size: 10 };
-};
 
 const bookService = {
   // Lấy danh sách sách với pagination và filter
@@ -58,7 +51,7 @@ const bookService = {
       if (search) url += `&keyword=${encodeURIComponent(search)}`;
       if (categoryId) url += `&categoryId=${categoryId}`;
       const response: any = await api.get(url);
-      const pageData = unwrapPage(response);
+      const pageData = unwrapPage<any>(response);
       return {
         data: {
           ...pageData,
@@ -74,7 +67,7 @@ const bookService = {
   getBookById: async (id: number): Promise<Book> => {
     try {
       const response: any = await api.get(`/user/books/${id}`);
-      const raw = response?.data || response;
+      const raw = unwrapApiData<any>(response);
       return mapBookFromBackend(raw);
     } catch (error: any) {
       throw error;
@@ -85,8 +78,8 @@ const bookService = {
   getCategories: async (): Promise<Category[]> => {
     try {
       const response: any = await api.get('/api/categories');
-      const pageData = response?.data?.content ? response.data : response?.content ? response : null;
-      const items = pageData?.content || [];
+      const pageData = unwrapPage<any>(response);
+      const items = pageData.content || [];
       return items.map((item: any) => ({
         id: item.id,
         name: item.name,
@@ -103,7 +96,7 @@ const bookService = {
       const response: any = await api.get(
         `/user/books?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`
       );
-      const pageData = unwrapPage(response);
+      const pageData = unwrapPage<any>(response);
       return {
         data: {
           ...pageData,
@@ -121,7 +114,7 @@ const bookService = {
       const response: any = await api.get(
         `/user/books?categoryId=${categoryId}&page=${page}&size=${size}`
       );
-      const pageData = unwrapPage(response);
+      const pageData = unwrapPage<any>(response);
       return {
         data: {
           ...pageData,
@@ -137,7 +130,7 @@ const bookService = {
   getFeaturedBooks: async (limit: number = 8): Promise<Book[]> => {
     try {
       const response: any = await api.get(`/user/books?page=0&size=${limit}`);
-      const pageData = unwrapPage(response);
+      const pageData = unwrapPage<any>(response);
       return (pageData.content || []).map(mapBookFromBackend);
     } catch (error: any) {
       throw error;

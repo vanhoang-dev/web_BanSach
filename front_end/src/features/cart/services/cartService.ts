@@ -1,10 +1,12 @@
 import api from '@/services/api/axiosClient';
+import { unwrapApiData } from '@/services/api/response';
 
 export interface CartItem {
   id?: number;
   bookId: number;
   quantity: number;
   price?: number;
+  subtotal?: number;
   book?: {
     id: number;
     title: string;
@@ -21,12 +23,13 @@ export interface Cart {
 }
 
 const normalizeCart = (response: any): Cart => {
-  const raw = response?.data || response || {};
+  const raw = unwrapApiData<any>(response) || {};
   const items = (raw.items || []).map((item: any) => ({
     id: item.id,
     bookId: item.bookId,
-    quantity: item.quantity,
+    quantity: Number(item.quantity ?? 0),
     price: Number(item.priceAfterDiscount ?? item.bookPrice ?? 0),
+    subtotal: Number(item.subtotal ?? 0),
     book: {
       id: item.bookId,
       title: item.bookTitle,
@@ -45,8 +48,8 @@ const normalizeCart = (response: any): Cart => {
 
 const findCartItemIdByBookId = async (bookId: number): Promise<number> => {
   const cartRaw: any = await api.get('/user/cart');
-  const items = cartRaw?.items || cartRaw?.data?.items || [];
-  const target = items.find((item: any) => item.bookId === bookId);
+  const items = unwrapApiData<any>(cartRaw)?.items || [];
+  const target = items.find((item: any) => Number(item.bookId) === Number(bookId));
   if (!target?.id) {
     throw new Error('Không tìm thấy sản phẩm trong giỏ hàng');
   }
@@ -54,57 +57,29 @@ const findCartItemIdByBookId = async (bookId: number): Promise<number> => {
 };
 
 const cartService = {
-  // Lấy giỏ hàng
-  getCart: async (): Promise<any> => {
-    try {
-      const response = await api.get('/user/cart');
-      return normalizeCart(response);
-    } catch (error: any) {
-      throw error;
-    }
+  getCart: async (): Promise<Cart> => {
+    const response = await api.get('/user/cart');
+    return normalizeCart(response);
   },
 
-  // Thêm sách vào giỏ hàng
-  addToCart: async (bookId: number, quantity: number = 1): Promise<any> => {
-    try {
-      const response = await api.post('/user/cart/items', { bookId, quantity });
-      return normalizeCart(response);
-    } catch (error: any) {
-      throw error;
-    }
+  addToCart: async (bookId: number, quantity: number = 1): Promise<Cart> => {
+    const response = await api.post('/user/cart/items', { bookId, quantity });
+    return normalizeCart(response);
   },
 
-  // Cập nhật số lượng sách trong giỏ hàng
-  updateCartItem: async (bookId: number, quantity: number): Promise<any> => {
-    try {
-      const itemId = await findCartItemIdByBookId(bookId);
-      const response = await api.put(`/user/cart/items/${itemId}`, { quantity });
-      return normalizeCart(response);
-    } catch (error: any) {
-      throw error;
-    }
+  updateCartItem: async (bookId: number, quantity: number): Promise<Cart> => {
+    const itemId = await findCartItemIdByBookId(bookId);
+    const response = await api.put(`/user/cart/items/${itemId}`, { quantity });
+    return normalizeCart(response);
   },
 
-  // Xóa sách khỏi giỏ hàng
-  removeFromCart: async (bookId: number): Promise<any> => {
-    try {
-      const itemId = await findCartItemIdByBookId(bookId);
-      const response = await api.delete(`/user/cart/items/${itemId}`);
-      return normalizeCart(response);
-    } catch (error: any) {
-      throw error;
-    }
+  removeFromCart: async (bookId: number): Promise<Cart> => {
+    const itemId = await findCartItemIdByBookId(bookId);
+    const response = await api.delete(`/user/cart/items/${itemId}`);
+    return normalizeCart(response);
   },
 
-  // Xóa toàn bộ giỏ hàng
-  clearCart: async (): Promise<any> => {
-    try {
-      const response = await api.delete('/user/cart/clear');
-      return response;
-    } catch (error: any) {
-      throw error;
-    }
-  },
+  clearCart: async (): Promise<any> => api.delete('/user/cart/clear'),
 };
 
 export default cartService;

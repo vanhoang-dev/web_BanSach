@@ -2,7 +2,6 @@ package com.example.web_bansach.module.book.controller;
 
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +15,6 @@ import com.example.web_bansach.module.book.service.BookQueryService;
 
 @RestController
 @RequestMapping("/user/books")
-@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 public class BookPublicController {
 
     private final BookQueryService bookQueryService;

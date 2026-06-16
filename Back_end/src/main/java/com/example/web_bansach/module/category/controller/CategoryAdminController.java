@@ -23,7 +23,6 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/admin/categories")
 @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class CategoryAdminController {
 
     private final CategoryQueryService queryService;

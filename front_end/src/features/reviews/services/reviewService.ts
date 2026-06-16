@@ -1,4 +1,5 @@
 import api from '@/services/api/axiosClient';
+import { unwrapApiData, unwrapPage } from '@/services/api/response';
 
 export interface Review {
   id?: number;
@@ -21,7 +22,7 @@ const reviewService = {
   getReviewsByBook: async (bookId: number, page: number = 0, size: number = 5): Promise<any> => {
     try {
       const response: any = await api.get(`/user/reviews/book/${bookId}?page=${page}&size=${size}`);
-      const pageData = response?.content ? response : response?.data?.content ? response.data : { content: [] };
+      const pageData = unwrapPage<any>(response);
       return {
         data: {
           ...pageData,
@@ -41,6 +42,17 @@ const reviewService = {
     }
   },
 
+  getReviewStats: async (bookId: number): Promise<{ averageRating: number; reviewCount: number }> =>
+    unwrapApiData(await api.get(`/user/reviews/book/${bookId}/stats`)),
+
+  getMyReview: async (bookId: number): Promise<Review | null> => {
+    try {
+      return unwrapApiData<Review>(await api.get(`/user/reviews/book/${bookId}/my-review`));
+    } catch {
+      return null;
+    }
+  },
+
   // Thêm review cho sách
   addReview: async (review: Review): Promise<any> => {
     try {
@@ -49,7 +61,7 @@ const reviewService = {
         rating: review.rating,
         comment: review.comment,
       });
-      return response;
+      return unwrapApiData(response);
     } catch (error: any) {
       throw error;
     }
@@ -63,7 +75,7 @@ const reviewService = {
         rating: review.rating,
         comment: review.comment,
       });
-      return response;
+      return unwrapApiData(response);
     } catch (error: any) {
       throw error;
     }
@@ -78,6 +90,14 @@ const reviewService = {
       throw error;
     }
   },
+
+  getUserReviewsForAdmin: async (userId: number, page: number = 0, size: number = 10): Promise<any> => {
+    const response = await api.get(`/admin/reviews/user/${userId}?page=${page}&size=${size}`);
+    const pageData = unwrapPage<any>(response);
+    return { data: pageData };
+  },
+
+  deleteReviewForAdmin: async (id: number): Promise<any> => api.delete(`/admin/reviews/${id}`),
 };
 
 export default reviewService;
