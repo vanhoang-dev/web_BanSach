@@ -1,59 +1,34 @@
-import { ReactNode } from 'react';
-import Header from './Header';
+import type { ReactNode } from 'react';
+
 import AdminHeader from './AdminHeader';
 import Footer from './Footer';
+import Header from './Header';
 import Sidebar from './Sidebar';
 
-interface LayoutProps {
-    children: ReactNode;
-}
-
-interface AdminLayoutProps {
-    children: ReactNode;
-    sidebarOpen?: boolean;
-}
-
-/**
- * MainLayout - Trang chính (với header + footer)
- */
-export const MainLayout = ({ children }: LayoutProps) => {
-    return (
-        <div className="min-h-screen bg-background text-on-background font-body-md flex flex-col">
-            <Header />
-            <main className="flex-grow">
-                {children}
-            </main>
-            <Footer />
-        </div>
-    );
+type LayoutProps = {
+  children: ReactNode;
 };
 
-/**
- * AdminLayout - Trang admin (với sidebar + header)
- */
-export const AdminLayout = ({ children, sidebarOpen = true }: AdminLayoutProps) => {
-    return (
-        <div className="min-h-screen bg-background text-on-background font-body-md">
-            {sidebarOpen && <Sidebar isOpen={true} />}
-            <div className={sidebarOpen ? 'ml-64' : ''}>
-                <AdminHeader />
-                <main className="min-h-screen p-gutter">
-                    {children}
-                </main>
-            </div>
-        </div>
-    );
-};
+export const MainLayout = ({ children }: LayoutProps) => (
+  <div className="min-h-screen bg-background text-on-surface">
+    <Header />
+    <main className="min-h-[70vh]">{children}</main>
+    <Footer />
+  </div>
+);
 
-/**
- * BlankLayout - Trang trống (chỉ có nội dung, không header/footer/sidebar)
- */
-export const BlankLayout = ({ children }: LayoutProps) => {
-    return (
-        <div className="min-h-screen bg-background text-on-background font-body-md">
-            {children}
-        </div>
-    );
-};
+export const AdminLayout = ({ children }: LayoutProps) => (
+  <div className="min-h-screen bg-background text-on-surface">
+    <Sidebar />
+    <div className="min-h-screen lg:pl-64">
+      <AdminHeader />
+      <main className="px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+    </div>
+  </div>
+);
+
+export const BlankLayout = ({ children }: LayoutProps) => (
+  <div className="min-h-screen bg-background text-on-surface">{children}</div>
+);
 
 export default MainLayout;

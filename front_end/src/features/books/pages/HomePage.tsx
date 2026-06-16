@@ -1,314 +1,186 @@
-import { useState, useEffect } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon } from '@/components/ui/staticUi';
+
+import { AccentButton, BookCard, Container, EmptyState, Icon, Panel, PrimaryButton, SecondaryButton, StatCard, Surface } from '@/components/ui/staticUi';
 import bookService, { Book, Category } from '@/features/books/services/bookService';
 import cartService from '@/features/cart/services/cartService';
 
+const fallbackBooks: Book[] = [
+  { id: 1, title: 'Tư duy nhanh và chậm', author: { id: 1, name: 'Daniel Kahneman' }, category: { id: 1, name: 'Tâm lý học' }, price: 189000, cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=520&q=80', discount: 15 },
+  { id: 2, title: 'Atomic Habits', author: { id: 2, name: 'James Clear' }, category: { id: 2, name: 'Kỹ năng' }, price: 168000, cover: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&w=520&q=80' },
+  { id: 3, title: 'Sapiens', author: { id: 3, name: 'Yuval Noah Harari' }, category: { id: 3, name: 'Lịch sử' }, price: 210000, cover: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=520&q=80' },
+  { id: 4, title: 'Nhà giả kim', author: { id: 4, name: 'Paulo Coelho' }, category: { id: 4, name: 'Văn học' }, price: 79000, cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=520&q=80', discount: 10 },
+];
+
+const fallbackCategories: Category[] = [
+  { id: 1, name: 'Kinh doanh', description: 'Quản trị, tài chính, bán hàng' },
+  { id: 2, name: 'Kỹ năng sống', description: 'Thói quen, tư duy, giao tiếp' },
+  { id: 3, name: 'Văn học', description: 'Tiểu thuyết và tác phẩm kinh điển' },
+  { id: 4, name: 'Thiếu nhi', description: 'Sách học tập và khám phá' },
+  { id: 5, name: 'Công nghệ', description: 'Lập trình và chuyển đổi số' },
+  { id: 6, name: 'Lịch sử', description: 'Thế giới, con người, văn minh' },
+];
+
 const HomePage = () => {
-    const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+  const [books, setBooks] = useState<Book[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                setError('');
-                // Lấy danh sách sách nổi bật
-                const books = await bookService.getFeaturedBooks(5);
-                setFeaturedBooks(books);
-                
-                // Lấy danh sách danh mục
-                const cats = await bookService.getCategories();
-                setCategories(cats);
-            } catch (err: any) {
-                console.error('Error fetching homepage data:', err);
-                setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
-            } finally {
-                setLoading(false);
-            }
-        };
+  useEffect(() => {
+    let active = true;
 
-        fetchData();
-    }, []);
+    Promise.all([bookService.getFeaturedBooks(8), bookService.getCategories()])
+      .then(([bookData, categoryData]) => {
+        if (!active) return;
+        setBooks(bookData.length ? bookData : fallbackBooks);
+        setCategories(categoryData.length ? categoryData : fallbackCategories);
+      })
+      .catch(() => {
+        if (!active) return;
+        setBooks(fallbackBooks);
+        setCategories(fallbackCategories);
+        setError('Đang hiển thị dữ liệu mẫu vì chưa kết nối được máy chủ.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
-    const handleAddToCart = async (bookId: number) => {
-        try {
-            await cartService.addToCart(bookId, 1);
-            alert('Đã thêm vào giỏ hàng');
-        } catch (err) {
-            alert('Lỗi khi thêm vào giỏ hàng');
-        }
+    return () => {
+      active = false;
     };
+  }, []);
 
-    const icon = (name: string, className = 'w-5 h-5') => {
-        const icons: any = {
-            search: (
-                <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-            ),
-            favorite: <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.53L12 21.35z" />,
-            shopping_cart: (
-                <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 8m10 0l2-8m0 0h2m-2 0h-2m0 8h-4m0 0h4"
-                />
-            ),
-            account_circle: (
-                <>
-                    <circle cx="12" cy="8" r="4" />
-                    <path d="M12 14c-6 0-8 3-8 3v3h16v-3s-2-3-8-3z" />
-                </>
-            ),
-            menu: <path d="M4 6h16M4 12h16M4 18h16" />,
-            arrow_forward: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />,
-            add_shopping_cart: (
-                <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
-            ),
-            menu_book: (
-                <>
-                    <path d="M12 6.253v13m0-13C6.5 6.253 2 10.753 2 16.253v4m10-13c5.5 0 10 4.5 10 10.253v4M2 20.253v4h20v-4" />
-                </>
-            ),
-        };
-        return (
-            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {icons[name]}
-            </svg>
-        );
-    };
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-        );
+  const addToCart = async (bookId?: number) => {
+    if (!bookId) return;
+    try {
+      await cartService.addToCart(bookId, 1);
+      window.alert('Đã thêm sách vào giỏ hàng');
+    } catch {
+      window.alert('Không thể thêm vào giỏ hàng. Vui lòng đăng nhập hoặc thử lại.');
     }
+  };
 
-    if (error) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <p className="text-error font-body-lg mb-4">{error}</p>
-                    <button onClick={() => window.location.reload()} className="bg-primary text-on-primary px-6 py-2 rounded-lg">
-                        Tải lại trang
-                    </button>
-                </div>
+  const featured = books[0] || fallbackBooks[0];
+
+  return (
+    <div>
+      {loading ? <div className="h-1 overflow-hidden bg-surface-container"><div className="h-full w-1/3 animate-pulse bg-primary" /></div> : null}
+      {error ? <Container className="pt-4"><div className="rounded-lg border border-secondary-container bg-secondary-container/20 px-4 py-3 text-sm font-semibold text-secondary">{error}</div></Container> : null}
+
+      <Container className="py-8">
+        <div className="grid gap-6 lg:grid-cols-12 lg:[grid-auto-rows:260px]">
+          <Panel className="relative overflow-hidden bg-primary text-on-primary lg:col-span-8 lg:row-span-2">
+            <img
+              src="https://images.unsplash.com/photo-1526243741027-444d633d7365?auto=format&fit=crop&w=1400&q=80"
+              alt="Không gian đọc sách"
+              className="absolute inset-0 h-full w-full object-cover opacity-35"
+            />
+            <div className="relative flex h-full min-h-[420px] flex-col justify-end p-8 md:p-12">
+              <span className="mb-4 w-fit rounded-sm bg-secondary px-3 py-1 text-xs font-bold uppercase text-on-secondary">Sự kiện sách mới</span>
+              <h1 className="max-w-2xl text-4xl font-bold leading-tight md:text-5xl">Khám phá thế giới qua từng trang sách chọn lọc</h1>
+              <p className="mt-5 max-w-xl text-lg leading-8 text-on-primary/90">Mua sách nhanh, theo dõi đơn rõ ràng và nhận các ưu đãi tốt nhất từ Nhà Sách Tri Thức.</p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link to="/catalog"><AccentButton>Khám phá ngay <Icon name="arrow" /></AccentButton></Link>
+                <Link to="/promotions"><SecondaryButton className="border-on-primary/30 bg-on-primary/10 text-on-primary hover:bg-on-primary/20">Xem khuyến mãi</SecondaryButton></Link>
+              </div>
             </div>
-        );
-    }
+          </Panel>
 
-    return (
-        <div className="antialiased text-on-surface">
-            <section className="max-w-container-max mx-auto px-gutter py-section-gap">
-                <div className="flex justify-between items-end mb-stack-lg">
-                    <div>
-                        <h2 className="font-h2 text-h2 text-primary">Sách hot tuần này</h2>
-                        <p className="font-body-md text-body-md text-on-surface-variant mt-stack-sm">
-                            Những tựa sách được tìm kiếm và mua nhiều nhất
-                        </p>
-                    </div>
-                    <Link
-                        to="/catalog"
-                        className="text-primary font-label-md text-label-md hover:underline flex items-center gap-unit"
-                    >
-                        Xem tất cả
-                        {icon('arrow_forward', 'w-4 h-4')}
-                    </Link>
+          <Panel className="overflow-hidden lg:col-span-4">
+            <div className="grid h-full grid-cols-[140px_1fr] bg-surface-container-low">
+              <img src={featured.cover} alt={featured.title} className="h-full min-h-60 w-full object-cover" />
+              <div className="flex flex-col justify-between p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase text-secondary">Nổi bật tuần này</p>
+                  <h2 className="mt-2 text-xl font-bold text-primary">{featured.title}</h2>
+                  <p className="mt-2 text-sm text-on-surface-variant">{featured.author?.name}</p>
                 </div>
+                <button onClick={() => addToCart(featured.id)} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-secondary hover:underline">
+                  Thêm vào giỏ <Icon name="cart" className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </Panel>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter">
-                    {featuredBooks.length > 0 && (
-                        <div className="md:col-span-2 md:row-span-2 bg-surface-container-lowest rounded-xl shadow-[0px_4px_12px_rgba(30,27,75,0.05)] hover:shadow-[0px_8px_24px_rgba(30,27,75,0.1)] transition-all duration-300 overflow-hidden group flex flex-col">
-                            <div className="relative h-64 md:h-full bg-surface-container flex items-center justify-center p-stack-lg overflow-hidden">
-                                <img
-                                    alt={featuredBooks[0].title}
-                                    className="h-full object-contain rounded drop-shadow-md group-hover:scale-105 transition-transform duration-500 z-10"
-                                    src={featuredBooks[0].cover || 'https://via.placeholder.com/300x400'}
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent" />
-                                {featuredBooks[0].discount && (
-                                    <span className="absolute top-stack-md left-stack-md bg-secondary-container text-on-secondary font-caption text-caption px-3 py-1 rounded-full z-20">
-                                        -{featuredBooks[0].discount}%
-                                    </span>
-                                )}
-                            </div>
-                            <div className="p-stack-md bg-surface-container-lowest z-20">
-                                <Link to={`/books/${featuredBooks[0].id}`}>
-                                    <h3 className="font-h3 text-h3 text-primary mb-unit line-clamp-1 hover:underline">
-                                        {featuredBooks[0].title}
-                                    </h3>
-                                </Link>
-                                <p className="font-caption text-caption text-on-surface-variant mb-stack-sm">
-                                    Tác giả: {featuredBooks[0].author?.name || 'N/A'}
-                                </p>
-                                <div className="flex items-center justify-between mt-stack-md">
-                                    <span className="font-h3 text-h3 text-[#f97316]">
-                                        {featuredBooks[0].price?.toLocaleString('vi-VN')} ₫
-                                    </span>
-                                    <button
-                                        onClick={() => handleAddToCart(featuredBooks[0].id || 0)}
-                                        className="bg-primary text-on-primary font-label-md text-label-md py-2 px-4 rounded-lg hover:bg-primary-container transition-colors shadow-sm flex items-center gap-unit"
-                                    >
-                                        {icon('add_shopping_cart', 'w-5 h-5')}
-                                        Thêm
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {featuredBooks.slice(1).map((book) => (
-                        <div
-                            key={book.id}
-                            className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_12px_rgba(30,27,75,0.05)] hover:shadow-[0px_8px_24px_rgba(30,27,75,0.1)] transition-all duration-300 overflow-hidden group flex flex-col p-stack-md"
-                        >
-                            <div className="relative h-48 bg-surface-container rounded-lg flex items-center justify-center p-stack-sm mb-stack-md overflow-hidden">
-                                <img
-                                    alt={book.title}
-                                    className="h-full object-contain rounded drop-shadow-sm group-hover:scale-105 transition-transform duration-500"
-                                    src={book.cover || 'https://via.placeholder.com/200x300'}
-                                />
-                            </div>
-                            <div className="flex-grow flex flex-col justify-end">
-                                <Link to={`/books/${book.id}`}>
-                                    <h3 className="font-body-lg text-body-lg text-primary mb-unit font-bold line-clamp-1 hover:underline">
-                                        {book.title}
-                                    </h3>
-                                </Link>
-                                <p className="font-caption text-caption text-on-surface-variant mb-stack-sm line-clamp-1">
-                                    {book.author?.name || 'N/A'}
-                                </p>
-                                <div className="flex items-center justify-between mt-auto pt-stack-sm border-t border-surface-variant">
-                                    <span className="font-label-md text-label-md text-primary font-bold">
-                                        {book.price?.toLocaleString('vi-VN')} ₫
-                                    </span>
-                                    <button
-                                        onClick={() => handleAddToCart(book.id || 0)}
-                                        title="Add to cart"
-                                        className="text-primary hover:text-secondary-container transition-colors p-1"
-                                    >
-                                        {icon('add_shopping_cart', 'w-5 h-5')}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <section className="max-w-container-max mx-auto px-gutter py-section-gap">
-                <div className="bg-primary rounded-2xl overflow-hidden shadow-[0px_12px_48px_rgba(30,27,75,0.15)] relative flex flex-col md:flex-row items-center">
-                    <div
-                        className="absolute inset-0 opacity-10 pointer-events-none"
-                        style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}
-                    />
-                    <div className="p-stack-lg md:p-[64px] flex-1 z-10 text-on-primary">
-                        <span className="bg-[#f97316] text-white font-label-md text-label-md px-3 py-1 rounded-full font-bold mb-stack-md inline-block uppercase tracking-wider text-[10px]">
-                            Flash Sale
-                        </span>
-                        <h2 className="font-h1 text-h1 mb-stack-sm text-white">Giảm Giá 50%</h2>
-                        <p className="font-h3 text-h3 text-primary-fixed-dim mb-stack-lg font-normal">Toàn bộ Tác phẩm Kinh điển</p>
-
-                        <div className="flex gap-stack-md mb-stack-lg flex-wrap">
-                            {[
-                                ['03', 'Ngày'],
-                                ['14', 'Giờ'],
-                                ['45', 'Phút'],
-                            ].map(([value, label]) => (
-                                <div key={label} className="flex flex-col items-center bg-white/10 backdrop-blur-sm rounded-lg p-3 min-w-[70px]">
-                                    <span className="font-h2 text-h2 font-bold leading-none">{value}</span>
-                                    <span className="font-caption text-caption text-primary-fixed-dim mt-1">{label}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <button className="bg-white text-primary font-label-md text-label-md py-3 px-8 rounded-lg font-bold hover:bg-surface-variant transition-colors shadow-sm">
-                            Mua ngay
-                        </button>
-                    </div>
-
-                    <div className="w-full md:w-2/5 h-64 md:h-auto self-stretch relative">
-                        <img
-                            alt="Classic Books"
-                            className="w-full h-full object-cover"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFXPSlmyi2ZTEOuUGkj9QiJ0wqTCPgjA7CqmMsL2agOeE-nYHu5NVjE5Fo1U2JtT3fQlqxzpwnKDrp8llADTT5gTfwhetnBJtSbBksjMkrQT3lKDxrK4-VDNdsasvd5-yZtAxCrYDNc3GWdt27U9Mhxml2AA0wKE325f1sZ8GhJ34P1sO5yvXMfIJFsuOVTXwceaNj1VY6vPDfi7-l4YdK3zS7e2OweEvtl13yhiP-g5eVsfDtEZvb-fdGRkXsa5XgX0EJz6M-H1M"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary to-transparent hidden md:block" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-primary to-transparent md:hidden" />
-                    </div>
-                </div>
-            </section>
-
-            <section className="bg-surface-container-low py-section-gap">
-                <div className="max-w-container-max mx-auto px-gutter">
-                    <div className="text-center mb-stack-lg">
-                        <h2 className="font-h2 text-h2 text-primary">Danh mục nổi bật</h2>
-                        <p className="font-body-md text-body-md text-on-surface-variant mt-stack-sm">
-                            Khám phá các chủ đề được yêu thích nhất
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-                        {categories.map((category) => (
-                            <Link key={category.id} to={`/catalog?category=${category.id}`}>
-                                <div className="relative h-64 rounded-xl overflow-hidden group cursor-pointer shadow-[0px_4px_12px_rgba(30,27,75,0.05)] hover:shadow-[0px_8px_24px_rgba(30,27,75,0.1)] transition-shadow">
-                                    <div className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 bg-gradient-to-br from-primary/30 to-secondary/30" />
-                                    <div className="absolute inset-0 bg-primary/40 group-hover:bg-primary/50 transition-colors" />
-                                    <div className="absolute inset-0 p-stack-lg flex flex-col justify-end">
-                                        <div className="bg-white/20 backdrop-blur-md rounded-lg p-stack-md border border-white/30 transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="font-h3 text-h3 text-white">{category.name}</h3>
-                                            </div>
-                                            <p className="font-caption text-caption text-white/80 mt-unit opacity-0 group-hover:opacity-100 transition-opacity delay-100">
-                                                {category.bookCount || 0}+ sách
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            <section className="max-w-container-max mx-auto px-gutter py-section-gap flex flex-col items-center text-center">
-                <span className="mb-stack-sm text-primary">{icon('menu_book', 'w-10 h-10')}</span>
-                <h2 className="font-h2 text-h2 text-primary mb-stack-md">Sứ mệnh của chúng tôi</h2>
-                <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                    BookStore được xây dựng với niềm tin rằng mỗi cuốn sách là một cánh cửa mở ra thế giới mới. Chúng tôi cam kết
-                    mang đến không gian mua sắm sách trực tuyến hiện đại, tiện lợi, tuyển chọn những tác phẩm giá trị nhất để đồng
-                    hành cùng quá trình phát triển tri thức của bạn.
-                </p>
-
-                <div className="mt-stack-lg flex gap-stack-md justify-center flex-wrap">
-                    {[
-                        ['10K+', 'Tựa sách'],
-                        ['50K+', 'Khách hàng'],
-                        ['4.9/5', 'Đánh giá'],
-                    ].map(([value, label], index) => (
-                        <div key={label} className={`flex flex-col items-center px-6 ${index < 2 ? 'border-r border-outline-variant' : ''}`}>
-                            <span className="font-h2 text-h2 text-primary font-bold">{value}</span>
-                            <span className="font-caption text-caption text-on-surface-variant mt-1 uppercase tracking-wider">{label}</span>
-                        </div>
-                    ))}
-                </div>
-            </section>
+          <Panel className="bg-secondary-container p-6 text-on-secondary-container lg:col-span-4">
+            <p className="text-sm font-bold uppercase">Voucher hôm nay</p>
+            <h2 className="mt-3 text-3xl font-bold">Giảm 25%</h2>
+            <p className="mt-2 text-sm leading-6">Áp dụng cho danh mục kỹ năng và kinh doanh. Số lượng có hạn.</p>
+            <Link to="/promotions" className="mt-5 inline-flex text-sm font-bold underline">Nhận mã ngay</Link>
+          </Panel>
         </div>
-    );
+      </Container>
+
+      <Container className="py-10">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <h2 className="border-l-4 border-secondary pl-4 text-2xl font-bold text-primary">Danh mục nổi bật</h2>
+          <Link to="/categories" className="text-sm font-bold text-secondary hover:underline">Tất cả danh mục</Link>
+        </div>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+          {categories.slice(0, 6).map((category) => (
+            <Link key={category.id} to={`/catalog?category=${category.id}`}>
+              <Panel className="h-full p-5 text-center transition hover:-translate-y-1 hover:shadow-md">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/5 text-primary">
+                  <Icon name="category" />
+                </div>
+                <h3 className="font-bold text-primary">{category.name}</h3>
+                <p className="mt-2 line-clamp-2 text-xs leading-5 text-on-surface-variant">{category.description}</p>
+              </Panel>
+            </Link>
+          ))}
+        </div>
+      </Container>
+
+      <Surface className="py-12">
+        <Container>
+          <div className="mb-8 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-primary">Sách bán chạy</h2>
+              <p className="mt-2 text-sm text-on-surface-variant">Danh sách lấy từ API sách công khai của hệ thống.</p>
+            </div>
+            <Link to="/catalog" className="text-sm font-bold text-secondary hover:underline">Xem tất cả</Link>
+          </div>
+          {books.length ? (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {books.slice(0, 8).map((book) => (
+                <BookCard
+                  key={book.id || book.title}
+                  id={book.id}
+                  title={book.title}
+                  author={book.author?.name}
+                  category={book.category?.name}
+                  price={book.price}
+                  cover={book.cover}
+                  discount={book.discount}
+                  onAdd={() => addToCart(book.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="Chưa có sách" description="Khi máy chủ trả dữ liệu, danh sách sản phẩm sẽ hiển thị tại đây." />
+          )}
+        </Container>
+      </Surface>
+
+      <Container className="grid gap-5 py-10 md:grid-cols-3">
+        <StatCard label="Phân hệ người dùng" value="7" detail="Danh mục sách, giỏ hàng, thanh toán, yêu thích, đơn hàng..." icon="users" />
+        <StatCard label="Phân hệ quản trị" value="8" detail="Tổng quan, sách, đơn hàng, tồn kho..." icon="chart" tone="success" />
+        <StatCard label="Thanh toán" value="SePay" detail="Có trạng thái thanh toán và webhook đối soát" icon="ticket" tone="warning" />
+      </Container>
+
+      <Container className="pb-12">
+        <Panel className="grid gap-8 bg-primary-container p-8 text-on-primary md:grid-cols-[1fr_auto] md:items-center">
+          <div>
+            <p className="text-sm font-bold uppercase text-primary-fixed-dim">Ưu đãi thành viên</p>
+            <h2 className="mt-2 text-3xl font-bold">Nhận mã giảm giá và gợi ý sách phù hợp với bạn</h2>
+            <p className="mt-3 max-w-2xl text-on-primary-container">Lưu sách yêu thích, theo dõi đơn hàng và nhận voucher theo lịch sử mua sách.</p>
+          </div>
+          <Link to="/register"><PrimaryButton className="bg-secondary-container text-on-secondary-container hover:brightness-105">Tạo tài khoản</PrimaryButton></Link>
+        </Panel>
+      </Container>
+    </div>
+  );
 };
 
 export default HomePage;

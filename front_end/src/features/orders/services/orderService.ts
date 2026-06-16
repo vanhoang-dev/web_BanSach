@@ -1,4 +1,5 @@
 import api from '@/services/api/axiosClient';
+import { unwrapApiData, unwrapPage } from '@/services/api/response';
 
 export interface OrderItem {
   id?: number;
@@ -12,127 +13,105 @@ export interface OrderItem {
   };
 }
 
+export interface CreateOrderPayload {
+  receiverName: string;
+  receiverPhone: string;
+  shippingAddress: string;
+  shippingMethod?: string;
+  shippingFee?: number;
+  voucherCode?: string;
+}
+
+export interface BuyNowOrderPayload extends CreateOrderPayload {
+  bookId: number;
+  quantity: number;
+}
+
 export interface Order {
   id?: number;
-  orderCode?: string;
   items: OrderItem[];
   totalPrice: number;
+  totalAmount?: number;
   shippingAddress: string;
-  phoneNumber: string;
-  fullName: string;
-  email?: string;
+  receiverPhone: string;
+  receiverName: string;
+  phoneNumber?: string;
+  fullName?: string;
   shippingMethod?: string;
   shippingFee?: number;
   voucherCode?: string;
   voucherDiscount?: number;
   status?: 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'SEPAY' | 'MOMO';
   paymentStatus?: 'UNPAID' | 'PAID';
+  orderDate?: string;
   createdAt?: string;
-  updatedAt?: string;
-  notes?: string;
 }
 
-export interface OrderResponse {
-  success: boolean;
-  data?: Order;
-  message?: string;
-}
-
-export interface OrdersListResponse {
-  success: boolean;
-  data?: {
-    content: Order[];
-    totalElements: number;
-    totalPages: number;
-    currentPage: number;
-    pageSize: number;
-  };
-}
+const mapOrder = (order: any): Order => ({
+  id: order?.id,
+  items: order?.items || [],
+  totalPrice: Number(order?.totalAmount ?? 0),
+  totalAmount: Number(order?.totalAmount ?? 0),
+  status: order?.status,
+  receiverName: order?.receiverName,
+  receiverPhone: order?.receiverPhone,
+  fullName: order?.receiverName,
+  phoneNumber: order?.receiverPhone,
+  shippingAddress: order?.shippingAddress,
+  voucherCode: order?.voucherCode,
+  voucherDiscount: Number(order?.voucherDiscount ?? 0),
+  orderDate: order?.orderDate,
+  createdAt: order?.orderDate,
+});
 
 const orderService = {
-  // Tạo đơn hàng
-  createOrder: async (orderData: Order): Promise<any> => {
-    try {
-      const payload = {
-        receiverName: orderData.fullName,
-        receiverPhone: orderData.phoneNumber,
-        shippingAddress: orderData.shippingAddress,
-        shippingMethod: orderData.shippingMethod || 'STANDARD',
-        shippingFee: 0,
-        voucherCode: undefined,
-      };
-      const response = await api.post('/user/orders', payload);
-      return response;
-    } catch (error: any) {
-      throw error;
-    }
+  createOrder: async (orderData: CreateOrderPayload): Promise<Order> => {
+    const payload = {
+      receiverName: orderData.receiverName,
+      receiverPhone: orderData.receiverPhone,
+      shippingAddress: orderData.shippingAddress,
+      shippingMethod: orderData.shippingMethod || 'STANDARD',
+      shippingFee: Number(orderData.shippingFee ?? 0),
+      voucherCode: orderData.voucherCode || undefined,
+    };
+    const response = await api.post('/user/orders', payload);
+    return mapOrder(unwrapApiData(response));
   },
 
-  // Lấy danh sách đơn hàng của user
+  buyNow: async (orderData: BuyNowOrderPayload): Promise<Order> => {
+    const payload = {
+      receiverName: orderData.receiverName,
+      receiverPhone: orderData.receiverPhone,
+      shippingAddress: orderData.shippingAddress,
+      shippingMethod: orderData.shippingMethod || 'STANDARD',
+      shippingFee: Number(orderData.shippingFee ?? 0),
+      voucherCode: orderData.voucherCode || undefined,
+      bookId: Number(orderData.bookId),
+      quantity: Number(orderData.quantity),
+    };
+    const response = await api.post('/user/orders/buy-now', payload);
+    return mapOrder(unwrapApiData(response));
+  },
+
   getOrders: async (page: number = 0, size: number = 10): Promise<any> => {
-    try {
-      const response: any = await api.get(`/user/orders?page=${page}&size=${size}`);
-      const pageData = response?.content ? response : response?.data?.content ? response.data : { content: [] };
-      return {
-        data: {
-          ...pageData,
-          content: (pageData.content || []).map((order: any) => ({
-            id: order.id,
-            items: order.items || [],
-            totalPrice: Number(order.totalAmount || 0),
-            status: order.status,
-            fullName: order.receiverName,
-            phoneNumber: order.receiverPhone,
-            shippingAddress: order.shippingAddress,
-            createdAt: order.orderDate,
-          })),
-        },
-      };
-    } catch (error: any) {
-      throw error;
-    }
+    const response: any = await api.get(`/user/orders?page=${page}&size=${size}`);
+    const pageData = unwrapPage<any>(response);
+    return {
+      data: {
+        ...pageData,
+        content: pageData.content.map(mapOrder),
+      },
+    };
   },
 
-  // Lấy chi tiết đơn hàng
-  getOrderById: async (id: number): Promise<any> => {
-    try {
-      const response: any = await api.get(`/user/orders/${id}`);
-      const order = response?.data || response;
-      return {
-        id: order.id,
-        items: order.items || [],
-        totalPrice: Number(order.totalAmount || 0),
-        status: order.status,
-        fullName: order.receiverName,
-        phoneNumber: order.receiverPhone,
-        shippingAddress: order.shippingAddress,
-        createdAt: order.orderDate,
-      };
-    } catch (error: any) {
-      throw error;
-    }
+  getOrderById: async (id: number): Promise<Order> => {
+    const response: any = await api.get(`/user/orders/${id}`);
+    return mapOrder(unwrapApiData(response));
   },
 
-  // Hủy đơn hàng
-  cancelOrder: async (id: number): Promise<any> => {
-    try {
-      const response = await api.put(`/user/orders/${id}/cancel`, {});
-      return response;
-    } catch (error: any) {
-      throw error;
-    }
-  },
+  cancelOrder: async (id: number): Promise<any> => api.put(`/user/orders/${id}/cancel`, {}),
 
-  // Kiểm tra thanh toán
-  checkPaymentStatus: async (orderId: number): Promise<any> => {
-    try {
-      const response = await api.get(`/api/payment/status/order/${orderId}`);
-      return response;
-    } catch (error: any) {
-      throw error;
-    }
-  },
+  checkPaymentStatus: async (orderId: number): Promise<any> => api.get(`/api/payment/status/order/${orderId}`),
 };
 
 export default orderService;

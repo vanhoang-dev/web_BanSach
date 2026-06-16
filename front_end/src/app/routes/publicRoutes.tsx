@@ -4,6 +4,7 @@ import { BlankLayout, MainLayout } from '@/components/layout/Layout';
 import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import RegisterPage from '@/features/auth/pages/RegisterPage';
+import ResetPasswordPage from '@/features/auth/pages/ResetPasswordPage';
 import AuthorsPage from '@/features/authors/pages/AuthorsPage';
 import BookDetailPage from '@/features/books/pages/BookDetailPage';
 import CatalogPage from '@/features/books/pages/CatalogPage';
@@ -25,5 +26,6 @@ export const publicRoutes = (
     <Route path="/login" element={<BlankLayout><LoginPage /></BlankLayout>} />
     <Route path="/register" element={<BlankLayout><RegisterPage /></BlankLayout>} />
     <Route path="/forgot-password" element={<BlankLayout><ForgotPasswordPage /></BlankLayout>} />
+    <Route path="/reset-password" element={<BlankLayout><ResetPasswordPage /></BlankLayout>} />
   </>
 );

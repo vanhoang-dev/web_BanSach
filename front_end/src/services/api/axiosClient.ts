@@ -25,7 +25,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    if (error.response?.status === 401) {
+    const hadToken = !!tokenStorage.getToken();
+    if (error.response?.status === 401 && hadToken) {
       tokenStorage.clear();
       window.location.href = '/login';
     }

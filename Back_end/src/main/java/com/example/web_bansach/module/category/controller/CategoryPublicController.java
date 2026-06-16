@@ -15,7 +15,6 @@ import com.example.web_bansach.module.category.service.CategoryQueryService;
  */
 @RestController
 @RequestMapping("/api/categories")
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class CategoryPublicController {
 
     private final CategoryQueryService queryService;

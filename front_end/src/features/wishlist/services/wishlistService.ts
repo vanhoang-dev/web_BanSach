@@ -1,4 +1,5 @@
 import api from '@/services/api/axiosClient';
+import { unwrapApiData, unwrapPage } from '@/services/api/response';
 
 export interface WishlistItem {
   id?: number;
@@ -17,7 +18,7 @@ const wishlistService = {
   getWishlist: async (page: number = 0, size: number = 50): Promise<any> => {
     try {
       const response: any = await api.get(`/user/wishlist?page=${page}&size=${size}`);
-      const pageData = response?.content ? response : response?.data?.content ? response.data : { content: [] };
+      const pageData = unwrapPage<any>(response);
       return (pageData.content || []).map((item: any) => ({
         id: item.bookId,
         bookId: item.bookId,
@@ -58,11 +59,13 @@ const wishlistService = {
   isInWishlist: async (bookId: number): Promise<boolean> => {
     try {
       const response: any = await api.get(`/user/wishlist/books/${bookId}/check`);
-      return !!response?.isInWishlist;
+      return !!unwrapApiData<any>(response)?.isInWishlist;
     } catch (error: any) {
       return false;
     }
   },
+
+  clearWishlist: async (): Promise<any> => api.delete('/user/wishlist/clear'),
 };
 
 export default wishlistService;
