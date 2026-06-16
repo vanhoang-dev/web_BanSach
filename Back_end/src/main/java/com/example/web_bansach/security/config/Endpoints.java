@@ -11,6 +11,7 @@ public class Endpoints {
             "/api/authors",
             "/api/authors/*",
             "/api/authors/search",
+            "/api/payment/sse/order/*",
             "/user/books",
             "/user/books/*",
     };

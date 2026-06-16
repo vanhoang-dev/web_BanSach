@@ -22,22 +22,26 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.example.web_bansach.common.exception.GlobalExceptionHandler;
+import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
 import com.example.web_bansach.module.payment.dto.PaymentRequest;
 import com.example.web_bansach.module.payment.dto.PaymentResponse;
 import com.example.web_bansach.module.payment.service.PaymentService;
+import com.example.web_bansach.security.jwt.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 class PaymentControllerTest {
 
     private final PaymentService paymentService = org.mockito.Mockito.mock(PaymentService.class);
+    private final RealtimeNotificationService realtimeNotificationService = org.mockito.Mockito.mock(RealtimeNotificationService.class);
+    private final JwtTokenProvider jwtTokenProvider = org.mockito.Mockito.mock(JwtTokenProvider.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new PaymentController(paymentService))
+                .standaloneSetup(new PaymentController(paymentService, realtimeNotificationService, jwtTokenProvider))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }

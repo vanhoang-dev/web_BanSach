@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useEffect, useState, ReactNode } from 'react';
+
 import authService from '@/features/auth/services';
 import { tokenStorage } from '@/services/storage/tokenStorage';
 
@@ -21,34 +22,56 @@ export interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const normalizeUser = (baseUser: Partial<User>, profile?: any): User => ({
+  id: profile?.id || profile?.userId || baseUser.id || 0,
+  email: profile?.email || baseUser.email || '',
+  fullName: profile?.fullName || profile?.full_name || '',
+  role: profile?.role || baseUser.role || 'USER',
+});
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Kiểm tra token khi component mount
   useEffect(() => {
-    const token = tokenStorage.getToken();
-    if (token) {
-      const storedUser = tokenStorage.getUser();
-      if (storedUser) {
-        setUser(storedUser);
+    const loadCurrentUser = async () => {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        setLoading(false);
+        return;
       }
-    }
-    setLoading(false);
+
+      const storedUser = tokenStorage.getUser();
+      if (storedUser) setUser(storedUser);
+
+      try {
+        const profile = await authService.getProfile();
+        const userData = normalizeUser(storedUser || {}, profile);
+        setUser(userData);
+        tokenStorage.setUser(userData);
+      } catch {
+        if (!storedUser) tokenStorage.clear();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCurrentUser();
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
       const response = await authService.login({ email, password });
-      
+
       if (response.success && response.data) {
-        const userData: User = {
+        const loginUser = normalizeUser({
           id: response.data.user?.id || 0,
           email: response.data.user?.email || email,
-          fullName: response.data.user?.fullName || '',
           role: response.data.user?.role || 'USER',
-        };
+        });
+        const profile = await authService.getProfile();
+        const userData = normalizeUser(loginUser, profile);
         setUser(userData);
         tokenStorage.setUser(userData);
       }
