@@ -6,9 +6,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
 
 import com.example.web_bansach.common.response.ApiResponse;
 import com.example.web_bansach.common.response.PageResponse;
@@ -46,5 +48,32 @@ public class VoucherUserController {
     public ResponseEntity<ApiResponse<VoucherResponse>> getVoucherByCode(@PathVariable String code) {
         VoucherResponse voucher = voucherService.getVoucherByCode(code);
         return ResponseEntity.ok(ApiResponse.success(voucher));
+    }
+
+    @PostMapping("/{voucherId}/claim")
+    public ResponseEntity<ApiResponse<VoucherResponse>> claimVoucher(
+            Authentication authentication,
+            @PathVariable Long voucherId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Đã lưu voucher vào tài khoản",
+                voucherService.claimVoucher(authentication.getName(), voucherId)));
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<ApiResponse<PageResponse<VoucherResponse>>> getMyVouchers(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(
+                voucherService.getMyAvailableVouchers(authentication.getName(), page, size))));
+    }
+
+    @GetMapping("/claimed")
+    public ResponseEntity<ApiResponse<PageResponse<VoucherResponse>>> getClaimedVouchers(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "100") Integer size) {
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(
+                voucherService.getMyClaimedVouchers(authentication.getName(), page, size))));
     }
 }

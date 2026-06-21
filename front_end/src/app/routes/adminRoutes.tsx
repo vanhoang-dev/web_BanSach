@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate, Route } from 'react-router-dom';
 
 import { ProtectedRoute } from '@/app/routes/protectedRoutes';
-import { AdminLayout } from '@/components/layout/Layout';
+import AdminLayout from '@/features/admin/components/AdminLayout';
 import AdminAuthorManagementPage from '@/features/admin/pages/AdminAuthorManagementPage';
 import AdminBookManagementPage from '@/features/admin/pages/AdminBookManagementPage';
 import AdminCategoryManagementPage from '@/features/admin/pages/AdminCategoryManagementPage';

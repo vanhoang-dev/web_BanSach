@@ -1,9 +1,11 @@
 ﻿import { FormEvent, useEffect, useState } from 'react';
 
 import { AdminTable, AdminToolbar, Field, Icon, IconButton, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
-import adminService from '@/features/admin/services';
+import AdminPagination from '@/features/admin/components/AdminPagination';
+import userAdminService from '@/features/admin/services/userAdminService';
 
 const emptyForm = { fullName: '', email: '', phone: '', address: '', isActive: true };
+const pageSize = 10;
 
 const AdminUserManagementPage = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -12,12 +14,15 @@ const AdminUserManagementPage = () => {
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getUsers(0, 100);
+      const response = await userAdminService.getAll(page, pageSize);
       setUsers(response.data.content || []);
+      setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
       setError('Không thể tải người dùng.');
     } finally {
@@ -27,13 +32,13 @@ const AdminUserManagementPage = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [page]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!editingId) return;
     try {
-      await adminService.updateUser(editingId, form);
+      await userAdminService.update(editingId, form);
       setEditingId(null);
       setForm(emptyForm);
       fetchUsers();
@@ -55,7 +60,7 @@ const AdminUserManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa người dùng này?')) return;
-    await adminService.deleteUser(id);
+    await userAdminService.remove(id);
     fetchUsers();
   };
 
@@ -82,8 +87,8 @@ const AdminUserManagementPage = () => {
       ) : null}
       <div className="mt-6">
         <AdminToolbar>
-          <input value={filter} onChange={(e) => setFilter(e.target.value)} className="h-11 w-full rounded-lg border-outline-variant bg-surface px-4 text-sm md:max-w-sm" placeholder="Tìm tên hoặc email..." />
-          <span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${visibleUsers.length} người dùng`}</span>
+          <input value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }} className="h-11 w-full rounded-lg border-outline-variant bg-surface px-4 text-sm md:max-w-sm" placeholder="Tìm tên hoặc email..." />
+          <span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${pageInfo.totalElements} người dùng`}</span>
         </AdminToolbar>
         <AdminTable minWidth="860px">
           <thead className="border-b border-outline-variant bg-surface-container-high text-xs uppercase text-on-surface-variant"><tr>{['Tên', 'Email', 'Vai trò', 'Trạng thái', ''].map((head) => <th key={head} className="px-5 py-4">{head}</th>)}</tr></thead>
@@ -102,6 +107,7 @@ const AdminUserManagementPage = () => {
             })}
           </tbody>
         </AdminTable>
+        <AdminPagination page={page} pageSize={pageSize} totalElements={pageInfo.totalElements} totalPages={pageInfo.totalPages} onPageChange={setPage} />
       </div>
     </div>
   );

@@ -253,6 +253,20 @@ CREATE TABLE IF NOT EXISTS vouchers (
   UNIQUE KEY uk_vouchers_code (code)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS user_vouchers (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  voucher_id BIGINT NOT NULL,
+  claimed_at DATETIME NOT NULL,
+  used_at DATETIME,
+  used TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_user_vouchers_user_voucher (user_id, voucher_id),
+  KEY idx_user_vouchers_voucher_id (voucher_id),
+  CONSTRAINT fk_user_vouchers_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+  CONSTRAINT fk_user_vouchers_voucher FOREIGN KEY (voucher_id) REFERENCES vouchers (voucher_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS wishlists (
   user_id BIGINT NOT NULL,
   book_id BIGINT NOT NULL,

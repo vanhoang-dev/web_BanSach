@@ -89,7 +89,8 @@ class OrderUserServiceTest {
         when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(cart));
         when(cartItemRepository.findByCartIdWithBook(10L)).thenReturn(List.of(item));
         when(inventoryRepository.findByBookId(100L)).thenReturn(Optional.of(inventory));
-        when(voucherService.getVoucherByCode("BAD")).thenThrow(new BusinessException("Mã voucher không hợp lệ"));
+        when(voucherService.getMyVoucherByCode("user@test.com", "BAD"))
+                .thenThrow(new BusinessException("Mã voucher không thuộc tài khoản hoặc không hợp lệ"));
 
         assertThatThrownBy(() -> orderUserService.createOrder("user@test.com", request))
                 .isInstanceOf(BusinessException.class)

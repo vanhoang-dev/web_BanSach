@@ -30,6 +30,11 @@ export interface Category {
   bookCount?: number;
 }
 
+export interface BookSort {
+  sortBy?: 'createdAt' | 'price';
+  sortDirection?: 'asc' | 'desc';
+}
+
 const mapBookFromBackend = (book: any): Book => ({
   id: book?.id,
   title: book?.title,
@@ -45,11 +50,14 @@ const mapBookFromBackend = (book: any): Book => ({
 
 const bookService = {
   // Lấy danh sách sách với pagination và filter
-  getBooks: async (page: number = 0, size: number = 12, search?: string, categoryId?: number): Promise<any> => {
+  getBooks: async (page: number = 0, size: number = 12, search?: string, categoryId?: number, sort?: BookSort, authorId?: number): Promise<any> => {
     try {
       let url = `/user/books?page=${page}&size=${size}`;
       if (search) url += `&keyword=${encodeURIComponent(search)}`;
       if (categoryId) url += `&categoryId=${categoryId}`;
+      if (authorId) url += `&authorId=${authorId}`;
+      if (sort?.sortBy) url += `&sortBy=${encodeURIComponent(sort.sortBy)}`;
+      if (sort?.sortDirection) url += `&sortDirection=${encodeURIComponent(sort.sortDirection)}`;
       const response: any = await api.get(url);
       const pageData = unwrapPage<any>(response);
       return {
@@ -91,10 +99,13 @@ const bookService = {
   },
 
   // Tìm kiếm sách
-  searchBooks: async (keyword: string, page: number = 0, size: number = 12): Promise<any> => {
+  searchBooks: async (keyword: string, page: number = 0, size: number = 12, sort?: BookSort): Promise<any> => {
     try {
+      const sortQuery = sort?.sortBy
+        ? `&sortBy=${encodeURIComponent(sort.sortBy)}&sortDirection=${encodeURIComponent(sort.sortDirection || 'desc')}`
+        : '';
       const response: any = await api.get(
-        `/user/books?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`
+        `/user/books?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}${sortQuery}`
       );
       const pageData = unwrapPage<any>(response);
       return {
@@ -109,10 +120,33 @@ const bookService = {
   },
 
   // Lấy sách theo danh mục
-  getBooksByCategory: async (categoryId: number, page: number = 0, size: number = 12): Promise<any> => {
+  getBooksByCategory: async (categoryId: number, page: number = 0, size: number = 12, sort?: BookSort): Promise<any> => {
     try {
+      const sortQuery = sort?.sortBy
+        ? `&sortBy=${encodeURIComponent(sort.sortBy)}&sortDirection=${encodeURIComponent(sort.sortDirection || 'desc')}`
+        : '';
       const response: any = await api.get(
-        `/user/books?categoryId=${categoryId}&page=${page}&size=${size}`
+        `/user/books?categoryId=${categoryId}&page=${page}&size=${size}${sortQuery}`
+      );
+      const pageData = unwrapPage<any>(response);
+      return {
+        data: {
+          ...pageData,
+          content: (pageData.content || []).map(mapBookFromBackend),
+        },
+      };
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  getBooksByAuthor: async (authorId: number, page: number = 0, size: number = 12, sort?: BookSort): Promise<any> => {
+    try {
+      const sortQuery = sort?.sortBy
+        ? `&sortBy=${encodeURIComponent(sort.sortBy)}&sortDirection=${encodeURIComponent(sort.sortDirection || 'desc')}`
+        : '';
+      const response: any = await api.get(
+        `/user/books?authorId=${authorId}&page=${page}&size=${size}${sortQuery}`
       );
       const pageData = unwrapPage<any>(response);
       return {

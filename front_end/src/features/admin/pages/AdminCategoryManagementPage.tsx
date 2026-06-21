@@ -1,9 +1,11 @@
 ﻿import { FormEvent, useEffect, useState } from 'react';
 
 import { AdminTable, AdminToolbar, Field, Icon, IconButton, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
-import adminService from '@/features/admin/services';
+import AdminPagination from '@/features/admin/components/AdminPagination';
+import categoryAdminService from '@/features/admin/services/categoryAdminService';
 
 const emptyForm = { name: '', description: '', isActive: true };
+const pageSize = 10;
 
 const AdminCategoryManagementPage = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -11,12 +13,15 @@ const AdminCategoryManagementPage = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getCategories(0, 100);
+      const response = await categoryAdminService.getAll(page, pageSize);
       setCategories(response.data.content || []);
+      setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
       setError('Không thể tải danh mục.');
     } finally {
@@ -26,13 +31,13 @@ const AdminCategoryManagementPage = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [page]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      if (editingId) await adminService.updateCategory(editingId, form);
-      else await adminService.addCategory(form);
+      if (editingId) await categoryAdminService.update(editingId, form);
+      else await categoryAdminService.create(form);
       setForm(emptyForm);
       setEditingId(null);
       fetchCategories();
@@ -48,13 +53,13 @@ const AdminCategoryManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa danh mục này?')) return;
-    await adminService.deleteCategory(id);
+    await categoryAdminService.remove(id);
     fetchCategories();
   };
 
   const toggle = async (category: any) => {
-    if (category.isActive === false) await adminService.activateCategory(category.id);
-    else await adminService.deactivateCategory(category.id);
+    if (category.isActive === false) await categoryAdminService.activate(category.id);
+    else await categoryAdminService.deactivate(category.id);
     fetchCategories();
   };
 
@@ -76,7 +81,7 @@ const AdminCategoryManagementPage = () => {
         </div>
       </form>
       <div className="mt-6">
-        <AdminToolbar><span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${categories.length} danh mục`}</span></AdminToolbar>
+        <AdminToolbar><span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${pageInfo.totalElements} danh mục`}</span></AdminToolbar>
         <AdminTable minWidth="680px">
           <thead className="border-b border-outline-variant bg-surface-container-high text-xs uppercase text-on-surface-variant"><tr>{['Tên danh mục', 'Mô tả', 'Trạng thái', ''].map((head) => <th key={head} className="px-5 py-4">{head}</th>)}</tr></thead>
           <tbody className="divide-y divide-outline-variant">
@@ -90,6 +95,7 @@ const AdminCategoryManagementPage = () => {
             ))}
           </tbody>
         </AdminTable>
+        <AdminPagination page={page} pageSize={pageSize} totalElements={pageInfo.totalElements} totalPages={pageInfo.totalPages} onPageChange={setPage} />
       </div>
     </div>
   );

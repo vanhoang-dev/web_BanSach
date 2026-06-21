@@ -1,9 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { BookCard, Container, EmptyState, Icon, Panel, SecondaryButton, SectionHeading } from '@/components/ui/staticUi';
-import bookService from '@/features/books/services/bookService';
+import bookService, { BookSort } from '@/features/books/services/bookService';
 import cartService from '@/features/cart/services/cartService';
+
+type SortOption = 'newest' | 'price-asc' | 'price-desc';
+
+const sortConfig: Record<SortOption, BookSort> = {
+  newest: { sortBy: 'createdAt', sortDirection: 'desc' },
+  'price-asc': { sortBy: 'price', sortDirection: 'asc' },
+  'price-desc': { sortBy: 'price', sortDirection: 'desc' },
+};
 
 const CatalogPage = () => {
   const [searchParams] = useSearchParams();
@@ -11,24 +19,40 @@ const CatalogPage = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(Number(searchParams.get('category')) || undefined);
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const keyword = searchParams.get('keyword') || undefined;
+  const authorId = Number(searchParams.get('authorId') || 0) || undefined;
+  const authorName = searchParams.get('authorName') || undefined;
+
+  const currentSort = useMemo(() => sortConfig[sortOption], [sortOption]);
 
   useEffect(() => {
     bookService.getCategories().then(setCategories).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
-    const keyword = searchParams.get('keyword') || undefined;
+    setSelectedCategory(Number(searchParams.get('category')) || undefined);
+    setPage(0);
+  }, [searchParams]);
+
+  useEffect(() => {
     setLoading(true);
-    bookService.getBooks(page, 12, keyword, selectedCategory)
+    bookService.getBooks(page, 12, authorId ? undefined : keyword, selectedCategory, currentSort, authorId)
       .then((response) => {
         setBooks(response?.data?.content || []);
         setTotalPages(response?.data?.totalPages || 0);
       })
       .catch(() => setBooks([]))
       .finally(() => setLoading(false));
-  }, [page, selectedCategory, searchParams]);
+  }, [authorId, currentSort, keyword, page, selectedCategory]);
+
+  const pageTitle = authorName
+    ? `Sách của tác giả "${authorName}"`
+    : keyword
+      ? `Kết quả cho "${keyword}"`
+      : 'Tất cả sách';
 
   const addToCart = async (bookId?: number) => {
     if (!bookId) return;
@@ -44,7 +68,7 @@ const CatalogPage = () => {
     <Container className="py-10">
       <SectionHeading
         eyebrow="Cửa hàng"
-        title={searchParams.get('keyword') ? `Kết quả cho "${searchParams.get('keyword')}"` : 'Tất cả sách'}
+        title={pageTitle}
         description="Duyệt sách theo danh mục, tìm kiếm theo từ khóa và thêm nhanh vào giỏ hàng."
         action={<SecondaryButton><Icon name="search" /> Lọc nâng cao</SecondaryButton>}
       />
@@ -72,13 +96,20 @@ const CatalogPage = () => {
         </Panel>
 
         <div>
-          <div className="mb-4 flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3">
             <p className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${books.length} sách trong trang này`}</p>
-            <select className="rounded-lg border-outline-variant bg-surface text-sm">
-              <option>Sắp xếp: Mới nhất</option>
-              <option>Giá tăng dần</option>
-              <option>Giá giảm dần</option>
-            </select>
+            <label className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+              <span className="sr-only">Sắp xếp sách</span>
+              <select
+                value={sortOption}
+                onChange={(event) => { setSortOption(event.target.value as SortOption); setPage(0); }}
+                className="rounded-lg border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="newest">Sắp xếp: Mới nhất</option>
+                <option value="price-asc">Giá tăng dần</option>
+                <option value="price-desc">Giá giảm dần</option>
+              </select>
+            </label>
           </div>
 
           {loading ? (

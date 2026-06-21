@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 
 import { AdminTable, formatVnd, Icon, Panel, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
-import adminService from '@/features/admin/services';
+import dashboardService from '@/features/admin/services/dashboardService';
 
 type RecentOrder = {
   id: number;
@@ -38,7 +38,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     let active = true;
 
-    adminService.getDashboardStats()
+    dashboardService.getStats()
       .then((response) => {
         if (active) setDashboard({ ...emptyStats, ...response });
       })

@@ -33,6 +33,14 @@ public interface BookRepository extends JpaRepository<Book, Long> {
         Page<Book> findByCategoryIdWithJoin(@Param("categoryId") Long categoryId, Pageable pageable);
 
         @Query(value = "SELECT DISTINCT b FROM Book b " +
+                        "LEFT JOIN FETCH b.author a " +
+                        "LEFT JOIN FETCH b.category " +
+                        "LEFT JOIN FETCH b.discount " +
+                        "WHERE a.id = :authorId AND b.deletedAt IS NULL",
+                        countQuery = "SELECT COUNT(b) FROM Book b WHERE b.author.id = :authorId AND b.deletedAt IS NULL")
+        Page<Book> findByAuthorIdWithJoin(@Param("authorId") Long authorId, Pageable pageable);
+
+        @Query(value = "SELECT DISTINCT b FROM Book b " +
                         "LEFT JOIN FETCH b.author " +
                         "LEFT JOIN FETCH b.category " +
                         "LEFT JOIN FETCH b.discount " +

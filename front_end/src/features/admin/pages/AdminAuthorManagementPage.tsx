@@ -1,9 +1,11 @@
 ﻿import { FormEvent, useEffect, useState } from 'react';
 
 import { Field, Icon, IconButton, Panel, PrimaryButton, SecondaryButton, SectionHeading, StatCard } from '@/components/ui/staticUi';
-import adminService from '@/features/admin/services';
+import AdminPagination from '@/features/admin/components/AdminPagination';
+import authorAdminService from '@/features/admin/services/authorAdminService';
 
 const emptyForm = { authorName: '', biography: '' };
+const pageSize = 9;
 
 const AdminAuthorManagementPage = () => {
   const [authors, setAuthors] = useState<any[]>([]);
@@ -11,12 +13,15 @@ const AdminAuthorManagementPage = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
   const fetchAuthors = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getAuthors(0, 100);
+      const response = await authorAdminService.getAll(page, pageSize);
       setAuthors(response.data.content || []);
+      setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
       setError('Không thể tải tác giả.');
     } finally {
@@ -26,13 +31,13 @@ const AdminAuthorManagementPage = () => {
 
   useEffect(() => {
     fetchAuthors();
-  }, []);
+  }, [page]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      if (editingId) await adminService.updateAuthor(editingId, form);
-      else await adminService.addAuthor(form);
+      if (editingId) await authorAdminService.update(editingId, form);
+      else await authorAdminService.create(form);
       setForm(emptyForm);
       setEditingId(null);
       fetchAuthors();
@@ -48,7 +53,7 @@ const AdminAuthorManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa tác giả này?')) return;
-    await adminService.deleteAuthor(id);
+    await authorAdminService.remove(id);
     fetchAuthors();
   };
 
@@ -56,7 +61,7 @@ const AdminAuthorManagementPage = () => {
     <div className="mx-auto max-w-7xl">
       <SectionHeading eyebrow="Quản trị" title="Quản lý tác giả" description="Tạo, cập nhật, xóa và tra cứu tác giả theo phân hệ /admin/authors." />
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Tổng tác giả" value={authors.length} icon="user" />
+        <StatCard label="Tổng tác giả" value={pageInfo.totalElements} icon="user" />
         <StatCard label="Đang hiển thị" value={authors.length} icon="book" tone="success" />
         <StatCard label="Trạng thái" value={loading ? 'Đang tải' : 'Sẵn sàng'} icon="chart" />
       </div>
@@ -83,6 +88,7 @@ const AdminAuthorManagementPage = () => {
           </Panel>
         ))}
       </div>
+      <AdminPagination page={page} pageSize={pageSize} totalElements={pageInfo.totalElements} totalPages={pageInfo.totalPages} onPageChange={setPage} />
     </div>
   );
 };

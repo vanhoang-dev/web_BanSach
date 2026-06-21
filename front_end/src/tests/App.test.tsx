@@ -4,5 +4,5 @@ import App from '@/app/App';
 
 test('renders app shell', () => {
   render(<App />);
-  expect(screen.getAllByText(/BookStore/i).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/Nhà Sách Tri Thức/i).length).toBeGreaterThan(0);
 });

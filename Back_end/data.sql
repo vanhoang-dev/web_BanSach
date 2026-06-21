@@ -7,6 +7,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE wishlists;
 TRUNCATE TABLE payments;
 TRUNCATE TABLE reviews;
+TRUNCATE TABLE user_vouchers;
 TRUNCATE TABLE vouchers;
 TRUNCATE TABLE order_items;
 TRUNCATE TABLE orders;
