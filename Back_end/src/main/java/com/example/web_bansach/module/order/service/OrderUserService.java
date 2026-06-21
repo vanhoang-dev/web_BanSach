@@ -179,8 +179,7 @@ public class OrderUserService {
         }
 
         // Sử dụng voucher nếu đã áp dụng thành công
-        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()
-                && voucherDiscount.compareTo(BigDecimal.ZERO) > 0) {
+        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
             voucherService.useOwnedVoucher(username, request.getVoucherCode());
         }
 
@@ -259,8 +258,7 @@ public class OrderUserService {
         orderItem.setPrice(book.getPrice());
         orderItemRepository.save(orderItem);
 
-        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()
-                && voucherDiscount.compareTo(BigDecimal.ZERO) > 0) {
+        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
             voucherService.useOwnedVoucher(username, request.getVoucherCode());
         }
 
