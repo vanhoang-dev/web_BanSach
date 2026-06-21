@@ -53,6 +53,7 @@ const CheckoutPage = () => {
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [myVouchers, setMyVouchers] = useState<Voucher[]>([]);
   const [vouchersLoading, setVouchersLoading] = useState(true);
+  const [vouchersError, setVouchersError] = useState('');
   const [useVoucher, setUseVoucher] = useState(false);
   const paymentId = paymentInfo?.paymentId;
   const orderId = paymentInfo?.orderId;
@@ -92,10 +93,16 @@ const CheckoutPage = () => {
 
     voucherService.getMyVouchers(0, 100)
       .then((response) => {
-        if (!cancelled) setMyVouchers(response.data.content || []);
+        if (!cancelled) {
+          setMyVouchers(response.data.content || []);
+          setVouchersError('');
+        }
       })
       .catch(() => {
-        if (!cancelled) setMyVouchers([]);
+        if (!cancelled) {
+          setMyVouchers([]);
+          setVouchersError('Không thể tải kho voucher. Vui lòng tải lại trang để thử lại.');
+        }
       })
       .finally(() => {
         if (!cancelled) setVouchersLoading(false);
@@ -174,11 +181,17 @@ const CheckoutPage = () => {
         shippingAddress: form.shippingAddress,
         shippingMethod: form.shippingMethod,
         shippingFee: Number(form.shippingFee || 0),
-        voucherCode: form.voucherCode || undefined,
+        voucherCode: useVoucher && form.voucherCode ? form.voucherCode : undefined,
       };
       const order = bookId
         ? await orderService.buyNow({ ...payload, bookId, quantity })
         : await orderService.createOrder(payload);
+
+      if (payload.voucherCode) {
+        setMyVouchers((current) => current.filter((voucher) => voucher.code !== payload.voucherCode));
+        setUseVoucher(false);
+        update('voucherCode', '');
+      }
 
       if (form.paymentMethod === 'SEPAY' && order.id) {
         const payment = await paymentService.initiatePayment({
@@ -242,7 +255,7 @@ const CheckoutPage = () => {
                 <input
                   type="checkbox"
                   checked={useVoucher}
-                  disabled={vouchersLoading || myVouchers.length === 0}
+                  disabled={vouchersLoading || !!vouchersError}
                   onChange={(event) => {
                     const checked = event.target.checked;
                     setUseVoucher(checked);
@@ -255,11 +268,13 @@ const CheckoutPage = () => {
 
               {vouchersLoading ? (
                 <p className="mt-3 text-sm text-on-surface-variant">Đang tải voucher...</p>
-              ) : myVouchers.length === 0 ? (
-                <p className="mt-3 text-sm text-on-surface-variant">Bạn chưa có voucher. Hãy vào trang Khuyến mãi để lấy voucher trước.</p>
+              ) : vouchersError ? (
+                <p className="mt-3 text-sm text-error">{vouchersError}</p>
+              ) : useVoucher && myVouchers.length === 0 ? (
+                <p className="mt-3 text-sm text-on-surface-variant">Không có voucher khả dụng trong kho. Hãy vào trang Khuyến mãi để lấy voucher trước.</p>
               ) : useVoucher ? (
                 <label className="mt-3 block">
-                  <span className="mb-2 block text-sm font-semibold text-on-surface">Chọn một voucher</span>
+                  <span className="mb-2 block text-sm font-semibold text-on-surface">Chọn voucher trong kho của bạn</span>
                   <select
                     value={form.voucherCode}
                     onChange={(event) => update('voucherCode', event.target.value)}

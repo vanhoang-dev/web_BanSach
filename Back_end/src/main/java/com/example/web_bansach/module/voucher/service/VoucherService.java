@@ -74,7 +74,10 @@ public class VoucherService {
     @Transactional(readOnly = true)
     public Page<VoucherResponse> getMyAvailableVouchers(String email, int page, int size) {
         Users user = requireUser(email);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("expiredAt").ascending());
+        // The repository query already sorts by uv.voucher.expiredAt. Adding a
+        // pageable sort here would target uv.expiredAt, which does not exist on
+        // UserVoucher and makes the "my vouchers" endpoint fail.
+        Pageable pageable = PageRequest.of(page, size);
         return userVoucherRepository.findAvailableByUserId(user.getId(), LocalDate.now(), pageable)
                 .map(voucherMapper::mapToResponse);
     }
