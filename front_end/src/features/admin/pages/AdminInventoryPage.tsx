@@ -1,7 +1,10 @@
 ﻿import { FormEvent, useEffect, useState } from 'react';
 
 import { AdminTable, AdminToolbar, Field, Icon, PrimaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
-import adminService from '@/features/admin/services';
+import AdminPagination from '@/features/admin/components/AdminPagination';
+import inventoryAdminService from '@/features/admin/services/inventoryAdminService';
+
+const pageSize = 10;
 
 const AdminInventoryPage = () => {
   const [inventory, setInventory] = useState<any[]>([]);
@@ -10,12 +13,15 @@ const AdminInventoryPage = () => {
   const [delta, setDelta] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
   const fetchInventory = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getInventory(0, 100);
+      const response = await inventoryAdminService.getAll(page, pageSize);
       setInventory(response.data.content || []);
+      setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
       setError('Không thể tải tồn kho.');
     } finally {
@@ -25,24 +31,24 @@ const AdminInventoryPage = () => {
 
   useEffect(() => {
     fetchInventory();
-  }, []);
+  }, [page]);
 
   const applySet = async (event: FormEvent) => {
     event.preventDefault();
     if (!selectedId) return;
-    await adminService.updateInventory(Number(selectedId), Number(quantity));
+    await inventoryAdminService.setQuantity(Number(selectedId), Number(quantity));
     fetchInventory();
   };
 
   const applyAdjust = async () => {
     if (!selectedId) return;
-    await adminService.adjustInventory(Number(selectedId), Number(delta));
+    await inventoryAdminService.adjust(Number(selectedId), Number(delta));
     fetchInventory();
   };
 
   const applyReconcile = async () => {
     if (!selectedId) return;
-    await adminService.reconcileInventory(Number(selectedId), Number(quantity));
+    await inventoryAdminService.reconcile(Number(selectedId), Number(quantity));
     fetchInventory();
   };
 
@@ -53,7 +59,7 @@ const AdminInventoryPage = () => {
     <div className="mx-auto max-w-7xl">
       <SectionHeading eyebrow="Quản trị" title="Quản lý tồn kho" description="Theo dõi tồn kho, đặt số lượng, điều chỉnh nhập/xuất và đối soát theo /admin/inventory." />
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Tổng đầu tồn" value={inventory.length} icon="inventory" />
+        <StatCard label="Tổng đầu tồn" value={pageInfo.totalElements} icon="inventory" />
         <StatCard label="Tổng số lượng" value={totalStock} icon="book" tone="success" />
         <StatCard label="Cần bổ sung" value={lowStock} icon="order" tone="warning" />
       </div>
@@ -72,7 +78,7 @@ const AdminInventoryPage = () => {
         <div className="flex items-end gap-2"><PrimaryButton onClick={applyAdjust}>Điều chỉnh</PrimaryButton><PrimaryButton onClick={applyReconcile}>Đối soát</PrimaryButton></div>
       </form>
       <div className="mt-6">
-        <AdminToolbar><span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${inventory.length} dòng tồn kho`}</span></AdminToolbar>
+        <AdminToolbar><span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${pageInfo.totalElements} dòng tồn kho`}</span></AdminToolbar>
         <AdminTable minWidth="760px">
           <thead className="border-b border-outline-variant bg-surface-container-high text-xs uppercase text-on-surface-variant"><tr>{['ID', 'Sách', 'Tồn kho', 'Cảnh báo'].map((head) => <th key={head} className="px-5 py-4">{head}</th>)}</tr></thead>
           <tbody className="divide-y divide-outline-variant">
@@ -89,6 +95,7 @@ const AdminInventoryPage = () => {
             })}
           </tbody>
         </AdminTable>
+        <AdminPagination page={page} pageSize={pageSize} totalElements={pageInfo.totalElements} totalPages={pageInfo.totalPages} onPageChange={setPage} />
       </div>
     </div>
   );

@@ -37,6 +37,8 @@ public class Endpoints {
             "/user/reviews/book/*/stats",
             "/user/vouchers",
             "/user/vouchers/code/*",
+            "/user/vouchers/my",
+            "/user/vouchers/claimed",
             "/user/inventory/book/*",
             "/api/payment/status/*",
             "/api/payment/status/order/*",
@@ -50,6 +52,7 @@ public class Endpoints {
             "/user/reviews",
             "/api/payment/initiate",
             "/user/change-password",
+            "/user/vouchers/*/claim",
     };
 
     public static final String[] USER_PUT_ENDPOINTS = {

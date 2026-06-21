@@ -59,7 +59,7 @@ const AuthorsPage = () => {
                   <p className="mt-2 line-clamp-3 text-sm leading-6 text-on-surface-variant">{author.biography || 'Tiểu sử tác giả đang được cập nhật.'}</p>
                   <div className="mt-5 flex items-center justify-between">
                     <span className="text-sm font-bold text-secondary">Tác giả</span>
-                    <Link to={`/catalog?keyword=${encodeURIComponent(author.authorName)}`} className="text-sm font-bold text-primary hover:underline">Xem sách</Link>
+                    <Link to={`/catalog?authorId=${author.id}&authorName=${encodeURIComponent(author.authorName)}`} className="text-sm font-bold text-primary hover:underline">Xem sách</Link>
                   </div>
                 </div>
               </div>

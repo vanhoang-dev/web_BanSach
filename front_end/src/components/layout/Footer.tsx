@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
-import { Container, Icon } from '@/components/ui/staticUi';
+import logoWeb from '@/assets/icons/logoweb.png';
+import { Container } from '@/components/ui/staticUi';
 
 const Footer = () => (
   <footer className="bg-primary text-on-primary">
@@ -8,8 +9,8 @@ const Footer = () => (
       <div className="grid gap-8 md:grid-cols-4">
         <div>
           <div className="mb-4 flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-container text-on-secondary-container">
-              <Icon name="book" />
+            <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg border border-on-primary/10 bg-white shadow-sm">
+              <img src={logoWeb} alt="Nhà Sách Tri Thức" className="h-full w-full object-cover" />
             </span>
             <span className="text-lg font-bold">Nhà Sách Tri Thức</span>
           </div>

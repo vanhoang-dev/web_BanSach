@@ -39,6 +39,31 @@ const voucherService = {
 
   getByCode: async (code: string): Promise<Voucher> =>
     normalizeVoucher(unwrapApiData(await api.get(`/user/vouchers/code/${encodeURIComponent(code)}`))),
+
+  getMyVouchers: async (page: number = 0, size: number = 20): Promise<any> => {
+    const response = await api.get(`/user/vouchers/my?page=${page}&size=${size}`);
+    const pageData = unwrapPage<any>(response);
+    return {
+      data: {
+        ...pageData,
+        content: (pageData.content || []).map(normalizeVoucher),
+      },
+    };
+  },
+
+  getClaimedVouchers: async (page: number = 0, size: number = 100): Promise<any> => {
+    const response = await api.get(`/user/vouchers/claimed?page=${page}&size=${size}`);
+    const pageData = unwrapPage<any>(response);
+    return {
+      data: {
+        ...pageData,
+        content: (pageData.content || []).map(normalizeVoucher),
+      },
+    };
+  },
+
+  claimVoucher: async (voucherId: number): Promise<Voucher> =>
+    normalizeVoucher(unwrapApiData(await api.post(`/user/vouchers/${voucherId}/claim`, {}))),
 };
 
 export default voucherService;

@@ -3,9 +3,11 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AccentButton, Container, Field, Icon, Panel, SectionHeading } from '@/components/ui/staticUi';
 import { env } from '@/config/env';
+import authService from '@/features/auth/services';
 import orderService from '@/features/orders/services/orderService';
 import paymentService from '@/features/payment/services/paymentService';
 import type { PaymentResponse } from '@/features/payment/services/paymentService';
+import voucherService, { type Voucher } from '@/features/vouchers/services/voucherService';
 import { tokenStorage } from '@/services/storage/tokenStorage';
 
 type InlinePayment = PaymentResponse & {
@@ -49,11 +51,60 @@ const CheckoutPage = () => {
   const [error, setError] = useState('');
   const [paymentInfo, setPaymentInfo] = useState<InlinePayment | null>(null);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [myVouchers, setMyVouchers] = useState<Voucher[]>([]);
+  const [vouchersLoading, setVouchersLoading] = useState(true);
+  const [useVoucher, setUseVoucher] = useState(false);
   const paymentId = paymentInfo?.paymentId;
   const orderId = paymentInfo?.orderId;
   const currentPaymentStatus = String(paymentInfo?.status || 'PENDING').toUpperCase();
 
   const update = (name: string, value: string) => setForm((current) => ({ ...current, [name]: value }));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fillShippingInformation = async () => {
+      try {
+        const profile = await authService.getProfile();
+        if (cancelled) return;
+
+        setForm((current) => ({
+          ...current,
+          receiverName: current.receiverName.trim() ? current.receiverName : profile?.fullName || '',
+          receiverPhone: current.receiverPhone.trim() ? current.receiverPhone : profile?.phone || '',
+          shippingAddress: current.shippingAddress.trim() ? current.shippingAddress : profile?.address || '',
+        }));
+      } catch {
+        // Checkout remains usable when the profile is unavailable; missing fields
+        // can still be entered manually by the customer.
+      }
+    };
+
+    fillShippingInformation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    voucherService.getMyVouchers(0, 100)
+      .then((response) => {
+        if (!cancelled) setMyVouchers(response.data.content || []);
+      })
+      .catch(() => {
+        if (!cancelled) setMyVouchers([]);
+      })
+      .finally(() => {
+        if (!cancelled) setVouchersLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!orderId || paymentCompleted || successStatuses.includes(currentPaymentStatus)) return;
@@ -170,7 +221,7 @@ const CheckoutPage = () => {
               <Field label="Số điện thoại" value={form.receiverPhone} onChange={(event) => update('receiverPhone', event.target.value)} placeholder="0901234567" />
             </div>
             <Field label="Địa chỉ giao hàng" value={form.shippingAddress} onChange={(event) => update('shippingAddress', event.target.value)} placeholder="Số nhà, đường, phường/xã..." textarea />
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-on-surface">Vận chuyển</span>
                 <select value={form.shippingMethod} onChange={(event) => update('shippingMethod', event.target.value)} className="h-11 w-full rounded-lg border-outline-variant bg-surface text-sm">
@@ -185,7 +236,43 @@ const CheckoutPage = () => {
                   <option value="SEPAY">SePay</option>
                 </select>
               </label>
-              <Field label="Mã voucher" value={form.voucherCode} onChange={(event) => update('voucherCode', event.target.value)} placeholder="SALE20" />
+            </div>
+            <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+              <label className="flex items-center gap-3 text-sm font-semibold text-on-surface">
+                <input
+                  type="checkbox"
+                  checked={useVoucher}
+                  disabled={vouchersLoading || myVouchers.length === 0}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setUseVoucher(checked);
+                    update('voucherCode', checked ? myVouchers[0]?.code || '' : '');
+                  }}
+                  className="rounded border-outline-variant text-primary focus:ring-primary"
+                />
+                Sử dụng voucher của tôi
+              </label>
+
+              {vouchersLoading ? (
+                <p className="mt-3 text-sm text-on-surface-variant">Đang tải voucher...</p>
+              ) : myVouchers.length === 0 ? (
+                <p className="mt-3 text-sm text-on-surface-variant">Bạn chưa có voucher. Hãy vào trang Khuyến mãi để lấy voucher trước.</p>
+              ) : useVoucher ? (
+                <label className="mt-3 block">
+                  <span className="mb-2 block text-sm font-semibold text-on-surface">Chọn một voucher</span>
+                  <select
+                    value={form.voucherCode}
+                    onChange={(event) => update('voucherCode', event.target.value)}
+                    className="h-11 w-full rounded-lg border-outline-variant bg-surface text-sm"
+                  >
+                    {myVouchers.map((voucher) => (
+                      <option key={voucher.id || voucher.code} value={voucher.code}>
+                        {voucher.code} — giảm {voucher.discountPercent}% tối đa {Number(voucher.maxDiscount).toLocaleString('vi-VN')}đ
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
             </div>
             <AccentButton type="submit" disabled={loading || !!paymentInfo} className="mt-2">{loading ? 'Đang xử lý...' : paymentInfo ? 'Đơn hàng đã được tạo' : 'Xác nhận đặt hàng'}</AccentButton>
           </form>

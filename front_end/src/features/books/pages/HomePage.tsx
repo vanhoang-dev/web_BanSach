@@ -21,6 +21,9 @@ const fallbackCategories: Category[] = [
   { id: 6, name: 'Lịch sử', description: 'Thế giới, con người, văn minh' },
 ];
 
+const heroImage = 'https://images.unsplash.com/photo-1526243741027-444d633d7365?auto=format&fit=crop&w=1600&q=95';
+const fallbackCover = 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=520&q=90';
+
 const HomePage = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -72,24 +75,33 @@ const HomePage = () => {
         <div className="grid gap-6 lg:grid-cols-12 lg:[grid-auto-rows:260px]">
           <Panel className="relative overflow-hidden bg-primary text-on-primary lg:col-span-8 lg:row-span-2">
             <img
-              src="https://images.unsplash.com/photo-1526243741027-444d633d7365?auto=format&fit=crop&w=1400&q=80"
+              src={heroImage}
               alt="Không gian đọc sách"
-              className="absolute inset-0 h-full w-full object-cover opacity-35"
+              className="absolute inset-0 h-full w-full object-cover"
             />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/70 to-primary/20" />
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-primary/80 to-transparent" />
             <div className="relative flex h-full min-h-[420px] flex-col justify-end p-8 md:p-12">
-              <span className="mb-4 w-fit rounded-sm bg-secondary px-3 py-1 text-xs font-bold uppercase text-on-secondary">Sự kiện sách mới</span>
-              <h1 className="max-w-2xl text-4xl font-bold leading-tight md:text-5xl">Khám phá thế giới qua từng trang sách chọn lọc</h1>
-              <p className="mt-5 max-w-xl text-lg leading-8 text-on-primary/90">Mua sách nhanh, theo dõi đơn rõ ràng và nhận các ưu đãi tốt nhất từ Nhà Sách Tri Thức.</p>
+              <span className="mb-4 w-fit rounded-sm bg-secondary px-3 py-1 text-xs font-bold uppercase text-on-secondary shadow-sm">Sự kiện sách mới</span>
+              <h1 className="max-w-2xl text-4xl font-bold leading-tight text-white drop-shadow md:text-5xl">Khám phá thế giới qua từng trang sách chọn lọc</h1>
+              <p className="mt-5 max-w-xl text-lg leading-8 text-white/95 drop-shadow-sm">Mua sách nhanh, theo dõi đơn rõ ràng và nhận các ưu đãi tốt nhất từ Nhà Sách Tri Thức.</p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link to="/catalog"><AccentButton>Khám phá ngay <Icon name="arrow" /></AccentButton></Link>
-                <Link to="/promotions"><SecondaryButton className="border-on-primary/30 bg-on-primary/10 text-on-primary hover:bg-on-primary/20">Xem khuyến mãi</SecondaryButton></Link>
+                <Link to="/promotions"><SecondaryButton className="border-white/70 bg-white text-primary hover:bg-white/90">Xem khuyến mãi</SecondaryButton></Link>
               </div>
             </div>
           </Panel>
 
           <Panel className="overflow-hidden lg:col-span-4">
-            <div className="grid h-full grid-cols-[140px_1fr] bg-surface-container-low">
-              <img src={featured.cover} alt={featured.title} className="h-full min-h-60 w-full object-cover" />
+            <div className="grid h-full grid-cols-[160px_1fr] bg-white">
+              <div className="bg-surface-container-low p-4">
+                <img
+                  src={featured.cover || fallbackCover}
+                  alt={featured.title}
+                  onError={(event) => { event.currentTarget.src = fallbackCover; }}
+                  className="h-full min-h-60 w-full rounded-lg object-cover shadow-md"
+                />
+              </div>
               <div className="flex flex-col justify-between p-5">
                 <div>
                   <p className="text-xs font-bold uppercase text-secondary">Nổi bật tuần này</p>
@@ -170,13 +182,25 @@ const HomePage = () => {
       </Container>
 
       <Container className="pb-12">
-        <Panel className="grid gap-8 bg-primary-container p-8 text-on-primary md:grid-cols-[1fr_auto] md:items-center">
-          <div>
-            <p className="text-sm font-bold uppercase text-primary-fixed-dim">Ưu đãi thành viên</p>
-            <h2 className="mt-2 text-3xl font-bold">Nhận mã giảm giá và gợi ý sách phù hợp với bạn</h2>
-            <p className="mt-3 max-w-2xl text-on-primary-container">Lưu sách yêu thích, theo dõi đơn hàng và nhận voucher theo lịch sử mua sách.</p>
+        <Panel className="relative overflow-hidden border-secondary-container bg-white p-8 shadow-sm md:p-10">
+          <div className="absolute inset-y-0 left-0 w-2 bg-secondary" />
+          <div className="absolute right-0 top-0 h-full w-1/3 bg-secondary-container/35" />
+          <div className="relative z-10 grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <p className="text-sm font-bold uppercase text-secondary">Ưu đãi thành viên</p>
+              <h2 className="mt-2 max-w-3xl text-3xl font-bold leading-tight text-primary">
+                Nhận mã giảm giá và gợi ý sách phù hợp với bạn
+              </h2>
+              <p className="mt-3 max-w-2xl text-base leading-7 text-on-surface-variant">
+                Lưu sách yêu thích, theo dõi đơn hàng và nhận voucher theo lịch sử mua sách.
+              </p>
+            </div>
+            <Link to="/register">
+              <PrimaryButton className="bg-secondary text-on-secondary hover:bg-secondary/90">
+                Tạo tài khoản
+              </PrimaryButton>
+            </Link>
           </div>
-          <Link to="/register"><PrimaryButton className="bg-secondary-container text-on-secondary-container hover:brightness-105">Tạo tài khoản</PrimaryButton></Link>
         </Panel>
       </Container>
     </div>

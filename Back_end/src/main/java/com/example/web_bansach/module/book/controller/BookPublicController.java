@@ -28,14 +28,20 @@ public class BookPublicController {
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long categoryId) {
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long authorId,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+        if (authorId != null) {
+            return ResponseEntity.ok(ApiResponse.success(PageResponse.from(bookQueryService.getBooksByAuthor(page, size, authorId, sortBy, sortDirection))));
+        }
         if (keyword != null && !keyword.trim().isEmpty()) {
-            return ResponseEntity.ok(ApiResponse.success(PageResponse.from(bookQueryService.searchBooks(page, size, keyword.trim()))));
+            return ResponseEntity.ok(ApiResponse.success(PageResponse.from(bookQueryService.searchBooks(page, size, keyword.trim(), sortBy, sortDirection))));
         }
         if (categoryId != null) {
-            return ResponseEntity.ok(ApiResponse.success(PageResponse.from(bookQueryService.getBooksByCategory(page, size, categoryId))));
+            return ResponseEntity.ok(ApiResponse.success(PageResponse.from(bookQueryService.getBooksByCategory(page, size, categoryId, sortBy, sortDirection))));
         }
-        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(bookQueryService.getAllBooks(page, size))));
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(bookQueryService.getAllBooks(page, size, sortBy, sortDirection))));
     }
 
     @GetMapping("/{id}")

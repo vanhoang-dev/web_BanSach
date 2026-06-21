@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 
+import logoWeb from '@/assets/icons/logoweb.png';
 import { AccentButton, Icon, IconButton } from '@/components/ui/staticUi';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -41,8 +42,8 @@ const Header = () => {
     <header className="sticky top-0 z-50 border-b border-outline-variant bg-surface/95 backdrop-blur">
       <div className="mx-auto flex h-20 max-w-container-max items-center gap-5 px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex shrink-0 items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-on-primary">
-            <Icon name="book" />
+          <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-outline-variant bg-white shadow-sm">
+            <img src={logoWeb} alt="Nhà Sách Tri Thức" className="h-full w-full object-cover" />
           </span>
           <span className="text-lg font-bold text-primary">Nhà Sách Tri Thức</span>
         </Link>

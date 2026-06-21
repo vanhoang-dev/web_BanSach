@@ -1,9 +1,11 @@
 ﻿import { FormEvent, useEffect, useState } from 'react';
 
 import { Field, formatVnd, Icon, IconButton, Panel, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
-import adminService from '@/features/admin/services';
+import AdminPagination from '@/features/admin/components/AdminPagination';
+import voucherAdminService from '@/features/admin/services/voucherAdminService';
 
 const emptyForm = { code: '', discountPercent: 10, maxDiscount: 50000, quantity: 10, expiredAt: '' };
+const pageSize = 9;
 
 const AdminVoucherManagementPage = () => {
   const [vouchers, setVouchers] = useState<any[]>([]);
@@ -11,12 +13,15 @@ const AdminVoucherManagementPage = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
   const fetchVouchers = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getVouchers(0, 100);
+      const response = await voucherAdminService.getAll(page, pageSize);
       setVouchers(response.data.content || []);
+      setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
       setError('Không thể tải voucher.');
     } finally {
@@ -26,13 +31,13 @@ const AdminVoucherManagementPage = () => {
 
   useEffect(() => {
     fetchVouchers();
-  }, []);
+  }, [page]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      if (editingId) await adminService.updateVoucher(editingId, form);
-      else await adminService.addVoucher(form);
+      if (editingId) await voucherAdminService.update(editingId, form);
+      else await voucherAdminService.create(form);
       setForm(emptyForm);
       setEditingId(null);
       fetchVouchers();
@@ -54,7 +59,7 @@ const AdminVoucherManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa voucher này?')) return;
-    await adminService.deleteVoucher(id);
+    await voucherAdminService.remove(id);
     fetchVouchers();
   };
 
@@ -62,7 +67,7 @@ const AdminVoucherManagementPage = () => {
     <div className="mx-auto max-w-7xl">
       <SectionHeading eyebrow="Quản trị" title="Quản lý voucher" description="Tạo, sửa, xóa và xem voucher theo phân hệ /admin/vouchers." />
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Tổng voucher" value={vouchers.length} icon="ticket" />
+        <StatCard label="Tổng voucher" value={pageInfo.totalElements} icon="ticket" />
         <StatCard label="Hợp lệ" value={vouchers.filter((item) => item.isValid !== false && item.isExpired !== true).length} icon="chart" tone="success" />
         <StatCard label="Hết hạn" value={vouchers.filter((item) => item.isExpired).length} icon="order" tone="warning" />
       </div>
@@ -94,6 +99,7 @@ const AdminVoucherManagementPage = () => {
           </Panel>
         ))}
       </div>
+      <AdminPagination page={page} pageSize={pageSize} totalElements={pageInfo.totalElements} totalPages={pageInfo.totalPages} onPageChange={setPage} />
     </div>
   );
 };

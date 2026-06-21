@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 
+import logoWeb from '@/assets/icons/logoweb.png';
 import { Icon } from '@/components/ui/staticUi';
 
 const menuItems = [
@@ -13,11 +14,11 @@ const menuItems = [
   { icon: 'user', label: 'Tác giả', to: '/admin/authors' },
 ];
 
-const Sidebar = () => (
+const AdminSidebar = () => (
   <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 bg-primary px-4 py-6 text-on-primary shadow-md lg:flex lg:flex-col">
     <Link to="/admin/dashboard" className="mb-10 flex items-center gap-3 px-2">
-      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-container text-on-secondary-container">
-        <Icon name="book" />
+      <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg border border-on-primary/10 bg-white shadow-sm">
+        <img src={logoWeb} alt="Nhà Sách Tri Thức" className="h-full w-full object-cover" />
       </span>
       <div>
         <p className="text-base font-bold">Quản trị nhà sách</p>
@@ -49,4 +50,4 @@ const Sidebar = () => (
   </aside>
 );
 
-export default Sidebar;
+export default AdminSidebar;

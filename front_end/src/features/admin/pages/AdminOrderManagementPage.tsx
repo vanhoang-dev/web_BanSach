@@ -1,21 +1,26 @@
 ﻿import { useEffect, useState } from 'react';
 
 import { AdminTable, AdminToolbar, formatVnd, Icon, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
-import adminService from '@/features/admin/services';
+import AdminPagination from '@/features/admin/components/AdminPagination';
+import orderAdminService from '@/features/admin/services/orderAdminService';
 
 const statuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'COMPLETED', 'CANCELLED'];
+const pageSize = 10;
 
 const AdminOrderManagementPage = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getOrders(0, 100);
+      const response = await orderAdminService.getAll(page, pageSize);
       setOrders(response.data.content || []);
+      setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
       setError('Không thể tải đơn hàng.');
     } finally {
@@ -25,16 +30,16 @@ const AdminOrderManagementPage = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [page]);
 
   const updateStatus = async (id: number, status: string) => {
-    await adminService.updateOrderStatus(id, status);
+    await orderAdminService.updateStatus(id, status);
     fetchOrders();
   };
 
   const cancel = async (id: number) => {
     if (!window.confirm('Hủy đơn hàng nay?')) return;
-    await adminService.cancelOrder(id);
+    await orderAdminService.cancel(id);
     fetchOrders();
   };
 
@@ -52,8 +57,8 @@ const AdminOrderManagementPage = () => {
       {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
       <div className="mt-6">
         <AdminToolbar>
-          <input value={filter} onChange={(e) => setFilter(e.target.value)} className="h-11 w-full rounded-lg border border-outline-variant bg-surface px-4 text-sm outline-none focus:border-primary md:max-w-sm" placeholder="Tìm mã đơn, khách hàng..." />
-          <span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${visibleOrders.length} đơn hàng`}</span>
+          <input value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }} className="h-11 w-full rounded-lg border border-outline-variant bg-surface px-4 text-sm outline-none focus:border-primary md:max-w-sm" placeholder="Tìm mã đơn, khách hàng..." />
+          <span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${pageInfo.totalElements} đơn hàng`}</span>
         </AdminToolbar>
         <AdminTable minWidth="880px">
           <thead className="border-b border-outline-variant bg-surface-container-high text-xs uppercase text-on-surface-variant"><tr>{['Mã đơn', 'Khách hàng', 'Số tiền', 'Địa chỉ', 'Trạng thái', 'Hành động'].map((head) => <th key={head} className="px-5 py-4">{head}</th>)}</tr></thead>
@@ -77,6 +82,7 @@ const AdminOrderManagementPage = () => {
             ))}
           </tbody>
         </AdminTable>
+        <AdminPagination page={page} pageSize={pageSize} totalElements={pageInfo.totalElements} totalPages={pageInfo.totalPages} onPageChange={setPage} />
       </div>
     </div>
   );

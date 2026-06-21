@@ -121,7 +121,10 @@ public class OrderUserService {
 
         // Xử lý voucher nếu có
         if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
-            var voucherResponse = voucherService.getVoucherByCode(request.getVoucherCode());
+            var voucherResponse = voucherService.getMyVoucherByCode(username, request.getVoucherCode());
+            if (voucherResponse == null) {
+                throw new BusinessException("Voucher không thuộc tài khoản hoặc không hợp lệ");
+            }
 
             BigDecimal discountAmount = itemsTotal.multiply(new BigDecimal(voucherResponse.getDiscountPercent()))
                     .divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
@@ -178,7 +181,7 @@ public class OrderUserService {
         // Sử dụng voucher nếu đã áp dụng thành công
         if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()
                 && voucherDiscount.compareTo(BigDecimal.ZERO) > 0) {
-            voucherService.useVoucher(request.getVoucherCode());
+            voucherService.useOwnedVoucher(username, request.getVoucherCode());
         }
 
         cartItemRepository.deleteByCartId(cart.getId());
@@ -227,7 +230,7 @@ public class OrderUserService {
         BigDecimal itemsTotal = book.getPrice().multiply(new BigDecimal(request.getQuantity()));
         BigDecimal shippingFee = request.getShippingFee() == null ? BigDecimal.ZERO : request.getShippingFee();
         BigDecimal totalAmount = itemsTotal.add(shippingFee);
-        BigDecimal voucherDiscount = calculateVoucherDiscount(request.getVoucherCode(), itemsTotal);
+        BigDecimal voucherDiscount = calculateVoucherDiscount(username, request.getVoucherCode(), itemsTotal);
         totalAmount = totalAmount.subtract(voucherDiscount);
         if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
             totalAmount = BigDecimal.ZERO;
@@ -258,7 +261,7 @@ public class OrderUserService {
 
         if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()
                 && voucherDiscount.compareTo(BigDecimal.ZERO) > 0) {
-            voucherService.useVoucher(request.getVoucherCode());
+            voucherService.useOwnedVoucher(username, request.getVoucherCode());
         }
 
         realtimeNotificationService.publishOrderEvent(
@@ -320,12 +323,15 @@ public class OrderUserService {
         }
     }
 
-    private BigDecimal calculateVoucherDiscount(String voucherCode, BigDecimal itemsTotal) {
+    private BigDecimal calculateVoucherDiscount(String username, String voucherCode, BigDecimal itemsTotal) {
         if (voucherCode == null || voucherCode.trim().isEmpty()) {
             return BigDecimal.ZERO;
         }
 
-        var voucherResponse = voucherService.getVoucherByCode(voucherCode);
+        var voucherResponse = voucherService.getMyVoucherByCode(username, voucherCode);
+        if (voucherResponse == null) {
+            throw new BusinessException("Voucher không thuộc tài khoản hoặc không hợp lệ");
+        }
         BigDecimal discountAmount = itemsTotal.multiply(new BigDecimal(voucherResponse.getDiscountPercent()))
                 .divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
 
