@@ -32,8 +32,6 @@ api.interceptors.response.use(
       window.location.href = '/401';
     } else if (status === 403) {
       window.location.href = '/403';
-    } else if (status >= 500) {
-      window.location.href = '/500';
     } else if (!error.response) {
       window.location.href = '/network-error';
     }

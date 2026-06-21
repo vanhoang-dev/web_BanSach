@@ -19,11 +19,9 @@ public class UpdateUserRequest {
     @Size(max = 500, message = "Địa chỉ không được vượt quá 500 ký tự")
     private String address;
 
-    @NotBlank(message = "Số điện thoại không được để trống")
-    @Pattern(regexp = "^(0|\\+84)(\\s|\\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\\d)(\\s|\\.)?(\\d{3})(\\s|\\.)?(\\d{3})$", message = "Số điện thoại không hợp lệ (VD: 0912345678)")
+    @Pattern(regexp = "^$|^(0|\\+84)(\\s|\\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\\d)(\\s|\\.)?(\\d{3})(\\s|\\.)?(\\d{3})$", message = "Số điện thoại không hợp lệ (VD: 0912345678)")
     private String phone;
 
-    @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không đúng định dạng")
     @Size(max = 255, message = "Email không được vượt quá 255 ký tự")
     private String email;

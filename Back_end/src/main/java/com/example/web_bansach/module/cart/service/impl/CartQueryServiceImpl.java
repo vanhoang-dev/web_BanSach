@@ -1,7 +1,6 @@
 package com.example.web_bansach.module.cart.service.impl;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,14 +44,10 @@ public class CartQueryServiceImpl implements CartQueryService {
             return empty;
         }
 
-        Cart cart = cartRepository.findByUserId(user.getId())
-                .orElseGet(() -> {
-                    Cart c = new Cart();
-                    c.setUser(user);
-                    c.setCreatedAt(LocalDateTime.now());
-                    c.setUpdatedAt(LocalDateTime.now());
-                    return cartRepository.save(c);
-                });
+        Cart cart = cartRepository.findByUserId(user.getId()).orElse(null);
+        if (cart == null) {
+            return emptyCart();
+        }
 
         List<CartItem> items = cartItemRepository.findByCartIdWithBook(cart.getId());
         CartResponse response = new CartResponse();
@@ -88,12 +83,23 @@ public class CartQueryServiceImpl implements CartQueryService {
     }
 
     private BigDecimal calculatePrice(com.example.web_bansach.module.book.entity.Book book) {
-        BigDecimal price = book.getPrice();
-        if (book.getDiscount() != null && book.getDiscount().getIsActive()) {
+        BigDecimal price = book.getPrice() == null ? BigDecimal.ZERO : book.getPrice();
+        if (book.getDiscount() != null
+                && Boolean.TRUE.equals(book.getDiscount().getIsActive())
+                && book.getDiscount().getDiscountPercent() != null) {
             BigDecimal discountPercent = new BigDecimal(book.getDiscount().getDiscountPercent());
             BigDecimal discountAmount = price.multiply(discountPercent).divide(new BigDecimal(100));
             price = price.subtract(discountAmount);
         }
         return price;
+    }
+
+    private CartResponse emptyCart() {
+        CartResponse empty = new CartResponse();
+        empty.setTotalItems(0);
+        empty.setCartId(null);
+        empty.setItems(List.of());
+        empty.setTotalAmount(BigDecimal.ZERO);
+        return empty;
     }
 }

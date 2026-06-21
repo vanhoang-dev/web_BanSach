@@ -36,7 +36,9 @@ public class UserProfileController {
     public ResponseEntity<ApiResponse<?>> updateUser(@Valid @RequestBody UpdateUserRequest updateUserRequest) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         service.updateCurrentUserProfile(username, updateUserRequest);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật thông tin thành công", null));
+        return ResponseEntity.ok(ApiResponse.success(
+                "Cập nhật thông tin thành công",
+                service.getCurrentUserProfile(username)));
     }
 
     @PostMapping("/change-password")

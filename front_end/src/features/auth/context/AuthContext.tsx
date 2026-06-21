@@ -7,6 +7,8 @@ export interface User {
   id: number;
   email: string;
   fullName: string;
+  phone?: string;
+  address?: string;
   role: 'USER' | 'ADMIN';
 }
 
@@ -26,6 +28,8 @@ const normalizeUser = (baseUser: Partial<User>, profile?: any): User => ({
   id: profile?.id || profile?.userId || baseUser.id || 0,
   email: profile?.email || baseUser.email || '',
   fullName: profile?.fullName || profile?.full_name || '',
+  phone: profile?.phone || baseUser.phone || '',
+  address: profile?.address || baseUser.address || '',
   role: profile?.role || baseUser.role || 'USER',
 });
 
