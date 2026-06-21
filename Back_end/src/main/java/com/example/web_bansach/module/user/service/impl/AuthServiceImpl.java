@@ -84,10 +84,16 @@ public class AuthServiceImpl implements AuthService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFullName(request.getFullName());
+        user.setPhone(normalizeOptional(request.getPhone()));
+        user.setAddress(normalizeOptional(request.getAddress()));
         user.setIsActive(true);
         user.setRoles(Set.of(userRole));
 
         userRepository.save(user);
+    }
+
+    private String normalizeOptional(String value) {
+        return value == null || value.trim().isEmpty() ? null : value.trim();
     }
 
     @Transactional
