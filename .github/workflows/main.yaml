@@ -9,7 +9,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Skip deploy when secrets are not configured
+        if: ${{ secrets.VPS_HOST == '' || secrets.VPS_USER == '' || secrets.VPS_KEY == '' }}
+        run: echo "VPS deploy secrets are not configured. Skipping deploy step."
+
       - name : Deloy project vps
+        if: ${{ secrets.VPS_HOST != '' && secrets.VPS_USER != '' && secrets.VPS_KEY != '' }}
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
