@@ -15,12 +15,14 @@ import com.example.web_bansach.module.inventory.service.InventoryService;
 @RestController
 @RequestMapping("/user/inventory")
 @PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
+// Cung cấp số lượng tồn kho của sách cho giao diện khách hàng.
 public class UserInventoryController {
 
     @Autowired
     private InventoryService inventoryService;
 
     @GetMapping("/book/{bookId}")
+    // Trả tồn kho hiện tại của một cuốn sách theo bookId.
     public ResponseEntity<ApiResponse<InventoryResponse>> getInventoryByBook(@PathVariable Long bookId) {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getByBookId(bookId)));
     }

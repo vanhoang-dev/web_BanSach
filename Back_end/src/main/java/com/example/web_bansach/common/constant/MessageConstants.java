@@ -1,5 +1,6 @@
 package com.example.web_bansach.common.constant;
 
+// Tập trung các thông báo dùng chung để tránh lặp chuỗi trong backend.
 public class MessageConstants {
 
     private MessageConstants() {
@@ -15,7 +16,7 @@ public class MessageConstants {
     public static final String EMAIL_ALREADY_EXISTS = "Email đã tồn tại";
     public static final String USERNAME_ALREADY_EXISTS = "Tên đăng nhập đã tồn tại";
     public static final String INVALID_EMAIL = "Email không đúng định dạng";
-    public static final String PASSWORD_TOO_SHORT = "Mật khẩu phải có ít nhất 6 ký tự";
+    public static final String PASSWORD_TOO_SHORT = "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt";
     public static final String OUT_OF_STOCK = "Sản phẩm đã hết hàng";
     public static final String INSUFFICIENT_STOCK = "Số lượng tồn kho không đủ";
     public static final String INVALID_QUANTITY = "Số lượng không hợp lệ";

@@ -25,9 +25,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    if (error.response?.status === 401) {
+    const hadToken = !!tokenStorage.getToken();
+    const status = error.response?.status;
+    if (status === 401 && hadToken) {
       tokenStorage.clear();
-      window.location.href = '/login';
+      window.location.href = '/401';
+    } else if (status === 403) {
+      window.location.href = '/403';
+    } else if (!error.response) {
+      window.location.href = '/network-error';
     }
     return Promise.reject(error.response?.data || error.message);
   }

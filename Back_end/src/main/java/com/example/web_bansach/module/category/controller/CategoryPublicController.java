@@ -10,12 +10,11 @@ import com.example.web_bansach.module.category.dto.response.CategoryResponse;
 import com.example.web_bansach.module.category.service.CategoryQueryService;
 
 /**
- * Public Controller for Category
- * Handles public/user endpoints
+ * Bộ điều khiển danh mục dành cho khách và người dùng.
+ * Xử lý các endpoint danh mục dành cho khách và người dùng.
  */
 @RestController
 @RequestMapping("/api/categories")
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class CategoryPublicController {
 
     private final CategoryQueryService queryService;
@@ -25,7 +24,7 @@ public class CategoryPublicController {
     }
 
     /**
-     * GET /api/categories - List all active categories with pagination
+     * GET /api/categories - Lấy các danh mục đang hoạt động, có phân trang.
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CategoryResponse>>> getAll(
@@ -37,7 +36,7 @@ public class CategoryPublicController {
     }
 
     /**
-     * GET /api/categories/{id} - Get category by ID
+     * GET /api/categories/{id} - Lấy danh mục theo mã định danh.
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<CategoryResponse>> getById(@PathVariable Long id) {
@@ -46,7 +45,7 @@ public class CategoryPublicController {
     }
 
     /**
-     * GET /api/categories/search?keyword=... - Search categories by name
+     * GET /api/categories/search?keyword=... - Tìm danh mục theo tên.
      */
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<CategoryResponse>>> search(

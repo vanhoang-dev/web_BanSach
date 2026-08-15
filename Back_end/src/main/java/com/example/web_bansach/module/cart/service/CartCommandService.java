@@ -3,6 +3,7 @@ package com.example.web_bansach.module.cart.service;
 import com.example.web_bansach.module.cart.dto.request.AddToCartRequest;
 import com.example.web_bansach.module.cart.dto.response.CartResponse;
 
+// Định nghĩa các thao tác thêm, sửa, xóa và làm rỗng giỏ hàng.
 public interface CartCommandService {
 
     CartResponse addToCart(String username, AddToCartRequest request);

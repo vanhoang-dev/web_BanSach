@@ -1,5 +1,6 @@
 package com.example.web_bansach.security.config;
 
+// Khai báo tập URL công khai, người dùng và admin dùng trong cấu hình bảo mật.
 public class Endpoints {
     private Endpoints() {
     }
@@ -11,7 +12,9 @@ public class Endpoints {
             "/api/authors",
             "/api/authors/*",
             "/api/authors/search",
-            "/api/payment/status/*",
+            "/api/payment/sse/order/*",
+            "/user/books",
+            "/user/books/*",
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {
@@ -23,8 +26,7 @@ public class Endpoints {
     };
 
     public static final String[] USER_GET_ENDPOINTS = {
-            "/user/books",
-            "/user/books/*",
+            "/user/me",
             "/user/cart",
             "/user/wishlist",
             "/user/wishlist/count",
@@ -36,20 +38,26 @@ public class Endpoints {
             "/user/reviews/book/*/stats",
             "/user/vouchers",
             "/user/vouchers/code/*",
+            "/user/vouchers/my",
+            "/user/vouchers/claimed",
             "/user/inventory/book/*",
+            "/api/payment/status/*",
+            "/api/payment/status/order/*",
     };
 
     public static final String[] USER_POST_ENDPOINTS = {
             "/user/cart/items",
             "/user/wishlist/books/*",
             "/user/orders",
+            "/user/orders/buy-now",
             "/user/reviews",
             "/api/payment/initiate",
+            "/user/change-password",
+            "/user/vouchers/*/claim",
     };
 
     public static final String[] USER_PUT_ENDPOINTS = {
             "/user/update-profile",
-            "/user/change-password",
             "/user/cart/items/*",
             "/user/orders/*/cancel",
             "/user/reviews/*",
@@ -64,6 +72,7 @@ public class Endpoints {
     };
 
     public static final String[] ADMIN_GET_ENDPOINTS = {
+            "/admin/dashboard",
             "/admin/books",
             "/admin/books/*",
             "/admin/authors",
@@ -86,7 +95,6 @@ public class Endpoints {
             "/admin/authors",
             "/api/admin/categories",
             "/admin/inventory/*/adjust/*",
-            "/api/payment/refund/*",
             "/admin/vouchers",
     };
 

@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import lombok.Data;
 
 @Data
+// Trả thông tin voucher và trạng thái còn hiệu lực cho frontend.
 public class VoucherResponse {
     private Long id;
     private String code;

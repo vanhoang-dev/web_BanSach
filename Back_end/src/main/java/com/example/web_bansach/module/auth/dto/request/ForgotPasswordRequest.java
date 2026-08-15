@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
+// Chứa email cần nhận liên kết khôi phục mật khẩu.
 public class ForgotPasswordRequest {
 
     @NotBlank(message = "Email không được để trống")

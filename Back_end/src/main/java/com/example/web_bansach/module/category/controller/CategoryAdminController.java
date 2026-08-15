@@ -17,13 +17,12 @@ import com.example.web_bansach.module.category.service.CategoryQueryService;
 import jakarta.validation.Valid;
 
 /**
- * Admin Controller for Category
- * Handles admin-only endpoints for category management
+ * Bộ điều khiển quản trị danh mục.
+ * Xử lý các endpoint quản lý danh mục chỉ dành cho quản trị viên.
  */
 @RestController
 @RequestMapping("/api/admin/categories")
 @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class CategoryAdminController {
 
     private final CategoryQueryService queryService;
@@ -37,8 +36,8 @@ public class CategoryAdminController {
     }
 
     /**
-     * GET /api/admin/categories - List all categories (including inactive) with
-     * pagination
+     * GET /api/admin/categories - Lấy tất cả danh mục, kể cả danh mục ngừng hoạt động,
+     * dưới dạng phân trang.
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CategoryResponse>>> getAll(
@@ -50,7 +49,7 @@ public class CategoryAdminController {
     }
 
     /**
-     * POST /api/admin/categories - Create new category
+     * POST /api/admin/categories - Tạo danh mục mới.
      */
     @PostMapping
     public ResponseEntity<ApiResponse<CategoryResponse>> create(
@@ -61,7 +60,7 @@ public class CategoryAdminController {
     }
 
     /**
-     * PUT /api/admin/categories/{id} - Update category
+     * PUT /api/admin/categories/{id} - Cập nhật danh mục.
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<CategoryResponse>> update(
@@ -73,7 +72,7 @@ public class CategoryAdminController {
     }
 
     /**
-     * DELETE /api/admin/categories/{id} - Soft delete category
+     * DELETE /api/admin/categories/{id} - Xóa mềm danh mục.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> delete(@PathVariable Long id) {
@@ -82,7 +81,7 @@ public class CategoryAdminController {
     }
 
     /**
-     * PUT /api/admin/categories/{id}/activate - Activate category
+     * PUT /api/admin/categories/{id}/activate - Kích hoạt danh mục.
      */
     @PutMapping("/{id}/activate")
     public ResponseEntity<ApiResponse<?>> activate(@PathVariable Long id) {
@@ -91,7 +90,7 @@ public class CategoryAdminController {
     }
 
     /**
-     * PUT /api/admin/categories/{id}/deactivate - Deactivate category
+     * PUT /api/admin/categories/{id}/deactivate - Ngừng kích hoạt danh mục.
      */
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<ApiResponse<?>> deactivate(@PathVariable Long id) {

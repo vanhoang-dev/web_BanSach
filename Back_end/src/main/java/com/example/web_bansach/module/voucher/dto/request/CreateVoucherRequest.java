@@ -12,6 +12,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
+// Chứa mã, phần trăm giảm, giới hạn, số lượng và hạn dùng của voucher.
 public class CreateVoucherRequest {
 
     @NotBlank(message = "Mã voucher không được để trống")

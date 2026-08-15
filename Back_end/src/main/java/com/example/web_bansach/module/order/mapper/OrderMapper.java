@@ -12,7 +12,7 @@ import com.example.web_bansach.module.order.entity.OrderItem;
 import com.example.web_bansach.module.order.repository.OrderItemRepository;
 
 /**
- * Mapper xử lý mapping Order entity sang OrderResponse
+ * Chuyển thực thể đơn hàng thành dữ liệu phản hồi.
  */
 @Component
 public class OrderMapper {
@@ -24,7 +24,7 @@ public class OrderMapper {
     }
 
     /**
-     * Map Order entity sang OrderResponse
+     * Chuyển một thực thể đơn hàng thành dữ liệu phản hồi.
      * Dùng JOIN FETCH để tránh N+1 problem
      */
     public OrderResponse mapToResponse(Order order) {
@@ -39,11 +39,13 @@ public class OrderMapper {
         response.setReceiverName(order.getReceiverName());
         response.setReceiverPhone(order.getReceiverPhone());
         response.setShippingAddress(order.getShippingAddress());
+        response.setShippingMethod(order.getShippingMethod());
+        response.setShippingFee(order.getShippingFee());
         response.setVoucherCode(order.getVoucherCode());
         response.setVoucherDiscount(order.getVoucherDiscount());
         response.setOrderDate(order.getOrderDate());
 
-        // Load order items với JOIN FETCH (tránh N+1)
+        // Tải các sản phẩm của đơn hàng bằng JOIN FETCH để tránh truy vấn N+1.
         List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
         List<OrderItemResponse> itemResponses = orderItems.stream()
                 .map(this::mapOrderItemToResponse)
@@ -64,6 +66,7 @@ public class OrderMapper {
         OrderItemResponse response = new OrderItemResponse();
         response.setBookId(item.getBook().getId());
         response.setBookTitle(item.getBook().getTitle());
+        response.setBookCoverImage(item.getBook().getCoverImage());
         response.setQuantity(item.getQuantity());
         response.setPrice(item.getPrice());
 

@@ -3,7 +3,7 @@ package com.example.web_bansach.infrastructure.file;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Interface xử lý upload file
+ * Giao diện định nghĩa các thao tác tải tệp lên hệ thống.
  * Abstraction để có thể thay đổi storage strategy (Cloudinary, S3, etc.)
  */
 public interface FileUploadService {
@@ -11,10 +11,10 @@ public interface FileUploadService {
     /**
      * Upload file
      * 
-     * @param file   - MultipartFile cần upload
-     * @param folder - folder lưu trữ (vd: "books", "users")
-     * @return URL của file đã upload
-     * @throws Exception nếu upload thất bại
+     * @param file   tệp cần tải lên
+     * @param folder thư mục lưu trữ, ví dụ "books" hoặc "users"
+     * @return đường dẫn của tệp sau khi tải lên thành công
+     * @throws Exception nếu quá trình tải lên thất bại
      */
     String uploadFile(MultipartFile file, String folder) throws Exception;
 
@@ -29,8 +29,8 @@ public interface FileUploadService {
     /**
      * Check file có hợp lệ không
      * 
-     * @param file - MultipartFile cần check
-     * @return true nếu hợp lệ
+     * @param file tệp cần kiểm tra
+     * @return {@code true} nếu tệp hợp lệ
      */
     boolean isValidFile(MultipartFile file);
 }

@@ -25,6 +25,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ tài khoản người dùng, hồ sơ, trạng thái và danh sách quyền.
 public class Users {
 
     @Id

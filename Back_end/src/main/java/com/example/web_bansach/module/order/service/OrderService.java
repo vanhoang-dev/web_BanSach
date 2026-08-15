@@ -24,9 +24,10 @@ import com.example.web_bansach.module.order.repository.OrderRepository;
 import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
 
 /**
- * Service xử lý nghiệp vụ Order
+ * Dịch vụ xử lý nghiệp vụ quản trị đơn hàng.
  */
 @Service
+// Xử lý truy vấn và thay đổi trạng thái đơn hàng từ phía quản trị.
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -35,6 +36,7 @@ public class OrderService {
     private final OrderMapper orderMapper;
     private final RealtimeNotificationService realtimeNotificationService;
 
+    // Khởi tạo service với repository đơn, tồn kho và mapper.
     public OrderService(OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             InventoryRepository inventoryRepository,
@@ -48,6 +50,7 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    // Trả toàn bộ đơn hàng theo trang cho quản trị viên.
     public Page<OrderResponse> getAllOrders(int page, int size) {
         if (page < 0 || size <= 0) {
             throw new BusinessException("Tham số phân trang không hợp lệ");
@@ -59,6 +62,7 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    // Trả chi tiết một đơn hàng bất kỳ theo ID.
     public OrderResponse getOrderDetail(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
@@ -66,6 +70,7 @@ public class OrderService {
     }
 
     @Transactional
+    // Chuyển trạng thái đơn và cập nhật tồn kho tại mốc nghiệp vụ phù hợp.
     public OrderResponse updateOrderStatus(Long id, OrderStatus status) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
@@ -80,6 +85,10 @@ public class OrderService {
 
         if (order.getStatus() == OrderStatus.COMPLETED && status != OrderStatus.COMPLETED) {
             throw new BusinessException("Đơn hàng đã hoàn thành, không thể thay đổi trạng thái");
+        }
+
+        if (!isAllowedStatusTransition(order.getStatus(), status)) {
+            throw new BusinessException("Chuyen trang thai don hang khong hop le");
         }
 
         order.setStatus(status);
@@ -101,6 +110,7 @@ public class OrderService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    // Hủy đơn từ phía quản trị viên và hoàn tồn kho khi cần.
     public void cancelOrder(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
@@ -117,12 +127,14 @@ public class OrderService {
             throw new BusinessException("Đơn hàng đã bị hủy trước đó");
         }
 
-        List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
-        for (OrderItem item : orderItems) {
-            Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId()).orElse(null);
-            if (inventory != null) {
-                inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
-                inventoryRepository.save(inventory);
+        if (order.getStatus() != OrderStatus.PENDING) {
+            List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
+            for (OrderItem item : orderItems) {
+                Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId()).orElse(null);
+                if (inventory != null) {
+                    inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
+                    inventoryRepository.save(inventory);
+                }
             }
         }
 
@@ -139,5 +151,18 @@ public class OrderService {
             java.util.Map.of(
                 "orderId", order.getId(),
                 "status", OrderStatus.CANCELLED.name()));
+    }
+
+    private boolean isAllowedStatusTransition(OrderStatus currentStatus, OrderStatus nextStatus) {
+        if (currentStatus == null || nextStatus == null || currentStatus == nextStatus) {
+            return true;
+        }
+
+        return switch (currentStatus) {
+            case PENDING -> nextStatus == OrderStatus.CONFIRMED || nextStatus == OrderStatus.CANCELLED;
+            case CONFIRMED -> nextStatus == OrderStatus.SHIPPING || nextStatus == OrderStatus.CANCELLED;
+            case SHIPPING -> nextStatus == OrderStatus.COMPLETED;
+            case COMPLETED, CANCELLED -> false;
+        };
     }
 }

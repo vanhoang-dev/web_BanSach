@@ -21,6 +21,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ kho voucher chung với số lượng phát hành và điều kiện giảm giá.
 public class Voucher {
 
     @Id

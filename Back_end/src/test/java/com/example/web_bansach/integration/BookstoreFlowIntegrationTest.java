@@ -68,7 +68,7 @@ class BookstoreFlowIntegrationTest {
         UserRequest request = new UserRequest();
         request.setUsername("student01");
         request.setEmail("student01@test.com");
-        request.setPassword("secret123");
+        request.setPassword("Secret123!");
         request.setFullName("Student One");
 
         authService.taoTaiKhoanMoi(request);
@@ -97,7 +97,7 @@ class BookstoreFlowIntegrationTest {
         OrderResponse orderResponse = orderUserService.createOrder(user.getEmail(), orderRequest);
 
         Inventory inventory = inventoryRepository.findByBookId(book.getId()).orElseThrow();
-        assertThat(inventory.getQuantity()).isEqualTo(3);
+        assertThat(inventory.getQuantity()).isEqualTo(5);
 
         Long cartId = cartRepository.findByUserId(user.getId()).orElseThrow().getId();
         assertThat(cartItemRepository.findByCartIdWithBook(cartId)).isEmpty();

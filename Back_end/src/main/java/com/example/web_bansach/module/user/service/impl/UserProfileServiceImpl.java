@@ -11,10 +11,13 @@ import com.example.web_bansach.module.user.mapper.UserMapper;
 import com.example.web_bansach.module.user.repository.UserRepository;
 import com.example.web_bansach.module.user.service.UserProfileService;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * Xử lý user profile - lấy thông tin, cập nhật profile cá nhân
+ * Xử lý việc lấy và cập nhật hồ sơ cá nhân của người dùng.
  */
 @Service
+@Slf4j
 public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserRepository userRepository;
@@ -28,6 +31,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Transactional(readOnly = true)
     @Override
     public UserResponse layNguoiDungTheoId(Long id) {
+        log.info("Get user profile, userId={}", id);
         Users user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
 
@@ -37,10 +41,11 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Transactional
     @Override
     public void capNhatThongTinCaNhan(Long id, UpdateUserProfileRequest request) {
+        log.info("Update user profile, userId={}", id);
         Users user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
 
-        // Update fields (self-service - không được thay đổi username, email, roles)
+        // Cập nhật các trường cá nhân; không cho phép đổi tên đăng nhập, email và quyền.
         if (request.getFullName() != null && !request.getFullName().trim().isEmpty()) {
             user.setFullName(request.getFullName());
         }
@@ -54,6 +59,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         }
 
         userRepository.save(user);
+        log.info("Update user profile successfully, userId={}", user.getId());
     }
 
     @Transactional(readOnly = true)

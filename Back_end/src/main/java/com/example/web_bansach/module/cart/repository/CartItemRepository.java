@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import com.example.web_bansach.module.cart.entity.CartItem;
 
 @Repository
+// Truy cập các dòng giỏ theo cartId, bookId và hỗ trợ xóa theo giỏ.
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     Optional<CartItem> findByCartIdAndBookId(Long cartId, Long bookId);

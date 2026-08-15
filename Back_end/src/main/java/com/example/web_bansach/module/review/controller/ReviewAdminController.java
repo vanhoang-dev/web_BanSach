@@ -17,7 +17,7 @@ import com.example.web_bansach.module.review.dto.response.ReviewResponse;
 import com.example.web_bansach.module.review.service.ReviewService;
 
 /**
- * Controller quản lý đánh giá sách (admin)
+ * Bộ điều khiển quản lý đánh giá sách dành cho quản trị viên.
  */
 @RestController
 @RequestMapping("/admin/reviews")
@@ -28,7 +28,7 @@ public class ReviewAdminController {
     private ReviewService reviewService;
 
     /**
-     * Lấy tất cả đánh giá của một user
+     * Lấy toàn bộ đánh giá của một người dùng.
      * GET /admin/reviews/user/{userId}?page=0&size=10
      */
     @GetMapping("/user/{userId}")
@@ -51,7 +51,7 @@ public class ReviewAdminController {
     }
 
     /**
-     * Xóa đánh giá (admin)
+     * Cho phép quản trị viên xóa đánh giá.
      * DELETE /admin/reviews/{reviewId}
      */
     @DeleteMapping("/{reviewId}")

@@ -10,32 +10,38 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.example.web_bansach.common.exception.GlobalExceptionHandler;
+import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
 import com.example.web_bansach.module.payment.dto.PaymentRequest;
 import com.example.web_bansach.module.payment.dto.PaymentResponse;
 import com.example.web_bansach.module.payment.service.PaymentService;
+import com.example.web_bansach.security.jwt.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 class PaymentControllerTest {
 
     private final PaymentService paymentService = org.mockito.Mockito.mock(PaymentService.class);
+    private final RealtimeNotificationService realtimeNotificationService = org.mockito.Mockito.mock(RealtimeNotificationService.class);
+    private final JwtTokenProvider jwtTokenProvider = org.mockito.Mockito.mock(JwtTokenProvider.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new PaymentController(paymentService))
+                .standaloneSetup(new PaymentController(paymentService, realtimeNotificationService, jwtTokenProvider))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -52,7 +58,7 @@ class PaymentControllerTest {
         when(paymentService.initiatePayment(eq("user@test.com"), any(PaymentRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/payment/initiate")
-                        .principal(new UsernamePasswordAuthenticationToken("user@test.com", null))
+                        .principal(userPrincipal())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(paymentRequest())))
                 .andExpect(status().isOk())
@@ -63,11 +69,12 @@ class PaymentControllerTest {
     }
 
     @Test
-    void getPaymentStatus_shouldReturn404WhenPaymentMissing() throws Exception {
-        when(paymentService.getPaymentStatus(999L))
-                .thenThrow(new ResourceNotFoundException("Không tìm thấy thông tin thanh toán"));
+    void getPaymentStatus_shouldUseAuthenticatedUserAndReturn404WhenPaymentMissing() throws Exception {
+        when(paymentService.getPaymentStatus("user@test.com", false, 999L))
+                .thenThrow(new ResourceNotFoundException("Khong tim thay thong tin thanh toan"));
 
-        mockMvc.perform(get("/api/payment/status/999"))
+        mockMvc.perform(get("/api/payment/status/999")
+                        .principal(userPrincipal()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404));
     }
@@ -81,6 +88,35 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(400));
     }
 
+    @Test
+    void sepayWebhook_shouldExtractPaymentCodeFromRealTransferContent() throws Exception {
+        Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("gateway", "MBBank");
+        payload.put("transactionDate", "2026-06-12 15:25:00");
+        payload.put("accountNumber", "82000444213546");
+        payload.put("subAccount", null);
+        payload.put("code", null);
+        payload.put("content", "133153544486-SEP4-CHUYEN TIEN-OQCH000DN0Z4-MOMO133153544486MOMO");
+        payload.put("transferType", "in");
+        payload.put("description", "BankAPINotify 133153544486-SEP4-CHUYEN TIEN-OQCH000DN0Z4-MOMO133153544486MOMO");
+        payload.put("transferAmount", 5000);
+        payload.put("referenceCode", "FT26163080353409");
+        payload.put("accumulated", 0);
+        payload.put("id", 62985170);
+
+        when(paymentService.verifyPaymentCallback(eq("SEP4"), any(BigDecimal.class), eq("Apikey test-key")))
+                .thenReturn(true);
+
+        mockMvc.perform(post("/api/payment/sepay-webhook")
+                        .header("Authorization", "Apikey test-key")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+
+        verify(paymentService).updatePaymentStatus("SEP4", "SUCCESS", "Apikey test-key");
+    }
+
     private PaymentRequest paymentRequest() {
         PaymentRequest request = new PaymentRequest();
         request.setOrderId(1L);
@@ -88,5 +124,12 @@ class PaymentControllerTest {
         request.setReturnUrl("http://return");
         request.setDescription("order 1");
         return request;
+    }
+
+    private UsernamePasswordAuthenticationToken userPrincipal() {
+        return new UsernamePasswordAuthenticationToken(
+                "user@test.com",
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
     }
 }

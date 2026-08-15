@@ -1,5 +1,6 @@
 package com.example.web_bansach.module.category.service.impl;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,7 @@ import com.example.web_bansach.module.category.mapper.CategoryMapper;
 import com.example.web_bansach.module.category.repository.CategoryRepository;
 import com.example.web_bansach.module.category.service.CategoryCommandService;
 import com.example.web_bansach.module.category.service.CategoryValidationService;
+import com.example.web_bansach.common.cache.CacheNames;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
 
 /**
@@ -34,11 +36,12 @@ public class CategoryCommandServiceImpl implements CategoryCommandService {
     }
 
     @Override
+    @CacheEvict(cacheNames = { CacheNames.CATEGORIES, CacheNames.BOOKS }, allEntries = true)
     public CategoryResponse create(CreateCategoryRequest request) {
-        // Validate request
+        // Kiểm tra tính hợp lệ của dữ liệu tạo danh mục.
         validationService.validateCreate(request);
 
-        // Map request to entity
+        // Chuyển dữ liệu yêu cầu thành thực thể danh mục.
         Category category = categoryMapper.toEntity(request);
 
         // Save to database
@@ -48,15 +51,16 @@ public class CategoryCommandServiceImpl implements CategoryCommandService {
     }
 
     @Override
+    @CacheEvict(cacheNames = { CacheNames.CATEGORIES, CacheNames.BOOKS }, allEntries = true)
     public CategoryResponse update(Long id, UpdateCategoryRequest request) {
-        // Get existing category
+        // Lấy danh mục hiện có.
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));
 
-        // Validate update request
+        // Kiểm tra tính hợp lệ của dữ liệu cập nhật danh mục.
         validationService.validateUpdate(id, request);
 
-        // Update fields
+        // Cập nhật các trường dữ liệu.
         categoryMapper.updateEntity(request, category);
 
         // Save changes
@@ -66,19 +70,21 @@ public class CategoryCommandServiceImpl implements CategoryCommandService {
     }
 
     @Override
+    @CacheEvict(cacheNames = { CacheNames.CATEGORIES, CacheNames.BOOKS }, allEntries = true)
     public void delete(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));
 
-        // Validate delete operation
+        // Kiểm tra điều kiện trước khi xóa danh mục.
         validationService.validateDelete(id);
 
-        // Soft delete
+        // Đánh dấu danh mục đã bị xóa theo cơ chế xóa mềm.
         category.softDelete();
         categoryRepository.save(category);
     }
 
     @Override
+    @CacheEvict(cacheNames = { CacheNames.CATEGORIES, CacheNames.BOOKS }, allEntries = true)
     public void activate(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));
@@ -88,6 +94,7 @@ public class CategoryCommandServiceImpl implements CategoryCommandService {
     }
 
     @Override
+    @CacheEvict(cacheNames = { CacheNames.CATEGORIES, CacheNames.BOOKS }, allEntries = true)
     public void deactivate(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));

@@ -6,13 +6,13 @@ import com.example.web_bansach.module.review.dto.response.ReviewResponse;
 import com.example.web_bansach.module.review.entity.Review;
 
 /**
- * Mapper xử lý mapping Review entity sang ReviewResponse
+ * Chuyển thực thể đánh giá thành dữ liệu phản hồi.
  */
 @Component
 public class ReviewMapper {
 
     /**
-     * Map Review entity sang ReviewResponse
+     * Chuyển một thực thể đánh giá thành dữ liệu phản hồi.
      */
     public ReviewResponse mapToResponse(Review review) {
         if (review == null) {

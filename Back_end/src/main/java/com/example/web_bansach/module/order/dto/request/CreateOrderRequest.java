@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
+// Chứa thông tin nhận hàng, vận chuyển và voucher khi tạo đơn.
 public class CreateOrderRequest {
 
     @NotBlank(message = "Tên người nhận không được để trống")

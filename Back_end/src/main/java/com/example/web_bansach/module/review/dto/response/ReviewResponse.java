@@ -1,11 +1,15 @@
 package com.example.web_bansach.module.review.dto.response;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import lombok.Data;
 
 @Data
-public class ReviewResponse {
+// Trả nội dung đánh giá cùng thông tin người viết và sách.
+public class ReviewResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private Long id;
     private Long userId;
     private String userName;

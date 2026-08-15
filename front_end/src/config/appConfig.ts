@@ -1,3 +1,3 @@
 export const appConfig = {
-  name: 'BookStore',
+  name: 'Nhà Sách Tri Thức',
 };

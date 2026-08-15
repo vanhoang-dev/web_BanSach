@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.example.web_bansach.module.book.entity.Book;
 
 @Repository
+// Truy cập sách và cung cấp truy vấn lọc, tìm kiếm, sắp xếp có phân trang.
 public interface BookRepository extends JpaRepository<Book, Long> {
 
         boolean existsByIsbn(String isbn);
@@ -33,6 +34,14 @@ public interface BookRepository extends JpaRepository<Book, Long> {
         Page<Book> findByCategoryIdWithJoin(@Param("categoryId") Long categoryId, Pageable pageable);
 
         @Query(value = "SELECT DISTINCT b FROM Book b " +
+                        "LEFT JOIN FETCH b.author a " +
+                        "LEFT JOIN FETCH b.category " +
+                        "LEFT JOIN FETCH b.discount " +
+                        "WHERE a.id = :authorId AND b.deletedAt IS NULL",
+                        countQuery = "SELECT COUNT(b) FROM Book b WHERE b.author.id = :authorId AND b.deletedAt IS NULL")
+        Page<Book> findByAuthorIdWithJoin(@Param("authorId") Long authorId, Pageable pageable);
+
+        @Query(value = "SELECT DISTINCT b FROM Book b " +
                         "LEFT JOIN FETCH b.author " +
                         "LEFT JOIN FETCH b.category " +
                         "LEFT JOIN FETCH b.discount " +
@@ -47,4 +56,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
                         "LEFT JOIN FETCH b.discount " +
                         "WHERE b.id = :id")
         Book findByIdWithJoin(@Param("id") Long id);
+
+        long countByDeletedAtIsNull();
 }

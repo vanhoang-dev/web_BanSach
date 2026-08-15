@@ -28,7 +28,11 @@ import com.example.web_bansach.module.inventory.repository.InventoryRepository;
 import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.UserRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
+// Thực hiện các thay đổi giỏ hàng và bảo đảm mỗi người dùng có một giỏ riêng.
 public class CartCommandServiceImpl implements CartCommandService {
 
     private final CartRepository cartRepository;
@@ -40,6 +44,7 @@ public class CartCommandServiceImpl implements CartCommandService {
     private final CartItemMapper cartItemMapper;
     private final CartValidationService cartValidationService;
 
+    // Khởi tạo service với repository, mapper và bộ kiểm tra giỏ hàng.
     public CartCommandServiceImpl(CartRepository cartRepository,
             CartItemRepository cartItemRepository,
             UserRepository userRepository,
@@ -59,6 +64,7 @@ public class CartCommandServiceImpl implements CartCommandService {
     }
 
     @Transactional
+    // Lấy giỏ hiện có hoặc tạo giỏ rỗng cho tài khoản lần đầu mua sắm.
     public Cart getOrCreateCart(String username) {
         Users user = userRepository.findByEmail(username);
         if (user == null) {
@@ -76,10 +82,20 @@ public class CartCommandServiceImpl implements CartCommandService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
+    // Thêm sách mới hoặc cộng dồn số lượng vào dòng đã có trong giỏ.
     public CartResponse addToCart(String username, AddToCartRequest request) {
+        if (request == null) {
+            throw new BusinessException("Thong tin gio hang khong hop le");
+        }
+        cartValidationService.validateBookExists(request.getBookId());
         cartValidationService.validateQuantity(request.getQuantity());
 
         Cart cart = getOrCreateCart(username);
+        Long userId = cart.getUser() != null ? cart.getUser().getId() : null;
+        log.info("Add book to cart started, userId={}, bookId={}, quantity={}",
+                userId,
+                request.getBookId(),
+                request.getQuantity());
         Book book = bookRepository.findByIdWithJoin(request.getBookId());
         if (book == null) {
             throw new ResourceNotFoundException("Không tìm thấy sách");
@@ -118,18 +134,29 @@ public class CartCommandServiceImpl implements CartCommandService {
         cartItemRepository.save(cartItem);
         cart.setUpdatedAt(LocalDateTime.now());
         cartRepository.save(cart);
+        log.info("Add book to cart successfully, userId={}, bookId={}, quantity={}",
+                userId,
+                book.getId(),
+                request.getQuantity());
 
         return getCart(username);
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
+    // Cập nhật số lượng sau khi xác minh dòng sản phẩm thuộc giỏ người dùng.
     public CartResponse updateCartItem(String username, Long itemId, Integer quantity) {
         cartValidationService.validateQuantity(quantity);
 
         Cart cart = getOrCreateCart(username);
+        Long userId = cart.getUser() != null ? cart.getUser().getId() : null;
         CartItem cartItem = cartItemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm trong giỏ hàng"));
+        Long bookId = cartItem.getBook() != null ? cartItem.getBook().getId() : null;
+        log.info("Update cart item quantity started, userId={}, bookId={}, quantity={}",
+                userId,
+                bookId,
+                quantity);
         if (!cartItem.getCart().getId().equals(cart.getId())) {
             throw new BusinessException("Sản phẩm không thuộc giỏ hàng của bạn");
         }
@@ -143,26 +170,36 @@ public class CartCommandServiceImpl implements CartCommandService {
         cartItemRepository.save(cartItem);
         cart.setUpdatedAt(LocalDateTime.now());
         cartRepository.save(cart);
+        log.info("Update cart item quantity successfully, userId={}, bookId={}, quantity={}",
+                userId,
+                bookId,
+                quantity);
         return getCart(username);
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
+    // Xóa một dòng sản phẩm thuộc giỏ của người dùng hiện tại.
     public CartResponse removeCartItem(String username, Long itemId) {
         Cart cart = getOrCreateCart(username);
+        Long userId = cart.getUser() != null ? cart.getUser().getId() : null;
         CartItem cartItem = cartItemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm trong giỏ hàng"));
+        Long bookId = cartItem.getBook() != null ? cartItem.getBook().getId() : null;
+        log.info("Remove book from cart started, userId={}, bookId={}", userId, bookId);
         if (!cartItem.getCart().getId().equals(cart.getId())) {
             throw new BusinessException("Sản phẩm không thuộc giỏ hàng của bạn");
         }
         cartItemRepository.delete(cartItem);
         cart.setUpdatedAt(LocalDateTime.now());
         cartRepository.save(cart);
+        log.info("Remove book from cart successfully, userId={}, bookId={}", userId, bookId);
         return getCart(username);
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
+    // Xóa toàn bộ dòng sản phẩm nhưng vẫn giữ bản ghi giỏ hàng.
     public void clearCart(String username) {
         Cart cart = getOrCreateCart(username);
         cartItemRepository.deleteByCartId(cart.getId());
@@ -170,6 +207,7 @@ public class CartCommandServiceImpl implements CartCommandService {
         cartRepository.save(cart);
     }
 
+    // Đọc lại giỏ sau thao tác ghi để trả dữ liệu mới nhất cho frontend.
     private CartResponse getCart(String username) {
         Cart cart = getOrCreateCart(username);
         List<CartItem> items = cartItemRepository.findByCartIdWithBook(cart.getId());

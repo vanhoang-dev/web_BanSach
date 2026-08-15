@@ -19,8 +19,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Filter đọc token trong header Authorization.
- * Nếu token hợp lệ thì đưa thông tin user vào SecurityContext.
+ * Bộ lọc đọc JWT trong tiêu đề Authorization.
+ * Nếu JWT hợp lệ thì đưa thông tin người dùng vào ngữ cảnh bảo mật.
  */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -30,11 +30,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
+    // Khởi tạo bộ lọc với thành phần kiểm tra và giải mã JWT.
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @Override
+    // Lấy Bearer token, xác thực và đặt Authentication vào SecurityContext.
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -72,6 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    // Tách JWT khỏi tiêu đề Authorization theo chuẩn Bearer.
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
 

@@ -3,8 +3,6 @@ package com.example.web_bansach.common.exception;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -16,14 +14,15 @@ import org.springframework.web.context.request.WebRequest;
 import com.example.web_bansach.common.constant.MessageConstants;
 import com.example.web_bansach.common.response.ApiResponse;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * Global exception handler for all REST endpoints
+ * Xử lý tập trung các ngoại lệ phát sinh từ toàn bộ endpoint REST.
  * Converts exceptions to standardized ApiResponse format
  */
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
-
-        private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
         private String requestPath(WebRequest request) {
                 return request.getDescription(false).replace("uri=", "");
@@ -33,7 +32,7 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiResponse<?>> handleResourceNotFound(
                         ResourceNotFoundException ex,
                         WebRequest request) {
-                logger.warn("Resource not found: {}", ex.getMessage());
+                log.warn("Resource not found, path={}", requestPath(request), ex);
 
                 ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.NOT_FOUND.value(),
@@ -47,7 +46,7 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiResponse<?>> handleUnauthorized(
                         UnauthorizedException ex,
                         WebRequest request) {
-                logger.warn("Unauthorized access: {}", ex.getMessage());
+                log.warn("Unauthorized access, path={}", requestPath(request), ex);
 
                 ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.UNAUTHORIZED.value(),
@@ -61,7 +60,7 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiResponse<?>> handleForbidden(
                         ForbiddenException ex,
                         WebRequest request) {
-                logger.warn("Forbidden access: {}", ex.getMessage());
+                log.warn("Forbidden access, path={}", requestPath(request), ex);
 
                 ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.FORBIDDEN.value(),
@@ -75,7 +74,7 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiResponse<?>> handleBadCredentials(
                         BadCredentialsException ex,
                         WebRequest request) {
-                logger.warn("Bad credentials");
+                log.warn("Bad credentials, path={}", requestPath(request), ex);
 
                 ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.UNAUTHORIZED.value(),
@@ -89,7 +88,7 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiResponse<?>> handleBusinessException(
                         BusinessException ex,
                         WebRequest request) {
-                logger.warn("Business exception: {}", ex.getMessage());
+                log.warn("Business exception, path={}", requestPath(request), ex);
 
                 ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.BAD_REQUEST.value(),
@@ -103,7 +102,7 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiResponse<?>> handleValidationException(
                         ValidationException ex,
                         WebRequest request) {
-                logger.warn("Validation exception: {}", ex.getMessage());
+                log.warn("Validation exception, path={}", requestPath(request), ex);
 
                 ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.BAD_REQUEST.value(),
@@ -122,7 +121,7 @@ public class GlobalExceptionHandler {
                 ex.getBindingResult().getFieldErrors()
                                 .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
 
-                logger.warn("Validation failed: {}", errors);
+                log.warn("Request validation failed, path={}", requestPath(request), ex);
 
                 ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.BAD_REQUEST.value(),
@@ -137,7 +136,7 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiResponse<?>> handleIllegalArgument(
                         IllegalArgumentException ex,
                         WebRequest request) {
-                logger.warn("Invalid argument: {}", ex.getMessage());
+                log.warn("Invalid argument, path={}", requestPath(request), ex);
 
                 ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.BAD_REQUEST.value(),
@@ -151,7 +150,7 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiResponse<?>> handleGlobalException(
                         Exception ex,
                         WebRequest request) {
-                logger.error("Unexpected error: {}", ex.getMessage(), ex);
+                log.error("Unexpected system error, path={}", requestPath(request), ex);
 
                 ApiResponse<?> response = ApiResponse.failure(
                                 HttpStatus.INTERNAL_SERVER_ERROR.value(),

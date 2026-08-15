@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
+// Trả dữ liệu sách mở rộng phục vụ biểu mẫu và bảng quản trị.
 public class BookAdminResponse {
     private Long id;
     private String title;

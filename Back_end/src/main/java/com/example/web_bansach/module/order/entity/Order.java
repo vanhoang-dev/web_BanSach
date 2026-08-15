@@ -27,6 +27,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ đơn hàng, người mua, giao nhận, trạng thái và tổng tiền.
 public class Order {
 
     @Id

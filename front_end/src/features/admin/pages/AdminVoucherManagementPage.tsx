@@ -1,20 +1,107 @@
-import { PageShell, Panel, SectionHeading, Icon, PrimaryButton } from '@/components/ui/staticUi';
+﻿import { FormEvent, useEffect, useState } from 'react';
 
-const AdminVoucherManagementPage = () => (
-    <PageShell>
-        <div className="max-w-container-max mx-auto px-gutter py-section-gap">
-            <SectionHeading eyebrow="Quản trị" title="Quản lý voucher" description="Danh sách voucher tĩnh theo đúng kiểu dashboard quản trị." action={<PrimaryButton>{Icon({ name: 'plus' })}Tạo voucher</PrimaryButton>} />
-            <div className="grid gap-gutter md:grid-cols-2 xl:grid-cols-3">
-                {['SALE50', 'FREESHIP', 'WELCOME20'].map((code) => (
-                    <Panel key={code} className="p-stack-lg">
-                        <p className="font-caption text-caption text-on-surface-variant">Mã</p>
-                        <h3 className="font-h2 text-h2 text-primary">{code}</h3>
-                        <p className="mt-unit text-body-md">Giảm giá dành cho đơn hàng đủ điều kiện.</p>
-                    </Panel>
-                ))}
-            </div>
+import { Field, formatVnd, Icon, IconButton, Panel, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
+import AdminPagination from '@/features/admin/components/AdminPagination';
+import voucherAdminService from '@/features/admin/services/voucherAdminService';
+
+const emptyForm = { code: '', discountPercent: 10, maxDiscount: 50000, quantity: 10, expiredAt: '' };
+const pageSize = 9;
+
+const AdminVoucherManagementPage = () => {
+  const [vouchers, setVouchers] = useState<any[]>([]);
+  const [form, setForm] = useState<any>(emptyForm);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
+
+  const fetchVouchers = async () => {
+    try {
+      setLoading(true);
+      const response = await voucherAdminService.getAll(page, pageSize);
+      setVouchers(response.data.content || []);
+      setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
+    } catch {
+      setError('Không thể tải voucher.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVouchers();
+  }, [page]);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    try {
+      if (editingId) await voucherAdminService.update(editingId, form);
+      else await voucherAdminService.create(form);
+      setForm(emptyForm);
+      setEditingId(null);
+      fetchVouchers();
+    } catch {
+      setError('Không thể lưu voucher.');
+    }
+  };
+
+  const edit = (voucher: any) => {
+    setEditingId(voucher.id);
+    setForm({
+      code: voucher.code || '',
+      discountPercent: voucher.discountPercent || 10,
+      maxDiscount: voucher.maxDiscount || 0,
+      quantity: voucher.quantity || 1,
+      expiredAt: voucher.expiredAt || '',
+    });
+  };
+
+  const remove = async (id: number) => {
+    if (!window.confirm('Xóa voucher này?')) return;
+    await voucherAdminService.remove(id);
+    fetchVouchers();
+  };
+
+  return (
+    <div className="mx-auto max-w-7xl">
+      <SectionHeading eyebrow="Quản trị" title="Quản lý voucher" description="Tạo, sửa, xóa và xem voucher theo phân hệ /admin/vouchers." />
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard label="Tổng voucher" value={pageInfo.totalElements} icon="ticket" />
+        <StatCard label="Hợp lệ" value={vouchers.filter((item) => item.isValid !== false && item.isExpired !== true).length} icon="chart" tone="success" />
+        <StatCard label="Hết hạn" value={vouchers.filter((item) => item.isExpired).length} icon="order" tone="warning" />
+      </div>
+      {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
+      <form onSubmit={submit} className="mt-6 grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-6">
+        <Field className="md:col-span-2" label="Mã voucher" value={form.code} onChange={(e) => setForm((current: any) => ({ ...current, code: e.target.value.toUpperCase() }))} required />
+        <Field label="% giảm" type="number" value={form.discountPercent} onChange={(e) => setForm((current: any) => ({ ...current, discountPercent: Number(e.target.value) }))} required />
+        <Field label="Giảm tối đa" type="number" value={form.maxDiscount} onChange={(e) => setForm((current: any) => ({ ...current, maxDiscount: Number(e.target.value) }))} required />
+        <Field label="Số lượng" type="number" value={form.quantity} onChange={(e) => setForm((current: any) => ({ ...current, quantity: Number(e.target.value) }))} required />
+        <Field label="Hết hạn" type="date" value={form.expiredAt} onChange={(e) => setForm((current: any) => ({ ...current, expiredAt: e.target.value }))} required />
+        <div className="flex items-end gap-2 md:col-span-6">
+          <PrimaryButton type="submit"><Icon name="plus" /> {editingId ? 'Cập nhật' : 'Tạo voucher'}</PrimaryButton>
+          {editingId ? <SecondaryButton onClick={() => { setEditingId(null); setForm(emptyForm); }}>Hủy</SecondaryButton> : null}
         </div>
-    </PageShell>
-);
+      </form>
+      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {loading ? Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-48 animate-pulse rounded-xl bg-surface-container" />) : vouchers.map((voucher) => (
+          <Panel key={voucher.id} className="p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase text-secondary">Mã voucher</p>
+                <h3 className="mt-2 text-2xl font-bold text-primary">{voucher.code}</h3>
+                <p className="mt-2 text-sm text-on-surface-variant">Giảm {voucher.discountPercent}% tối đa {formatVnd(Number(voucher.maxDiscount || 0))}</p>
+                <p className="mt-1 text-sm text-on-surface-variant">Đã dùng {voucher.usedQuantity || 0}/{voucher.quantity || 0}, hết hạn {voucher.expiredAt || '-'}</p>
+              </div>
+              <StatusBadge status={voucher.isExpired ? 'INACTIVE' : 'ACTIVE'}>{voucher.isExpired ? 'Hết hạn' : 'Hợp lệ'}</StatusBadge>
+            </div>
+            <div className="mt-5 flex gap-2"><IconButton onClick={() => edit(voucher)}><Icon name="edit" /></IconButton><IconButton onClick={() => remove(voucher.id)}><Icon name="trash" /></IconButton></div>
+          </Panel>
+        ))}
+      </div>
+      <AdminPagination page={page} pageSize={pageSize} totalElements={pageInfo.totalElements} totalPages={pageInfo.totalPages} onPageChange={setPage} />
+    </div>
+  );
+};
 
 export default AdminVoucherManagementPage;

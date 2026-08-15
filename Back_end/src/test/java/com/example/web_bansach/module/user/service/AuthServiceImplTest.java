@@ -15,7 +15,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.web_bansach.common.exception.BusinessException;
-import com.example.web_bansach.infrastructure.external.EmailSender;
+import com.example.web_bansach.infrastructure.messaging.email.EmailQueuePublisher;
 import com.example.web_bansach.module.auth.dto.request.UserRequest;
 import com.example.web_bansach.module.auth.repository.PasswordResetTokenRepository;
 import com.example.web_bansach.module.user.entity.Roles;
@@ -33,7 +33,7 @@ class AuthServiceImplTest {
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private PasswordResetTokenRepository passwordResetTokenRepository;
-    @Mock private EmailSender emailSender;
+    @Mock private EmailQueuePublisher emailQueuePublisher;
     @Mock private RolesRepository rolesRepository;
 
     @InjectMocks
@@ -47,7 +47,7 @@ class AuthServiceImplTest {
 
         when(userRepository.findByUsername("newuser")).thenReturn(null);
         when(userRepository.findByEmail("new@test.com")).thenReturn(null);
-        when(passwordEncoder.encode("secret123")).thenReturn("encoded");
+        when(passwordEncoder.encode("Secret123!")).thenReturn("encoded");
         when(rolesRepository.findByName("ROLE_USER")).thenReturn(roleUser);
 
         authService.taoTaiKhoanMoi(userRequest());
@@ -75,7 +75,7 @@ class AuthServiceImplTest {
         UserRequest request = new UserRequest();
         request.setUsername("newuser");
         request.setEmail("new@test.com");
-        request.setPassword("secret123");
+        request.setPassword("Secret123!");
         request.setFullName("New User");
         return request;
     }

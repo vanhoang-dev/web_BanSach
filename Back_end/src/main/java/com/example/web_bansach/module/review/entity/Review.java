@@ -25,6 +25,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ đánh giá của một người dùng dành cho một cuốn sách.
 public class Review {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

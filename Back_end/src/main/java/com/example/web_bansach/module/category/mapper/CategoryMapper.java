@@ -8,9 +8,9 @@ import com.example.web_bansach.module.category.dto.response.CategoryResponse;
 import com.example.web_bansach.module.category.entity.Category;
 
 /**
- * Mapper for Category entity and DTOs.
+ * Chuyển đổi giữa thực thể danh mục và các đối tượng truyền dữ liệu.
  *
- * Keep the mapping logic small and explicit so it is easy to debug.
+ * Giữ logic chuyển đổi ngắn gọn, rõ ràng để thuận tiện kiểm tra lỗi.
  */
 @Component
 public class CategoryMapper {
@@ -46,7 +46,7 @@ public class CategoryMapper {
     }
 
     /**
-     * Convert create request to a new entity.
+     * Chuyển yêu cầu tạo mới thành thực thể danh mục.
      */
     public Category toEntity(CreateCategoryRequest request) {
         if (request == null) {
@@ -62,7 +62,7 @@ public class CategoryMapper {
     }
 
     /**
-     * Update an existing entity from request data.
+     * Cập nhật thực thể hiện có bằng dữ liệu từ yêu cầu.
      */
     public void updateEntity(UpdateCategoryRequest request, Category entity) {
         if (request == null) {

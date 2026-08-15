@@ -24,6 +24,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ một cuốn sách, số lượng và đơn giá được lưu trong giỏ.
 public class CartItem {
 
     @Id

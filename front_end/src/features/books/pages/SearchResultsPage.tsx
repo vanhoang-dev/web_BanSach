@@ -1,53 +1,97 @@
-import { PageShell, Panel, SectionHeading, Icon, PrimaryButton } from '@/components/ui/staticUi';
+﻿import { FormEvent, useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 
-const SearchResultsPage = () => (
-    <PageShell>
-        <div className="max-w-container-max mx-auto px-gutter py-section-gap">
-            <SectionHeading
-                eyebrow="Tìm kiếm"
-                title="Kết quả tìm kiếm"
-                description="Giao diện tĩnh cho trang tìm kiếm, có thể dùng cho cả trạng thái có kết quả và không có kết quả."
-            />
+import { BookCard, Container, EmptyState, Icon, Panel, PrimaryButton, SectionHeading } from '@/components/ui/staticUi';
+import bookService, { Book } from '@/features/books/services/bookService';
+import cartService from '@/features/cart/services/cartService';
 
-            <Panel className="p-stack-md mb-stack-lg">
-                <div className="relative">
-                    <input className="w-full h-12 rounded-full border border-outline-variant bg-surface-container-low pl-4 pr-10 font-body-md text-body-md" placeholder="Tìm kiếm sách, tác giả..." />
-                    <span className="absolute right-4 top-3 text-on-surface-variant">{Icon({ name: 'search' })}</span>
-                </div>
-            </Panel>
+const SearchResultsPage = () => {
+  const [params, setParams] = useSearchParams();
+  const [keyword, setKeyword] = useState(params.get('keyword') || params.get('q') || '');
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-            <div className="grid gap-gutter lg:grid-cols-3">
-                <div className="lg:col-span-2 grid gap-stack-md">
-                    {['Tư Duy Nhanh Và Chậm', 'Sapiens', 'Nhà Giả Kim'].map((title) => (
-                        <Panel key={title} className="p-stack-md flex gap-stack-md">
-                            <div className="w-24 h-32 rounded-lg bg-gradient-to-br from-primary to-secondary-container shrink-0" />
-                            <div className="flex-1">
-                                <h3 className="font-body-lg text-body-lg text-primary font-bold">{title}</h3>
-                                <p className="font-caption text-caption text-on-surface-variant mt-unit">Tác giả nổi bật • Nhà xuất bản uy tín</p>
-                                <div className="mt-stack-md flex items-center justify-between">
-                                    <span className="font-label-md text-label-md text-secondary-container font-bold">185.000 ₫</span>
-                                    <PrimaryButton className="px-4 py-2">{Icon({ name: 'cart' })}Thêm</PrimaryButton>
-                                </div>
-                            </div>
-                        </Panel>
-                    ))}
-                </div>
+  const fetchBooks = async (search: string) => {
+    if (!search.trim()) {
+      setBooks([]);
+      return;
+    }
+    try {
+      setLoading(true);
+      setError('');
+      const response = await bookService.searchBooks(search.trim(), 0, 18);
+      setBooks(response.data.content || []);
+    } catch {
+      setError('Không thể tìm kiếm sách từ máy chủ.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                <Panel className="p-stack-lg">
-                    <h3 className="font-h3 text-h3 text-primary mb-stack-md">Không tìm thấy?</h3>
-                    <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">Thử từ khóa khác hoặc xem các danh mục nổi bật bên dưới.</p>
-                    <div className="space-y-stack-sm">
-                        {['Kinh doanh', 'Kỹ năng', 'Học thuật'].map((item) => (
-                            <div key={item} className="flex items-center justify-between rounded-lg bg-surface-container-low px-4 py-3">
-                                <span className="font-label-md text-label-md text-on-surface">{item}</span>
-                                {Icon({ name: 'arrow', className: 'w-4 h-4' })}
-                            </div>
-                        ))}
-                    </div>
-                </Panel>
+  useEffect(() => {
+    const q = params.get('keyword') || params.get('q') || '';
+    setKeyword(q);
+    fetchBooks(q);
+  }, [params]);
+
+  const handleSearch = (event: FormEvent) => {
+    event.preventDefault();
+    setParams(keyword ? { keyword } : {});
+  };
+
+  const handleAddToCart = async (bookId?: number) => {
+    if (!bookId) return;
+    try {
+      await cartService.addToCart(bookId, 1);
+      alert('Đã thêm vào giỏ hàng');
+    } catch {
+      alert('Không thể thêm vào giỏ hàng');
+    }
+  };
+
+  return (
+    <Container className="py-10">
+      <SectionHeading eyebrow="Tìm kiếm" title="Kết quả tìm kiếm" description="Tìm sách theo tên sách, tác giả hoặc từ khóa hệ thống đang hỗ trợ." />
+      <Panel className="mb-6 p-4">
+        <form className="relative" onSubmit={handleSearch}>
+          <input value={keyword} onChange={(event) => setKeyword(event.target.value)} className="h-12 w-full rounded-full border-0 bg-surface-container pl-4 pr-14 text-sm outline-none focus:ring-2 focus:ring-primary/25" placeholder="Tìm kiếm sách, tác giả..." />
+          <button type="submit" className="absolute right-2 top-1 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary"><Icon name="search" /></button>
+        </form>
+      </Panel>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div>
+          {error ? <div className="mb-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
+          {loading ? (
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-96 animate-pulse rounded-xl bg-surface-container" />)}</div>
+          ) : books.length === 0 ? (
+            <EmptyState title="Chưa có kết quả" description="Nhập từ khóa hoặc thử một cụm từ ngắn hơn." />
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {books.map((book) => (
+                <BookCard key={book.id} id={book.id} title={book.title} author={book.author?.name} category={book.category?.name} price={book.price} cover={book.cover} discount={book.discount} onAdd={() => handleAddToCart(book.id)} />
+              ))}
             </div>
+          )}
         </div>
-    </PageShell>
-);
+
+        <Panel className="h-fit p-5">
+          <h3 className="text-xl font-bold text-primary">Gợi ý khám phá</h3>
+          <p className="mt-2 text-sm leading-6 text-on-surface-variant">Nếu chưa tìm thấy sách cần mua, hãy xem danh mục sách hoặc đi theo từng danh mục.</p>
+          <div className="mt-5 space-y-2">
+            {['Kinh doanh', 'Kỹ năng', 'Văn học'].map((item) => (
+              <Link key={item} to={`/catalog?keyword=${encodeURIComponent(item)}`} className="flex w-full items-center justify-between rounded-lg bg-surface-container-low px-4 py-3 text-sm font-bold text-on-surface">
+                {item}
+                <Icon name="arrow" className="h-4 w-4" />
+              </Link>
+            ))}
+          </div>
+          <Link to="/catalog"><PrimaryButton className="mt-5 w-full">Xem danh mục sách</PrimaryButton></Link>
+        </Panel>
+      </div>
+    </Container>
+  );
+};
 
 export default SearchResultsPage;

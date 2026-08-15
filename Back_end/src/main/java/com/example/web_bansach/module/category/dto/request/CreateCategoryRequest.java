@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Request DTO for creating a new category
+ * Dữ liệu yêu cầu tạo danh mục mới.
  */
 @Data
 @NoArgsConstructor

@@ -6,28 +6,28 @@ import com.example.web_bansach.module.book.dto.request.BookRequest;
 import com.example.web_bansach.module.book.entity.Book;
 
 /**
- * Service xử lý assembly/construction của Book entity
+ * Dịch vụ xây dựng và cập nhật thực thể sách.
  * Tách riêng để tuân thủ Single Responsibility Principle
  */
 public interface BookAssemblyService {
 
     /**
-     * Tạo entity Book từ request
+     * Tạo thực thể sách từ dữ liệu yêu cầu.
      * 
-     * @param request   - BookRequest chứa thông tin sách
+     * @param request dữ liệu thông tin sách
      * @param imageFile - file hình ảnh (có thể null)
-     * @return Book entity đã được xây dựng
+     * @return thực thể sách đã được xây dựng
      * @throws Exception nếu có lỗi
      */
     Book assembleBookFromRequest(BookRequest request, MultipartFile imageFile) throws Exception;
 
     /**
-     * Cập nhật entity Book từ request
+     * Cập nhật thực thể sách từ dữ liệu yêu cầu.
      * 
-     * @param book      - Book entity hiện tại
-     * @param request   - BookRequest chứa thông tin mới
+     * @param book thực thể sách hiện tại
+     * @param request dữ liệu mới của sách
      * @param imageFile - file hình ảnh mới (có thể null)
-     * @return Book entity đã được cập nhật
+     * @return thực thể sách đã được cập nhật
      * @throws Exception nếu có lỗi
      */
     Book updateBookFromRequest(Book book, BookRequest request, MultipartFile imageFile) throws Exception;

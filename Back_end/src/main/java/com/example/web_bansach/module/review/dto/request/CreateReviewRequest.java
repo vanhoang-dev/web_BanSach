@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
+// Chứa số sao và nội dung người dùng gửi khi đánh giá sách.
 public class CreateReviewRequest {
 
     @NotNull(message = "ID sách không được để trống")

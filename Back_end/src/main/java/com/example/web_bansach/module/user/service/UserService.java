@@ -3,8 +3,6 @@ package com.example.web_bansach.module.user.service;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
+import com.example.web_bansach.common.logging.LogMaskingUtil;
 import com.example.web_bansach.module.user.dto.request.ChangePasswordRequest;
 import com.example.web_bansach.module.user.dto.request.AdminUpdateUserRequest;
 import com.example.web_bansach.module.user.dto.request.UpdateUserRequest;
@@ -20,15 +19,15 @@ import com.example.web_bansach.module.user.dto.response.UserResponse;
 import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.UserRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * Service xử lý User operations
- * Sử dụng constructor injection thay vì field injection
+ * Dịch vụ xử lý các thao tác liên quan đến người dùng.
+ * Nhận các thành phần phụ thuộc thông qua hàm khởi tạo.
  */
 @Service
+@Slf4j
 public class UserService {
-
-    @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -41,6 +40,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Users layNguoiDungTheoId(Long id) {
+        log.info("Get user by id, userId={}", id);
         if (id == null || id <= 0) {
             throw new BusinessException("ID người dùng không hợp lệ");
         }
@@ -48,7 +48,7 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsersPagination(Integer pageNumber, Integer pageSize) {
         if (pageNumber == null || pageNumber < 0) {
             pageNumber = 0;
@@ -79,6 +79,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse getCurrentUserProfile(String username) {
+        log.info("Get current user profile, email={}", LogMaskingUtil.maskEmail(username));
         Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Người dùng không tồn tại");
@@ -92,6 +93,9 @@ public class UserService {
         if (user == null) {
             throw new ResourceNotFoundException("Người dùng không tồn tại");
         }
+        log.info("Update current user profile, userId={}, email={}",
+                user.getId(),
+                LogMaskingUtil.maskEmail(user.getEmail()));
         updateUserProfileById(user.getId(), update);
     }
 
@@ -132,6 +136,7 @@ public class UserService {
 
     @Transactional
     public void updateUserProfileById(Long userId, UpdateUserRequest update) {
+        log.info("Update user profile by id, userId={}", userId);
         Users userData = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
@@ -154,6 +159,7 @@ public class UserService {
         }
 
         userRepository.save(userData);
+        log.info("Update user profile successfully, userId={}", userData.getId());
     }
 
     @Transactional

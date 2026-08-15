@@ -10,35 +10,35 @@ import org.springframework.stereotype.Repository;
 import com.example.web_bansach.module.category.entity.Category;
 
 /**
- * Repository for Category entity
+ * Kho truy cập dữ liệu của thực thể danh mục.
  */
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     /**
-     * Find all active categories with pagination
+     * Tìm các danh mục đang hoạt động theo từng trang.
      */
     Page<Category> findAllByIsActiveTrue(Pageable pageable);
 
     /**
-     * Search categories by name
+     * Tìm danh mục theo tên.
      */
     @Query("SELECT c FROM Category c WHERE c.isActive = true AND c.name LIKE %:keyword%")
     Page<Category> searchByName(@Param("keyword") String keyword, Pageable pageable);
 
     /**
-     * Check if category exists by name
+     * Kiểm tra danh mục có tồn tại theo tên hay không.
      */
     boolean existsByName(String name);
 
     /**
-     * Check if category exists by name and different ID
+     * Kiểm tra tên danh mục đã thuộc về một mã định danh khác hay chưa.
      */
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM Category c WHERE c.name = :name AND c.id != :id")
     boolean existsByNameAndIdNot(@Param("name") String name, @Param("id") Long id);
 
     /**
-     * Check if category is in use (has books)
+     * Kiểm tra danh mục có đang được sách sử dụng hay không.
      */
     @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM Category c LEFT JOIN Book b ON c.id = b.category.id WHERE c.id = :id")
     boolean isInUse(@Param("id") Long id);

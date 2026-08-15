@@ -12,8 +12,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
- * Base entity class with audit fields (createdAt, updatedAt, deletedAt)
- * All entities should extend this class for consistency
+ * Lớp thực thể cơ sở chứa các trường thời gian tạo, cập nhật và xóa.
+ * Các thực thể kế thừa lớp này để thống nhất cơ chế theo dõi dữ liệu.
  */
 @Getter
 @Setter
@@ -33,21 +33,21 @@ public abstract class BaseEntity {
     private LocalDateTime deletedAt;
 
     /**
-     * Check if entity is soft deleted
+     * Kiểm tra thực thể đã bị xóa mềm hay chưa.
      */
     public boolean isDeleted() {
         return deletedAt != null;
     }
 
     /**
-     * Soft delete entity
+     * Đánh dấu thực thể đã bị xóa theo cơ chế xóa mềm.
      */
     public void softDelete() {
         this.deletedAt = LocalDateTime.now();
     }
 
     /**
-     * Restore soft deleted entity
+     * Khôi phục thực thể đã bị xóa mềm.
      */
     public void restore() {
         this.deletedAt = null;

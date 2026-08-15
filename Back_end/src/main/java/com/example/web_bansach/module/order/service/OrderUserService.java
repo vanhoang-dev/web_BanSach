@@ -13,11 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
+import com.example.web_bansach.common.logging.LogMaskingUtil;
+import com.example.web_bansach.module.book.repository.BookRepository;
+import com.example.web_bansach.module.book.entity.Book;
 import com.example.web_bansach.module.cart.entity.CartItem;
 import com.example.web_bansach.module.cart.repository.CartItemRepository;
 import com.example.web_bansach.module.cart.repository.CartRepository;
 import com.example.web_bansach.module.inventory.entity.Inventory;
 import com.example.web_bansach.module.inventory.repository.InventoryRepository;
+import com.example.web_bansach.module.order.dto.request.BuyNowOrderRequest;
 import com.example.web_bansach.module.order.dto.request.CreateOrderRequest;
 import com.example.web_bansach.module.order.dto.response.OrderResponse;
 import com.example.web_bansach.module.order.entity.Order;
@@ -31,11 +35,15 @@ import com.example.web_bansach.module.user.repository.UserRepository;
 import com.example.web_bansach.module.voucher.service.VoucherService;
 import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * Service xử lý tạo order từ phía user
- * Sử dụng constructor injection thay vì field injection
+ * Dịch vụ xử lý việc tạo đơn hàng từ phía người dùng.
+ * Nhận các thành phần phụ thuộc thông qua hàm khởi tạo.
  */
 @Service
+@Slf4j
+// Xử lý toàn bộ nghiệp vụ đơn hàng phía người mua, voucher và dữ liệu giỏ.
 public class OrderUserService {
 
     private final UserRepository userRepository;
@@ -44,17 +52,20 @@ public class OrderUserService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final InventoryRepository inventoryRepository;
+    private final BookRepository bookRepository;
     private final VoucherService voucherService;
     private final OrderMapper orderMapper;
     private final RealtimeNotificationService realtimeNotificationService;
     private final OrderValidationService orderValidationService;
 
+    // Khởi tạo service với các repository và service liên quan đến đơn hàng.
     public OrderUserService(UserRepository userRepository,
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             CartRepository cartRepository,
             CartItemRepository cartItemRepository,
             InventoryRepository inventoryRepository,
+            BookRepository bookRepository,
             VoucherService voucherService,
             OrderMapper orderMapper,
             RealtimeNotificationService realtimeNotificationService,
@@ -65,6 +76,7 @@ public class OrderUserService {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.inventoryRepository = inventoryRepository;
+        this.bookRepository = bookRepository;
         this.voucherService = voucherService;
         this.orderMapper = orderMapper;
         this.realtimeNotificationService = realtimeNotificationService;
@@ -72,13 +84,16 @@ public class OrderUserService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    // Tạo đơn từ giỏ, tính voucher, lưu dòng hàng và làm rỗng giỏ trong một transaction.
     public OrderResponse createOrder(String username, CreateOrderRequest request) {
+        log.info("Create order started, email={}", LogMaskingUtil.maskEmail(username));
         orderValidationService.validateCreateOrder(request);
 
         Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
+        log.info("Create order processing, userId={}", user.getId());
 
         var cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new BusinessException("Giỏ hàng trống, không thể tạo đơn"));
@@ -87,7 +102,7 @@ public class OrderUserService {
             throw new BusinessException("Giỏ hàng trống, không thể tạo đơn");
         }
 
-        // Kiểm tra tồn kho cho tất cả items trước khi tạo order
+        // Kiểm tra tồn kho của tất cả sản phẩm trước khi tạo đơn hàng.
         for (CartItem item : cartItems) {
             Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId())
                     .orElseThrow(() -> new BusinessException(
@@ -115,7 +130,10 @@ public class OrderUserService {
 
         // Xử lý voucher nếu có
         if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
-            var voucherResponse = voucherService.getVoucherByCode(request.getVoucherCode());
+            var voucherResponse = voucherService.getMyVoucherByCode(username, request.getVoucherCode());
+            if (voucherResponse == null) {
+                throw new BusinessException("Voucher không thuộc tài khoản hoặc không hợp lệ");
+            }
 
             BigDecimal discountAmount = itemsTotal.multiply(new BigDecimal(voucherResponse.getDiscountPercent()))
                     .divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
@@ -167,14 +185,11 @@ public class OrderUserService {
             orderItemRepository.save(orderItem);
 
             // Giảm Inventory quantity
-            inventory.setQuantity(inventory.getQuantity() - cartItem.getQuantity());
-            inventoryRepository.save(inventory);
         }
 
         // Sử dụng voucher nếu đã áp dụng thành công
-        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()
-                && voucherDiscount.compareTo(BigDecimal.ZERO) > 0) {
-            voucherService.useVoucher(request.getVoucherCode());
+        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
+            voucherService.useOwnedVoucher(username, request.getVoucherCode());
         }
 
         cartItemRepository.deleteByCartId(cart.getId());
@@ -193,10 +208,104 @@ public class OrderUserService {
                 "totalAmount", savedOrder.getTotalAmount(),
                 "status", savedOrder.getStatus().name()));
 
+        log.info("Create order successfully, orderId={}, userId={}, totalAmount={}",
+                savedOrder.getId(),
+                user.getId(),
+                savedOrder.getTotalAmount());
+        return orderMapper.mapToResponse(savedOrder);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    // Tạo đơn mua ngay cho một sách và số lượng cụ thể.
+    public OrderResponse buyNow(String username, BuyNowOrderRequest request) {
+        log.info("Create buy-now order started, email={}, bookId={}, quantity={}",
+                LogMaskingUtil.maskEmail(username),
+                request.getBookId(),
+                request.getQuantity());
+        orderValidationService.validateCreateOrder(request);
+        validateBuyNowRequest(request);
+
+        Users user = userRepository.findByEmail(username);
+        if (user == null) {
+            throw new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng");
+        }
+
+        log.info("Create buy-now order processing, userId={}, bookId={}, quantity={}",
+                user.getId(),
+                request.getBookId(),
+                request.getQuantity());
+
+        Book book = bookRepository.findById(request.getBookId())
+                .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y sÃ¡ch"));
+
+        if (book.getDeletedAt() != null) {
+            throw new BusinessException("SÃ¡ch khÃ´ng kháº£ dá»¥ng");
+        }
+
+        Inventory inventory = inventoryRepository.findByBookIdForUpdate(book.getId())
+                .orElseThrow(() -> new BusinessException("KhÃ´ng tÃ¬m tháº¥y báº£n ghi tá»“n kho cho sÃ¡ch: " + book.getTitle()));
+
+        if (inventory.getQuantity() == null || inventory.getQuantity() < request.getQuantity()) {
+            throw new BusinessException("Sá»‘ lÆ°á»£ng sÃ¡ch '" + book.getTitle() + "' khÃ´ng Ä‘á»§");
+        }
+
+        BigDecimal itemsTotal = book.getPrice().multiply(new BigDecimal(request.getQuantity()));
+        BigDecimal shippingFee = request.getShippingFee() == null ? BigDecimal.ZERO : request.getShippingFee();
+        BigDecimal totalAmount = itemsTotal.add(shippingFee);
+        BigDecimal voucherDiscount = calculateVoucherDiscount(username, request.getVoucherCode(), itemsTotal);
+        totalAmount = totalAmount.subtract(voucherDiscount);
+        if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
+            totalAmount = BigDecimal.ZERO;
+        }
+
+        Order order = new Order();
+        order.setUser(user);
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus(OrderStatus.PENDING);
+        order.setReceiverName(request.getReceiverName().trim());
+        order.setReceiverPhone(request.getReceiverPhone().trim());
+        order.setShippingAddress(request.getShippingAddress().trim());
+        order.setShippingMethod(request.getShippingMethod());
+        order.setShippingFee(shippingFee);
+        order.setVoucherCode(request.getVoucherCode() != null ? request.getVoucherCode().toUpperCase() : null);
+        order.setVoucherDiscount(voucherDiscount);
+        order.setTotalAmount(totalAmount);
+        order.setUpdatedAt(LocalDateTime.now());
+
+        Order savedOrder = orderRepository.save(order);
+
+        OrderItem orderItem = new OrderItem();
+        orderItem.setOrder(savedOrder);
+        orderItem.setBook(book);
+        orderItem.setQuantity(request.getQuantity());
+        orderItem.setPrice(book.getPrice());
+        orderItemRepository.save(orderItem);
+
+        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
+            voucherService.useOwnedVoucher(username, request.getVoucherCode());
+        }
+
+        realtimeNotificationService.publishOrderEvent(
+            "ORDER_CREATED",
+            savedOrder.getId(),
+            user.getUsername(),
+            "ÄÆ¡n hÃ ng má»›i Ä‘Ã£ Ä‘Æ°á»£c táº¡o",
+            "PENDING",
+            java.util.Map.of(
+                "orderId", savedOrder.getId(),
+                "username", user.getUsername(),
+                "totalAmount", savedOrder.getTotalAmount(),
+                "status", savedOrder.getStatus().name()));
+
+        log.info("Create buy-now order successfully, orderId={}, userId={}, totalAmount={}",
+                savedOrder.getId(),
+                user.getId(),
+                savedOrder.getTotalAmount());
         return orderMapper.mapToResponse(savedOrder);
     }
 
     @Transactional(readOnly = true)
+    // Trả lịch sử đơn của tài khoản theo trang, mới nhất trước.
     public Page<OrderResponse> getMyOrders(String username, int page, int size) {
         validatePageRequest(page, size);
 
@@ -204,13 +313,13 @@ public class OrderUserService {
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
-
         Pageable pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
         return orderRepository.findByUserId(user.getId(), pageable)
                 .map(orderMapper::mapToResponse);
     }
 
     @Transactional(readOnly = true)
+    // Trả chi tiết khi đơn thuộc đúng tài khoản yêu cầu.
     public OrderResponse getMyOrderDetail(String username, Long orderId) {
         Users user = userRepository.findByEmail(username);
         if (user == null) {
@@ -225,13 +334,44 @@ public class OrderUserService {
         return orderMapper.mapToResponse(order);
     }
 
+    // Kiểm tra tham số phân trang trước khi truy vấn database.
     private void validatePageRequest(int page, int size) {
         if (page < 0 || size <= 0) {
             throw new BusinessException("Tham số phân trang không hợp lệ");
         }
     }
 
+    // Kiểm tra bookId và số lượng của yêu cầu mua ngay.
+    private void validateBuyNowRequest(BuyNowOrderRequest request) {
+        if (request.getBookId() == null || request.getBookId() <= 0) {
+            throw new BusinessException("ID sach khong hop le");
+        }
+        if (request.getQuantity() == null || request.getQuantity() <= 0) {
+            throw new BusinessException("So luong phai lon hon 0");
+        }
+    }
+
+    // Tính số tiền voucher của người dùng, có áp dụng mức giảm tối đa.
+    private BigDecimal calculateVoucherDiscount(String username, String voucherCode, BigDecimal itemsTotal) {
+        if (voucherCode == null || voucherCode.trim().isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        var voucherResponse = voucherService.getMyVoucherByCode(username, voucherCode);
+        if (voucherResponse == null) {
+            throw new BusinessException("Voucher không thuộc tài khoản hoặc không hợp lệ");
+        }
+        BigDecimal discountAmount = itemsTotal.multiply(new BigDecimal(voucherResponse.getDiscountPercent()))
+                .divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+
+        if (discountAmount.compareTo(voucherResponse.getMaxDiscount()) > 0) {
+            return voucherResponse.getMaxDiscount();
+        }
+        return discountAmount;
+    }
+
     @Transactional(rollbackFor = Exception.class)
+    // Hủy đơn thuộc người dùng nếu chưa giao hoặc hoàn tất.
     public void cancelMyOrder(String username, Long orderId) {
         Users user = userRepository.findByEmail(username);
         if (user == null) {
@@ -254,11 +394,13 @@ public class OrderUserService {
         }
 
         // Hoàn lại inventory
-        List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
-        for (OrderItem item : orderItems) {
-            Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId()).get();
-            inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
-            inventoryRepository.save(inventory);
+        if (order.getStatus() != OrderStatus.PENDING) {
+            List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
+            for (OrderItem item : orderItems) {
+                Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId()).get();
+                inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
+                inventoryRepository.save(inventory);
+            }
         }
 
         order.setStatus(OrderStatus.CANCELLED);

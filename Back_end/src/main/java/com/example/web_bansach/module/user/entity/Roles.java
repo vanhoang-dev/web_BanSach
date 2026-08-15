@@ -17,6 +17,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
+// Ánh xạ quyền ROLE_USER hoặc ROLE_ADMIN dùng bởi Spring Security.
 public class Roles {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

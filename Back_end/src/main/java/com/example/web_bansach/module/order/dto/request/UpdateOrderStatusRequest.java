@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
+// Chứa trạng thái mới mà admin muốn áp dụng cho đơn hàng.
 public class UpdateOrderStatusRequest {
 
     @NotNull(message = "Trạng thái đơn hàng không được để trống")

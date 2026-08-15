@@ -6,39 +6,39 @@ import com.example.web_bansach.module.user.dto.request.AdminUpdateUserRequest;
 import com.example.web_bansach.module.user.dto.response.UserResponse;
 
 /**
- * Service xử lý admin user management - tách riêng từ UserService
- * Quản lý: User CRUD operations dành cho admin
+ * Dịch vụ quản trị tài khoản người dùng, được tách riêng từ dịch vụ người dùng.
+ * Quản lý việc tạo, đọc, cập nhật và xóa người dùng dành cho quản trị viên.
  */
 public interface UserAdminService {
 
     /**
-     * Lấy tất cả users (admin view)
+     * Lấy toàn bộ người dùng cho màn hình quản trị.
      * 
      * @param page - Trang
      * @param size - Kích cỡ
-     * @return List<UserResponse>
+     * @return danh sách thông tin người dùng
      */
     List<UserResponse> layDanhSachNguoiDung(int page, int size);
 
     /**
-     * Cập nhật thông tin user (admin - có thể thay đổi bất kỳ field nào)
+     * Cập nhật thông tin người dùng; quản trị viên có thể thay đổi mọi trường được cho phép.
      * 
      * @param id      - User ID
-     * @param request - AdminUpdateUserRequest
-     * @throws ResourceNotFoundException nếu user không tồn tại
+     * @param request dữ liệu cập nhật từ quản trị viên
+     * @throws ResourceNotFoundException nếu người dùng không tồn tại
      */
     void capNhatNguoiDungAdmin(Long id, AdminUpdateUserRequest request);
 
     /**
-     * Xoá user (soft delete)
+     * Xóa mềm tài khoản người dùng.
      * 
      * @param id - User ID
-     * @throws ResourceNotFoundException nếu user không tồn tại
+     * @throws ResourceNotFoundException nếu người dùng không tồn tại
      */
     void xoaNguoiDungTheoId(Long id);
 
     /**
-     * Bật/tắt user
+     * Bật hoặc tắt trạng thái hoạt động của người dùng.
      * 
      * @param id       - User ID
      * @param isActive - Active flag

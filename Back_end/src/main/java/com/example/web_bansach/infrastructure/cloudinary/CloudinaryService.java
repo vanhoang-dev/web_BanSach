@@ -11,6 +11,7 @@ import com.cloudinary.utils.ObjectUtils;
 import com.example.web_bansach.common.exception.BusinessException;
 
 @Service
+// Upload, xóa và trích publicId ảnh trên Cloudinary.
 public class CloudinaryService {
 
     @Autowired

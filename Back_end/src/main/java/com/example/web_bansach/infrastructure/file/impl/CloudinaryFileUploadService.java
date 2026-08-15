@@ -8,7 +8,7 @@ import com.example.web_bansach.infrastructure.cloudinary.CloudinaryService;
 import com.example.web_bansach.infrastructure.file.FileUploadService;
 
 /**
- * Xử lý upload file sử dụng Cloudinary
+ * Xử lý việc tải tệp lên dịch vụ lưu trữ Cloudinary.
  */
 @Service
 public class CloudinaryFileUploadService implements FileUploadService {
@@ -52,7 +52,7 @@ public class CloudinaryFileUploadService implements FileUploadService {
             return false;
         }
 
-        // Check content type
+        // Kiểm tra loại nội dung của tệp.
         String contentType = file.getContentType();
         if (contentType == null) {
             return false;

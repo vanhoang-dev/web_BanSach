@@ -15,15 +15,18 @@ import com.example.web_bansach.module.author.service.AuthorQueryService;
 
 @RestController
 @RequestMapping("/api/authors")
+// Cung cấp API công khai để người dùng xem, tìm kiếm và lọc sách theo tác giả.
 public class AuthorPublicController {
 
     private final AuthorQueryService authorQueryService;
 
+    // Khởi tạo controller với service truy vấn tác giả.
     public AuthorPublicController(AuthorQueryService authorQueryService) {
         this.authorQueryService = authorQueryService;
     }
 
     @GetMapping
+    // Trả danh sách tác giả theo trang cho giao diện người dùng.
     public ResponseEntity<ApiResponse<PageResponse<AuthorResponse>>> getAllAuthors(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -32,6 +35,7 @@ public class AuthorPublicController {
     }
 
     @GetMapping("/search")
+    // Tìm tác giả theo từ khóa và trả kết quả có phân trang.
     public ResponseEntity<ApiResponse<PageResponse<AuthorResponse>>> searchAuthors(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") Integer page,
@@ -41,6 +45,7 @@ public class AuthorPublicController {
     }
 
     @GetMapping("/{id}")
+    // Trả thông tin chi tiết của một tác giả theo ID.
     public ResponseEntity<ApiResponse<AuthorResponse>> getAuthorById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(authorQueryService.getAuthorById(id)));
     }

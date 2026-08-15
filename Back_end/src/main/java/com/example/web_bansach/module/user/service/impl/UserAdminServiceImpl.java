@@ -19,7 +19,7 @@ import com.example.web_bansach.module.user.repository.UserRepository;
 import com.example.web_bansach.module.user.service.UserAdminService;
 
 /**
- * Xử lý user management - admin view
+ * Xử lý nghiệp vụ quản lý người dùng dành cho quản trị viên.
  * Quản lý: CRUD operations cho users
  */
 @Service

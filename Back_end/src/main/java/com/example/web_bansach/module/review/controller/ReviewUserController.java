@@ -25,7 +25,7 @@ import com.example.web_bansach.module.review.service.ReviewService;
 import jakarta.validation.Valid;
 
 /**
- * Controller xử lý đánh giá sách cho user
+ * Bộ điều khiển đánh giá sách dành cho người dùng.
  */
 @RestController
 @RequestMapping("/user/reviews")
@@ -76,7 +76,7 @@ public class ReviewUserController {
     }
 
     /**
-     * Lấy đánh giá của user cho một sách
+     * Lấy đánh giá của người dùng dành cho một cuốn sách.
      * GET /user/reviews/book/{bookId}/my-review
      */
     @GetMapping("/book/{bookId}/my-review")

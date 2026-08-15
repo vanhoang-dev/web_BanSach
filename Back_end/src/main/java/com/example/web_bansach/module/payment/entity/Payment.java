@@ -28,7 +28,7 @@ public class Payment {
 
     private BigDecimal amount;
     private String paymentMethod; // SEPAY only
-    private String status; // PENDING, SUCCESS, FAILED, REFUNDED, CANCELLED
+    private String status; // PENDING, SUCCESS, FAILED, CANCELLED
 
     // Transaction tracking
     private String transactionId; // ID từ payment gateway

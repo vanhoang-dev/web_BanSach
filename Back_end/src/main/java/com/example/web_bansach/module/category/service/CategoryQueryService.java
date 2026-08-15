@@ -5,28 +5,28 @@ import org.springframework.data.domain.Page;
 import com.example.web_bansach.module.category.dto.response.CategoryResponse;
 
 /**
- * Query Service Interface for Category
- * Handles all read operations
+ * Giao diện dịch vụ truy vấn danh mục.
+ * Xử lý toàn bộ thao tác đọc dữ liệu danh mục.
  */
 public interface CategoryQueryService {
 
     /**
-     * Get all active categories with pagination
+     * Lấy các danh mục đang hoạt động theo từng trang.
      */
     Page<CategoryResponse> getAllActive(int pageNumber, int pageSize);
 
     /**
-     * Get category by ID
+     * Lấy danh mục theo mã định danh.
      */
     CategoryResponse getById(Long id);
 
     /**
-     * Search categories by name
+     * Tìm danh mục theo tên.
      */
     Page<CategoryResponse> search(String keyword, int pageNumber, int pageSize);
 
     /**
-     * Check if category exists
+     * Kiểm tra danh mục có tồn tại hay không.
      */
     boolean exists(Long id);
 }

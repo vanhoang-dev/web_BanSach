@@ -21,6 +21,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ số lượng tồn kho hiện tại của từng cuốn sách.
 public class Inventory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

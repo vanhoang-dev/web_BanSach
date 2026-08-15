@@ -9,7 +9,7 @@ import com.example.web_bansach.module.cart.entity.CartItem;
 import com.example.web_bansach.module.pricing.service.PricingService;
 
 /**
- * Mapper xử lý mapping Cart entity sang CartResponse
+ * Chuyển thực thể giỏ hàng thành dữ liệu phản hồi.
  */
 @Component
 public class CartItemMapper {
@@ -21,7 +21,7 @@ public class CartItemMapper {
     }
 
     /**
-     * Map CartItem sang CartItemResponse
+     * Chuyển một dòng sản phẩm trong giỏ thành dữ liệu phản hồi.
      * Sử dụng PricingService để tính giá
      */
     public CartItemResponse mapToResponse(CartItem item) {
@@ -36,18 +36,18 @@ public class CartItemMapper {
         response.setBookCoverImage(item.getBook().getCoverImage());
         response.setBookPrice(item.getBook().getPrice());
 
-        // Calculate price with discount
+        // Tính giá sản phẩm sau khi áp dụng giảm giá.
         BigDecimal priceAfterDiscount = pricingService.calculateBookPrice(item.getBook());
         response.setPriceAfterDiscount(priceAfterDiscount);
 
-        // Get discount percent if available
+        // Lấy phần trăm giảm giá nếu đang có hiệu lực.
         Integer discountPercent = pricingService.getDiscountPercent(item.getBook());
         response.setDiscountPercent(discountPercent > 0 ? discountPercent : null);
 
         // Set quantity
         response.setQuantity(item.getQuantity());
 
-        // Calculate subtotal
+        // Tính thành tiền của sản phẩm.
         BigDecimal subtotal = priceAfterDiscount.multiply(new BigDecimal(item.getQuantity()));
         response.setSubtotal(subtotal);
 

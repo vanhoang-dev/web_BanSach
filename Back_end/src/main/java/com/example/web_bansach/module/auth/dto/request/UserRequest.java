@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
+// Chứa và kiểm tra dữ liệu frontend gửi lên khi đăng ký tài khoản.
 public class UserRequest {
 
     @NotBlank(message = "Tên đăng nhập không được để trống")
@@ -14,7 +15,8 @@ public class UserRequest {
     private String username;
 
     @NotBlank(message = "Mật khẩu không được để trống")
-    @Size(min = 6, max = 50, message = "Mật khẩu phải từ 6 đến 50 ký tự")
+    @Size(min = 8, max = 50, message = "Mật khẩu phải từ 8 đến 50 ký tự")
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).*$", message = "Mật khẩu phải có chữ hoa, chữ thường, số và ký tự đặc biệt")
     private String password;
 
     @NotBlank(message = "Họ tên không được để trống")

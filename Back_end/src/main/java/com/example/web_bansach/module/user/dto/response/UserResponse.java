@@ -6,6 +6,7 @@ import java.util.Set;
 import lombok.Data;
 
 @Data
+// Trả hồ sơ, trạng thái và quyền tài khoản cho frontend.
 public class UserResponse {
     private Long userId;
     private String username;

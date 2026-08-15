@@ -7,13 +7,13 @@ import com.example.web_bansach.module.wishlist.dto.response.WishlistResponse;
 import com.example.web_bansach.module.wishlist.entity.Wishlist;
 
 /**
- * Mapper xử lý mapping Wishlist entity sang WishlistResponse
+ * Chuyển thực thể danh sách yêu thích thành dữ liệu phản hồi.
  */
 @Component
 public class WishlistMapper {
 
     /**
-     * Map Wishlist entity sang WishlistResponse
+     * Chuyển một thực thể yêu thích thành dữ liệu phản hồi.
      */
     public WishlistResponse mapToResponse(Wishlist wishlist) {
         if (wishlist == null) {
