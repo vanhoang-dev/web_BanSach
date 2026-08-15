@@ -8,6 +8,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
+// Chứa dữ liệu admin được phép thay đổi trên một tài khoản.
 public class AdminUpdateUserRequest {
 
     @NotBlank(message = "Họ tên không được để trống")

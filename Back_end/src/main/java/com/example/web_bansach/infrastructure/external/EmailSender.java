@@ -10,6 +10,7 @@ import com.example.web_bansach.common.exception.BusinessException;
 import jakarta.mail.internet.MimeMessage;
 
 @Service
+// Gửi email HTML, hiện được dùng cho luồng khôi phục mật khẩu.
 public class EmailSender {
 
     private final ObjectProvider<JavaMailSender> mailSenderProvider;

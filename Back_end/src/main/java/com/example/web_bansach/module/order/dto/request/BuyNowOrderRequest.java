@@ -7,9 +7,11 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
+// Mở rộng thông tin giao hàng với bookId và số lượng cho luồng mua ngay.
 public class BuyNowOrderRequest extends CreateOrderRequest {
 
     @NotNull(message = "ID sách không được để trống")
+    @Min(value = 1, message = "ID sach phai lon hon 0")
     private Long bookId;
 
     @NotNull(message = "Số lượng không được để trống")

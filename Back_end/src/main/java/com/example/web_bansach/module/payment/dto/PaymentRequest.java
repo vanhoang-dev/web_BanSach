@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Request để khởi tạo payment
+ * Dữ liệu yêu cầu khởi tạo thanh toán.
  */
 @Getter
 @Setter

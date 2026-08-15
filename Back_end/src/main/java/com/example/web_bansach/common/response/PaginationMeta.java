@@ -5,9 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Page metadata used together with PageResponse.
+ * Thông tin phân trang được sử dụng cùng dữ liệu phản hồi theo trang.
  *
- * pageNumber is zero-based because Spring Data pages start from 0.
+ * Số trang bắt đầu từ 0 để thống nhất với quy ước của Spring Data.
  */
 @Data
 @NoArgsConstructor

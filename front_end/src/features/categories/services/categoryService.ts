@@ -8,6 +8,12 @@ export interface CategoryItem {
   isActive?: boolean;
 }
 
+export interface CategoryPage {
+  content: CategoryItem[];
+  totalElements: number;
+  totalPages: number;
+}
+
 const normalize = (item: any): CategoryItem => ({
   id: item?.id,
   name: item?.name,
@@ -16,16 +22,16 @@ const normalize = (item: any): CategoryItem => ({
 });
 
 const categoryService = {
-  getCategories: async (page: number = 0, size: number = 24): Promise<any> => {
+  getCategories: async (page: number = 0, size: number = 24): Promise<CategoryPage> => {
     const response = await api.get(`/api/categories?page=${page}&size=${size}`);
     const pageData = unwrapPage<any>(response);
-    return { data: { ...pageData, content: (pageData.content || []).map(normalize) } };
+    return { ...pageData, content: (pageData.content || []).map(normalize) };
   },
 
-  searchCategories: async (keyword: string, page: number = 0, size: number = 24): Promise<any> => {
+  searchCategories: async (keyword: string, page: number = 0, size: number = 24): Promise<CategoryPage> => {
     const response = await api.get(`/api/categories/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`);
     const pageData = unwrapPage<any>(response);
-    return { data: { ...pageData, content: (pageData.content || []).map(normalize) } };
+    return { ...pageData, content: (pageData.content || []).map(normalize) };
   },
 };
 

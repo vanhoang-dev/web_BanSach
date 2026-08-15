@@ -41,7 +41,7 @@ export interface Order {
   shippingFee?: number;
   voucherCode?: string;
   voucherDiscount?: number;
-  status?: 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
+  status?: 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
   paymentStatus?: 'UNPAID' | 'PAID';
   orderDate?: string;
   createdAt?: string;
@@ -49,7 +49,17 @@ export interface Order {
 
 const mapOrder = (order: any): Order => ({
   id: order?.id,
-  items: order?.items || [],
+  items: (order?.items || []).map((item: any) => ({
+    id: item?.id,
+    bookId: Number(item?.bookId || 0),
+    quantity: Number(item?.quantity || 0),
+    price: Number(item?.price || 0),
+    book: {
+      id: Number(item?.bookId || 0),
+      title: item?.bookTitle || `Sách #${item?.bookId}`,
+      cover: item?.bookCoverImage,
+    },
+  })),
   totalPrice: Number(order?.totalAmount ?? 0),
   totalAmount: Number(order?.totalAmount ?? 0),
   status: order?.status,
@@ -58,6 +68,8 @@ const mapOrder = (order: any): Order => ({
   fullName: order?.receiverName,
   phoneNumber: order?.receiverPhone,
   shippingAddress: order?.shippingAddress,
+  shippingMethod: order?.shippingMethod,
+  shippingFee: Number(order?.shippingFee ?? 0),
   voucherCode: order?.voucherCode,
   voucherDiscount: Number(order?.voucherDiscount ?? 0),
   orderDate: order?.orderDate,

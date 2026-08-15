@@ -20,12 +20,14 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/user")
+// Cung cấp API để người dùng xem và cập nhật hồ sơ, mật khẩu của chính mình.
 public class UserProfileController {
 
     @Autowired
     private UserService service;
 
     @GetMapping("/me")
+    // Trả hồ sơ đầy đủ của tài khoản đang đăng nhập.
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUserProfile() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(ApiResponse.success(service.getCurrentUserProfile(username)));
@@ -33,6 +35,7 @@ public class UserProfileController {
 
     // Cập nhật thông tin tài khoản của người dùng hiện tại
     @PutMapping("/update-profile")
+    // Cập nhật họ tên, email, điện thoại và địa chỉ của tài khoản hiện tại.
     public ResponseEntity<ApiResponse<?>> updateUser(@Valid @RequestBody UpdateUserRequest updateUserRequest) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         service.updateCurrentUserProfile(username, updateUserRequest);
@@ -42,6 +45,7 @@ public class UserProfileController {
     }
 
     @PostMapping("/change-password")
+    // Kiểm tra mật khẩu cũ rồi lưu mật khẩu mới đã mã hóa.
     public ResponseEntity<ApiResponse<?>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         service.changeCurrentUserPassword(username, request);

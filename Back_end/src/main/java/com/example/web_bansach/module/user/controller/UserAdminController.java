@@ -25,6 +25,7 @@ import jakarta.validation.constraints.Min;
 
 @RestController
 @RequestMapping("/user_for_admin/")
+// Cung cấp API quản trị danh sách, hồ sơ và trạng thái tài khoản người dùng.
 public class UserAdminController {
     @Autowired
     private UserService userService;
@@ -32,6 +33,7 @@ public class UserAdminController {
     // Lấy người dùng theo ID người dùng
     @GetMapping("user/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    // Trả thông tin người dùng theo ID cho admin.
     public ResponseEntity<ApiResponse<Users>> getUserId(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(userService.layNguoiDungTheoId(id)));
     }
@@ -39,6 +41,7 @@ public class UserAdminController {
     // Lấy tất cả người dùng từ dữ liệu
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    // Trả danh sách người dùng có phân trang.
     public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getAllUser(
             @RequestParam(defaultValue = "0") @Min(0) Integer page,
             @RequestParam(defaultValue = "10") @Min(1) Integer size) {
@@ -49,6 +52,7 @@ public class UserAdminController {
     // Xóa người dùng theo ID
     @DeleteMapping("/user/delete/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    // Xóa mềm tài khoản để bảo toàn dữ liệu liên quan.
     public ResponseEntity<ApiResponse<?>> deleteUserId(@PathVariable Long id) {
         userService.xoaNguoiDungTheoId(id);
         return ResponseEntity.ok(ApiResponse.success("Đã xóa thành công người dùng", null));
@@ -57,6 +61,7 @@ public class UserAdminController {
     // Chỉnh sửa thông tin hoặc hoạt động của người dùng
     @PutMapping("/user/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    // Cho phép admin cập nhật thông tin, quyền và trạng thái tài khoản.
     public ResponseEntity<ApiResponse<?>> updateUserForAdmin(
             @PathVariable Long id,
             @Valid @RequestBody AdminUpdateUserRequest request) {

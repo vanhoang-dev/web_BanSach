@@ -19,6 +19,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ chương trình giảm trực tiếp trên giá sách trong một khoảng thời gian.
 public class Discount {
 
     @Id

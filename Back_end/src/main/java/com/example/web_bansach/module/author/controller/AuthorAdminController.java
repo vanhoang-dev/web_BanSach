@@ -27,23 +27,27 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/admin/authors")
 @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+// Cung cấp API quản trị để thêm, sửa, xóa và xem danh sách tác giả.
 public class AuthorAdminController {
 
     private final AuthorCommandService authorCommandService;
 
     private final AuthorQueryService authorQueryService;
 
+    // Khởi tạo controller với service ghi và service đọc dữ liệu tác giả.
     public AuthorAdminController(AuthorCommandService authorCommandService, AuthorQueryService authorQueryService) {
         this.authorCommandService = authorCommandService;
         this.authorQueryService = authorQueryService;
     }
 
     @PostMapping
+    // Tạo một tác giả mới từ dữ liệu quản trị viên gửi lên.
     public ResponseEntity<ApiResponse<Author>> createAuthor(@Valid @RequestBody AuthorRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(authorCommandService.addAuthorService(request)));
     }
 
     @PutMapping("/{id}")
+    // Cập nhật thông tin tác giả đã tồn tại.
     public ResponseEntity<ApiResponse<Author>> updateAuthor(
             @PathVariable Long id,
             @Valid @RequestBody AuthorRequest request) {
@@ -51,12 +55,14 @@ public class AuthorAdminController {
     }
 
     @DeleteMapping("/{id}")
+    // Xóa tác giả theo ID sau khi kiểm tra ràng buộc nghiệp vụ.
     public ResponseEntity<ApiResponse<?>> deleteAuthor(@PathVariable Long id) {
         authorCommandService.deleAuthorService(id);
         return ResponseEntity.ok(ApiResponse.success("Đã xóa tác giả thành công", null));
     }
 
     @GetMapping
+    // Trả danh sách tác giả có phân trang cho màn hình admin.
     public ResponseEntity<ApiResponse<PageResponse<AuthorResponse>>> getAllAuthors(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {

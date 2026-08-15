@@ -12,6 +12,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Đóng gói dữ liệu sự kiện realtime gửi qua WebSocket hoặc SSE.
 public class RealtimeNotification {
     private String eventType;
     private String entityType;

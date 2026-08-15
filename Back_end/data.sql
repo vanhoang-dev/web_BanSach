@@ -83,17 +83,17 @@ INSERT INTO categories (category_name, description, is_active, created_at, updat
 ('Sach Cho Tre Em', 'Cac cuon sach dac biet cho tre em', 1, NOW(), NOW(), NULL);
 
 -- ============ DISCOUNTS ============
-INSERT INTO discounts (name, discount_percent, start_date, end_date, is_active, created_at) VALUES 
-('Summer Sale', 10, '2026-06-01', '2026-08-31', 1, NOW()),
-('Black Friday', 25, '2026-11-01', '2026-11-30', 1, NOW()),
-('New Year', 15, '2026-01-01', '2026-01-31', 1, NOW()),
-('Valentine', 20, '2026-02-01', '2026-02-14', 1, NOW()),
-('Easter Sale', 12, '2026-03-15', '2026-03-31', 1, NOW()),
-('Tet Holiday', 30, '2026-01-15', '2026-02-05', 0, NOW()),
-('Mid Year', 8, '2026-06-15', '2026-06-30', 1, NOW()),
-('Back to School', 18, '2026-08-01', '2026-09-30', 1, NOW()),
-('Anniversary', 22, '2026-05-01', '2026-05-31', 0, NOW()),
-('Clearance', 40, '2026-12-01', '2026-12-31', 1, NOW());
+INSERT INTO discounts (name, discount_percent, start_date, end_date, is_active) VALUES 
+('Summer Sale', 10, '2026-06-01', '2026-08-31', 1),
+('Black Friday', 25, '2026-11-01', '2026-11-30', 1),
+('New Year', 15, '2026-01-01', '2026-01-31', 1),
+('Valentine', 20, '2026-02-01', '2026-02-14', 1),
+('Easter Sale', 12, '2026-03-15', '2026-03-31', 1),
+('Tet Holiday', 30, '2026-01-15', '2026-02-05', 0),
+('Mid Year', 8, '2026-06-15', '2026-06-30', 1),
+('Back to School', 18, '2026-08-01', '2026-09-30', 1),
+('Anniversary', 22, '2026-05-01', '2026-05-31', 0),
+('Clearance', 40, '2026-12-01', '2026-12-31', 1);
 
 -- ============ BOOKS ============
 INSERT INTO books (title, publisher, publication_year, isbn, price, description, author_id, category_id, discount_id, created_at) VALUES 
@@ -109,17 +109,17 @@ INSERT INTO books (title, publisher, publication_year, isbn, price, description,
 ('Cho Thoi Nieu Truoc', 'NXB Nhi Dong', 2020, '978-0000010', 45000.00, 'Sach co tich cho tre em', 10, 10, 8, NOW());
 
 -- ============ INVENTORY ============
-INSERT INTO inventory (book_id, quantity, updated_at) VALUES 
-(1, 50, NOW()),
-(2, 35, NOW()),
-(3, 20, NOW()),
-(4, 15, NOW()),
-(5, 60, NOW()),
-(6, 40, NOW()),
-(7, 25, NOW()),
-(8, 10, NOW()),
-(9, 30, NOW()),
-(10, 100, NOW());
+INSERT INTO inventory (book_id, quantity) VALUES 
+(1, 50),
+(2, 35),
+(3, 20),
+(4, 15),
+(5, 60),
+(6, 40),
+(7, 25),
+(8, 10),
+(9, 30),
+(10, 100);
 
 -- ============ CARTS ============
 INSERT INTO carts (user_id, created_at, updated_at) VALUES 
@@ -148,17 +148,17 @@ INSERT INTO cart_items (cart_id, book_id, quantity, price) VALUES
 (9, 10, 4, 45000.00);
 
 -- ============ ORDERS ============
-INSERT INTO orders (user_id, order_date, status, total_amount, receiver_name, receiver_phone, shipping_address, shipping_fee, shipping_method, tracking_code, updated_at) VALUES 
-(2, NOW(), 'COMPLETED', 285000.00, 'Nguyen Van A', '0901111111', 'Ha Noi', 30000.00, 'Standard', 'VN001', NOW()),
-(3, NOW(), 'SHIPPING', 95000.00, 'Tran Thi B', '0902222222', 'Ho Chi Minh', 25000.00, 'Express', 'VN002', NOW()),
-(4, NOW(), 'CONFIRMED', 330000.00, 'Le Van C', '0903333333', 'Da Nang', 35000.00, 'Standard', 'VN003', NOW()),
-(5, NOW(), 'PENDING', 225000.00, 'Pham Thi D', '0904444444', 'Can Tho', 30000.00, 'Standard', 'VN004', NOW()),
-(6, NOW(), 'COMPLETED', 105000.00, 'Hoang Van E', '0905555555', 'Hai Phong', 25000.00, 'Express', 'VN005', NOW()),
-(7, NOW(), 'COMPLETED', 155000.00, 'Vu Thi F', '0906666666', 'Vinh Phuc', 20000.00, 'Standard', 'VN006', NOW()),
-(8, NOW(), 'SHIPPING', 285000.00, 'Dang Van G', '0907777777', 'Thai Nguyen', 30000.00, 'Standard', 'VN007', NOW()),
-(9, NOW(), 'COMPLETED', 155000.00, 'Bui Thi H', '0908888888', 'Bac Ninh', 25000.00, 'Express', 'VN008', NOW()),
-(10, NOW(), 'PENDING', 290000.00, 'Ngo Van I', '0909999999', 'Quang Ninh', 35000.00, 'Standard', 'VN009', NOW()),
-(2, DATE_ADD(NOW(), INTERVAL -7 DAY), 'COMPLETED', 180000.00, 'Nguyen Van A', '0901111111', 'Ha Noi', 20000.00, 'Standard', 'VN010', NOW());
+INSERT INTO orders (user_id, order_date, status, total_amount, receiver_name, receiver_phone, shipping_address, shipping_fee, shipping_method, updated_at) VALUES 
+(2, NOW(), 'COMPLETED', 285000.00, 'Nguyen Van A', '0901111111', 'Ha Noi', 30000.00, 'Standard', NOW()),
+(3, NOW(), 'SHIPPING', 95000.00, 'Tran Thi B', '0902222222', 'Ho Chi Minh', 25000.00, 'Express', NOW()),
+(4, NOW(), 'CONFIRMED', 330000.00, 'Le Van C', '0903333333', 'Da Nang', 35000.00, 'Standard', NOW()),
+(5, NOW(), 'PENDING', 225000.00, 'Pham Thi D', '0904444444', 'Can Tho', 30000.00, 'Standard', NOW()),
+(6, NOW(), 'COMPLETED', 105000.00, 'Hoang Van E', '0905555555', 'Hai Phong', 25000.00, 'Express', NOW()),
+(7, NOW(), 'COMPLETED', 155000.00, 'Vu Thi F', '0906666666', 'Vinh Phuc', 20000.00, 'Standard', NOW()),
+(8, NOW(), 'SHIPPING', 285000.00, 'Dang Van G', '0907777777', 'Thai Nguyen', 30000.00, 'Standard', NOW()),
+(9, NOW(), 'COMPLETED', 155000.00, 'Bui Thi H', '0908888888', 'Bac Ninh', 25000.00, 'Express', NOW()),
+(10, NOW(), 'PENDING', 290000.00, 'Ngo Van I', '0909999999', 'Quang Ninh', 35000.00, 'Standard', NOW()),
+(2, DATE_ADD(NOW(), INTERVAL -7 DAY), 'COMPLETED', 180000.00, 'Nguyen Van A', '0901111111', 'Ha Noi', 20000.00, 'Standard', NOW());
 
 -- ============ ORDER_ITEMS ============
 INSERT INTO order_items (order_id, book_id, quantity, price) VALUES 

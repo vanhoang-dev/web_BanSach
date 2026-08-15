@@ -24,7 +24,7 @@ import com.example.web_bansach.module.user.repository.UserRepository;
 
 /**
  * Service quản lý voucher
- * Sử dụng constructor injection thay vì field injection
+ * Nhận các thành phần phụ thuộc thông qua hàm khởi tạo.
  */
 @Service
 public class VoucherService {
@@ -50,7 +50,7 @@ public class VoucherService {
         Voucher voucher = voucherRepository.findById(voucherId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy voucher"));
 
-        // Lock by code before checking quantity so concurrent claims cannot oversell.
+        // Khóa bản ghi theo mã trước khi kiểm tra số lượng để tránh cấp vượt mức khi có yêu cầu đồng thời.
         voucher = voucherRepository.findByCodeForUpdate(voucher.getCode())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy voucher"));
         if (userVoucherRepository.existsByUser_IdAndVoucher_Id(user.getId(), voucher.getId())) {
@@ -74,9 +74,9 @@ public class VoucherService {
     @Transactional(readOnly = true)
     public Page<VoucherResponse> getMyAvailableVouchers(String email, int page, int size) {
         Users user = requireUser(email);
-        // The repository query already sorts by uv.voucher.expiredAt. Adding a
-        // pageable sort here would target uv.expiredAt, which does not exist on
-        // UserVoucher and makes the "my vouchers" endpoint fail.
+        // Truy vấn repository đã sắp xếp theo thời hạn voucher. Nếu thêm sắp xếp
+        // từ Pageable, Spring sẽ tìm trường expiredAt không tồn tại trong UserVoucher
+        // và khiến endpoint lấy kho voucher của người dùng bị lỗi.
         Pageable pageable = PageRequest.of(page, size);
         return userVoucherRepository.findAvailableByUserId(user.getId(), LocalDate.now(), pageable)
                 .map(voucherMapper::mapToResponse);
@@ -190,7 +190,7 @@ public class VoucherService {
     }
 
     /**
-     * Lấy danh sách voucher hợp lệ (user - chỉ show voucher còn hạn sử dụng)
+     * Lấy danh sách voucher còn hạn sử dụng dành cho người dùng.
      */
     @Transactional(readOnly = true)
     public Page<VoucherResponse> getValidVouchers(int page, int size) {
@@ -222,7 +222,7 @@ public class VoucherService {
     }
 
     /**
-     * Giảm số lượng voucher (khi user sử dụng)
+     * Giảm số lượng voucher khi người dùng sử dụng.
      */
     @Transactional(rollbackFor = Exception.class)
     public void useVoucher(String code) {

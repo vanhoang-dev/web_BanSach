@@ -6,59 +6,59 @@ import com.example.web_bansach.module.book.entity.Book;
 import com.example.web_bansach.module.voucher.entity.Voucher;
 
 /**
- * Service tính toán giá (pricing, discount, voucher)
- * Tách riêng logic để tái sử dụng ở multiple places (cart, order, etc.)
+ * Dịch vụ tính giá sản phẩm, mức giảm giá và voucher.
+ * Tách riêng logic tính giá để tái sử dụng tại giỏ hàng, đơn hàng và các nơi khác.
  */
 public interface PricingService {
 
     /**
-     * Tính giá sách sau khi áp dụng discount
+     * Tính giá sách sau khi áp dụng chương trình giảm giá.
      * 
-     * @param book - Đối tượng sách
-     * @return Giá sau khi áp dụng discount (nếu có)
+     * @param book đối tượng sách
+     * @return giá sau khi áp dụng chương trình giảm giá nếu có
      */
     BigDecimal calculateBookPrice(Book book);
 
     /**
-     * Tính tiền discount từ discount object
+     * Tính số tiền được giảm từ chương trình giảm giá của sách.
      * 
-     * @param book - Đối tượng sách
-     * @return Số tiền discount
+     * @param book đối tượng sách
+     * @return số tiền được giảm
      */
     BigDecimal calculateDiscount(Book book);
 
     /**
-     * Tính tiền discount từ voucher
+     * Tính số tiền được giảm từ voucher.
      * 
      * @param totalAmount - Tổng tiền trước khi áp voucher
      * @param voucher     - Đối tượng voucher
-     * @return Số tiền discount từ voucher (có giới hạn maxDiscount)
+     * @return số tiền được giảm từ voucher, không vượt quá mức giảm tối đa
      */
     BigDecimal calculateVoucherDiscount(BigDecimal totalAmount, Voucher voucher);
 
     /**
-     * Tính giá cuối cùng sau khi áp dụng discount và voucher
+     * Tính giá cuối cùng sau khi áp dụng chương trình giảm giá và voucher.
      * 
-     * @param book     - Đối tượng sách
+     * @param book đối tượng sách
      * @param quantity - Số lượng
      * @param voucher  - Voucher (có thể null)
-     * @return Giá cuối cùng
+     * @return giá cuối cùng
      */
     BigDecimal calculateFinalPrice(Book book, Integer quantity, Voucher voucher);
 
     /**
-     * Check xem book có discount active không
+     * Kiểm tra sách có chương trình giảm giá đang hoạt động hay không.
      * 
-     * @param book - Đối tượng sách
-     * @return true nếu book có discount active
+     * @param book đối tượng sách
+     * @return {@code true} nếu sách có chương trình giảm giá đang hoạt động
      */
     boolean hasActiveDiscount(Book book);
 
     /**
-     * Lấy phần trăm discount của book
+     * Lấy phần trăm giảm giá của sách.
      * 
-     * @param book - Đối tượng sách
-     * @return Phần trăm discount, 0 nếu không có discount
+     * @param book đối tượng sách
+     * @return phần trăm giảm giá hoặc 0 nếu không có chương trình giảm giá
      */
     Integer getDiscountPercent(Book book);
 }

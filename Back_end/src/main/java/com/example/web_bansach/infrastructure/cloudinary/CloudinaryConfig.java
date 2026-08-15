@@ -8,6 +8,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 
 @Configuration
+// Tạo Cloudinary client từ thông tin cấu hình môi trường.
 public class CloudinaryConfig {
 
     @Value("${cloudinary.cloud-name}")

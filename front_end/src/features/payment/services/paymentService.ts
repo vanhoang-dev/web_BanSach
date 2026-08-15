@@ -14,6 +14,9 @@ export interface PaymentResponse {
   transactionId?: string;
   amount: number;
   status: 'PENDING' | 'SUCCESS' | 'FAILED' | string;
+  paymentMethod?: string;
+  createdAt?: string;
+  paidAt?: string;
   message?: string;
 }
 

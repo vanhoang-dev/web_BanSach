@@ -9,10 +9,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Wrapper for paged API data.
+ * Cấu trúc bao bọc dữ liệu API có phân trang.
  *
- * content: items on the current page
- * meta: page information needed by the frontend
+ * content: danh sách phần tử trong trang hiện tại.
+ * meta: thông tin phân trang cần thiết cho giao diện.
  */
 @Data
 @NoArgsConstructor

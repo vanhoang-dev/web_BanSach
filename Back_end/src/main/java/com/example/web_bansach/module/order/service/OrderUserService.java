@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
+import com.example.web_bansach.common.logging.LogMaskingUtil;
 import com.example.web_bansach.module.book.repository.BookRepository;
 import com.example.web_bansach.module.book.entity.Book;
 import com.example.web_bansach.module.cart.entity.CartItem;
@@ -34,11 +35,15 @@ import com.example.web_bansach.module.user.repository.UserRepository;
 import com.example.web_bansach.module.voucher.service.VoucherService;
 import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * Service xử lý tạo order từ phía user
- * Sử dụng constructor injection thay vì field injection
+ * Dịch vụ xử lý việc tạo đơn hàng từ phía người dùng.
+ * Nhận các thành phần phụ thuộc thông qua hàm khởi tạo.
  */
 @Service
+@Slf4j
+// Xử lý toàn bộ nghiệp vụ đơn hàng phía người mua, voucher và dữ liệu giỏ.
 public class OrderUserService {
 
     private final UserRepository userRepository;
@@ -53,6 +58,7 @@ public class OrderUserService {
     private final RealtimeNotificationService realtimeNotificationService;
     private final OrderValidationService orderValidationService;
 
+    // Khởi tạo service với các repository và service liên quan đến đơn hàng.
     public OrderUserService(UserRepository userRepository,
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
@@ -78,13 +84,16 @@ public class OrderUserService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    // Tạo đơn từ giỏ, tính voucher, lưu dòng hàng và làm rỗng giỏ trong một transaction.
     public OrderResponse createOrder(String username, CreateOrderRequest request) {
+        log.info("Create order started, email={}", LogMaskingUtil.maskEmail(username));
         orderValidationService.validateCreateOrder(request);
 
         Users user = userRepository.findByEmail(username);
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
+        log.info("Create order processing, userId={}", user.getId());
 
         var cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new BusinessException("Giỏ hàng trống, không thể tạo đơn"));
@@ -93,7 +102,7 @@ public class OrderUserService {
             throw new BusinessException("Giỏ hàng trống, không thể tạo đơn");
         }
 
-        // Kiểm tra tồn kho cho tất cả items trước khi tạo order
+        // Kiểm tra tồn kho của tất cả sản phẩm trước khi tạo đơn hàng.
         for (CartItem item : cartItems) {
             Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId())
                     .orElseThrow(() -> new BusinessException(
@@ -199,11 +208,20 @@ public class OrderUserService {
                 "totalAmount", savedOrder.getTotalAmount(),
                 "status", savedOrder.getStatus().name()));
 
+        log.info("Create order successfully, orderId={}, userId={}, totalAmount={}",
+                savedOrder.getId(),
+                user.getId(),
+                savedOrder.getTotalAmount());
         return orderMapper.mapToResponse(savedOrder);
     }
 
     @Transactional(rollbackFor = Exception.class)
+    // Tạo đơn mua ngay cho một sách và số lượng cụ thể.
     public OrderResponse buyNow(String username, BuyNowOrderRequest request) {
+        log.info("Create buy-now order started, email={}, bookId={}, quantity={}",
+                LogMaskingUtil.maskEmail(username),
+                request.getBookId(),
+                request.getQuantity());
         orderValidationService.validateCreateOrder(request);
         validateBuyNowRequest(request);
 
@@ -211,6 +229,11 @@ public class OrderUserService {
         if (user == null) {
             throw new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng");
         }
+
+        log.info("Create buy-now order processing, userId={}, bookId={}, quantity={}",
+                user.getId(),
+                request.getBookId(),
+                request.getQuantity());
 
         Book book = bookRepository.findById(request.getBookId())
                 .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y sÃ¡ch"));
@@ -274,10 +297,15 @@ public class OrderUserService {
                 "totalAmount", savedOrder.getTotalAmount(),
                 "status", savedOrder.getStatus().name()));
 
+        log.info("Create buy-now order successfully, orderId={}, userId={}, totalAmount={}",
+                savedOrder.getId(),
+                user.getId(),
+                savedOrder.getTotalAmount());
         return orderMapper.mapToResponse(savedOrder);
     }
 
     @Transactional(readOnly = true)
+    // Trả lịch sử đơn của tài khoản theo trang, mới nhất trước.
     public Page<OrderResponse> getMyOrders(String username, int page, int size) {
         validatePageRequest(page, size);
 
@@ -285,13 +313,13 @@ public class OrderUserService {
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
-
         Pageable pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
         return orderRepository.findByUserId(user.getId(), pageable)
                 .map(orderMapper::mapToResponse);
     }
 
     @Transactional(readOnly = true)
+    // Trả chi tiết khi đơn thuộc đúng tài khoản yêu cầu.
     public OrderResponse getMyOrderDetail(String username, Long orderId) {
         Users user = userRepository.findByEmail(username);
         if (user == null) {
@@ -306,12 +334,14 @@ public class OrderUserService {
         return orderMapper.mapToResponse(order);
     }
 
+    // Kiểm tra tham số phân trang trước khi truy vấn database.
     private void validatePageRequest(int page, int size) {
         if (page < 0 || size <= 0) {
             throw new BusinessException("Tham số phân trang không hợp lệ");
         }
     }
 
+    // Kiểm tra bookId và số lượng của yêu cầu mua ngay.
     private void validateBuyNowRequest(BuyNowOrderRequest request) {
         if (request.getBookId() == null || request.getBookId() <= 0) {
             throw new BusinessException("ID sach khong hop le");
@@ -321,6 +351,7 @@ public class OrderUserService {
         }
     }
 
+    // Tính số tiền voucher của người dùng, có áp dụng mức giảm tối đa.
     private BigDecimal calculateVoucherDiscount(String username, String voucherCode, BigDecimal itemsTotal) {
         if (voucherCode == null || voucherCode.trim().isEmpty()) {
             return BigDecimal.ZERO;
@@ -340,6 +371,7 @@ public class OrderUserService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    // Hủy đơn thuộc người dùng nếu chưa giao hoặc hoàn tất.
     public void cancelMyOrder(String username, Long orderId) {
         Users user = userRepository.findByEmail(username);
         if (user == null) {

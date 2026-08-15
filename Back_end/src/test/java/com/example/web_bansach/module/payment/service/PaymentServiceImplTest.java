@@ -3,6 +3,9 @@ package com.example.web_bansach.module.payment.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -41,6 +44,7 @@ class PaymentServiceImplTest {
     @Mock private InventoryRepository inventoryRepository;
     @Mock private PaymentGateway paymentGateway;
     @Mock private RealtimeNotificationService realtimeNotificationService;
+    @Mock private PaymentEmailService paymentEmailService;
 
     @InjectMocks
     private PaymentServiceImpl paymentService;
@@ -54,6 +58,44 @@ class PaymentServiceImplTest {
 
         assertThatThrownBy(() -> paymentService.initiatePayment("other@test.com", request))
                 .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void initiatePayment_shouldRejectNullRequest() {
+        assertThatThrownBy(() -> paymentService.initiatePayment("user@test.com", null))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void initiatePayment_shouldRejectInvalidOrderIdAmountAndReturnUrl() {
+        PaymentRequest invalidOrderIdRequest = paymentRequest(0L, new BigDecimal("100000"));
+        assertThatThrownBy(() -> paymentService.initiatePayment("user@test.com", invalidOrderIdRequest))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("ID");
+
+        PaymentRequest zeroAmountRequest = paymentRequest(1L, BigDecimal.ZERO);
+        assertThatThrownBy(() -> paymentService.initiatePayment("user@test.com", zeroAmountRequest))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("So tien");
+
+        PaymentRequest blankReturnUrlRequest = paymentRequest(1L, new BigDecimal("100000"));
+        blankReturnUrlRequest.setReturnUrl(" ");
+        assertThatThrownBy(() -> paymentService.initiatePayment("user@test.com", blankReturnUrlRequest))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("URL");
+    }
+
+    @Test
+    void initiatePayment_shouldRejectOrderThatIsNotPending() {
+        Order order = order(1L, "user@test.com", new BigDecimal("100000"));
+        order.setStatus(OrderStatus.CONFIRMED);
+        PaymentRequest request = paymentRequest(1L, new BigDecimal("100000"));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> paymentService.initiatePayment("user@test.com", request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("dang cho xu ly");
     }
 
     @Test
@@ -181,9 +223,61 @@ class PaymentServiceImplTest {
         when(inventoryRepository.findByBookIdForUpdate(20L)).thenReturn(Optional.of(inventory));
 
         paymentService.updatePaymentStatus("SEP1", "SUCCESS", "Apikey test");
+        paymentService.updatePaymentStatus("SEP1", "SUCCESS", "Apikey test");
 
         assertThat(inventory.getQuantity()).isEqualTo(3);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        verify(paymentEmailService).sendPaymentSuccessEmailAfterCommit(payment);
+        verify(orderItemRepository, times(1)).findByOrderIdWithBook(1L);
+        verify(inventoryRepository, times(1)).save(inventory);
+    }
+
+    @Test
+    void updatePaymentStatus_shouldNotDeductInventoryWhenPaymentFails() {
+        Order order = order(1L, "user@test.com", new BigDecimal("100000"));
+        Payment payment = new Payment();
+        payment.setId(10L);
+        payment.setAmount(new BigDecimal("100000"));
+        payment.setTransactionId("SEP1");
+        payment.setOrder(order);
+
+        when(paymentRepository.findByTransactionId("SEP1")).thenReturn(Optional.of(payment));
+
+        paymentService.updatePaymentStatus("SEP1", "FAILED", "Apikey test");
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING);
+        assertThat(payment.getStatus()).isEqualTo("FAILED");
+        verify(orderItemRepository, never()).findByOrderIdWithBook(1L);
+        verify(paymentEmailService, never()).sendPaymentSuccessEmailAfterCommit(any(Payment.class));
+    }
+
+    @Test
+    void updatePaymentStatus_shouldRejectChangingSuccessfulPaymentToFailed() {
+        Order order = order(1L, "user@test.com", new BigDecimal("100000"));
+        Payment payment = new Payment();
+        payment.setId(10L);
+        payment.setAmount(new BigDecimal("100000"));
+        payment.setTransactionId("SEP1");
+        payment.setStatus("SUCCESS");
+        payment.setOrder(order);
+
+        when(paymentRepository.findByTransactionId("SEP1")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.updatePaymentStatus("SEP1", "FAILED", "Apikey test"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("da ket thuc");
+
+        assertThat(payment.getStatus()).isEqualTo("SUCCESS");
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void updatePaymentStatus_shouldRejectUnknownStatus() {
+        assertThatThrownBy(() -> paymentService.updatePaymentStatus("SEP1", "REFUNDED", "Apikey test"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("khong hop le");
+
+        verify(paymentRepository, never()).findByTransactionId(any());
     }
 
     private Order order(Long id, String email, BigDecimal totalAmount) {

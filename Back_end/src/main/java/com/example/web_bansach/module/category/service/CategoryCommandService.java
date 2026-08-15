@@ -5,23 +5,23 @@ import com.example.web_bansach.module.category.dto.request.UpdateCategoryRequest
 import com.example.web_bansach.module.category.dto.response.CategoryResponse;
 
 /**
- * Command Service Interface for Category
- * Handles all write operations (create, update, delete)
+ * Giao diện dịch vụ thực hiện các lệnh thay đổi danh mục.
+ * Xử lý toàn bộ thao tác ghi dữ liệu gồm tạo, cập nhật và xóa danh mục.
  */
 public interface CategoryCommandService {
 
     /**
-     * Create new category
+     * Tạo danh mục mới.
      */
     CategoryResponse create(CreateCategoryRequest request);
 
     /**
-     * Update existing category
+     * Cập nhật danh mục hiện có.
      */
     CategoryResponse update(Long id, UpdateCategoryRequest request);
 
     /**
-     * Soft delete category
+     * Xóa mềm danh mục theo mã định danh.
      */
     void delete(Long id);
 

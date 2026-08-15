@@ -14,13 +14,13 @@ import com.example.web_bansach.module.order.entity.Order;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     /**
-     * Lấy danh sách đơn hàng của user (phân trang)
+     * Lấy danh sách đơn hàng có phân trang của người dùng.
      */
     @Query("SELECT o FROM Order o WHERE o.user.id = :userId ORDER BY o.orderDate DESC")
     Page<Order> findByUserId(@Param("userId") Long userId, Pageable pageable);
 
     /**
-     * Tìm order của user theo ID
+     * Tìm đơn hàng của người dùng theo mã định danh.
      */
     @Query("SELECT o FROM Order o WHERE o.id = :orderId AND o.user.id = :userId")
     Order findByIdAndUserId(@Param("orderId") Long orderId, @Param("userId") Long userId);

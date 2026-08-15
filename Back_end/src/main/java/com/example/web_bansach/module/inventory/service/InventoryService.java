@@ -11,6 +11,7 @@ import com.example.web_bansach.module.inventory.mapper.InventoryMapper;
 import com.example.web_bansach.module.inventory.repository.InventoryRepository;
 
 @Service
+// Quản lý việc đọc, thiết lập, điều chỉnh và đối soát tồn kho.
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;

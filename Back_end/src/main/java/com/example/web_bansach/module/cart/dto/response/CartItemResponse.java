@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
+// Trả thông tin sách, giá sau giảm, số lượng và thành tiền của một dòng giỏ.
 public class CartItemResponse {
     private Long id;
     private Long bookId;

@@ -10,7 +10,7 @@ import com.example.web_bansach.module.pricing.service.PricingService;
 import com.example.web_bansach.module.voucher.entity.Voucher;
 
 /**
- * Xử lý tính toán giá (pricing, discount, voucher)
+ * Thực hiện việc tính giá sản phẩm, mức giảm giá và voucher.
  */
 @Service
 public class PricingServiceImpl implements PricingService {
@@ -60,12 +60,12 @@ public class PricingServiceImpl implements PricingService {
             return BigDecimal.ZERO;
         }
 
-        // Calculate discount amount
+        // Tính số tiền được giảm.
         BigDecimal discountPercent = new BigDecimal(voucher.getDiscountPercent());
         BigDecimal discountAmount = totalAmount.multiply(discountPercent)
                 .divide(HUNDRED, DECIMAL_PLACES, RoundingMode.HALF_UP);
 
-        // Check if discount exceeds maxDiscount
+        // Kiểm tra số tiền giảm có vượt quá mức tối đa hay không.
         if (voucher.getMaxDiscount() != null
                 && discountAmount.compareTo(voucher.getMaxDiscount()) > 0) {
             return voucher.getMaxDiscount();
@@ -80,10 +80,10 @@ public class PricingServiceImpl implements PricingService {
             return BigDecimal.ZERO;
         }
 
-        // Calculate book price with discount
+        // Tính giá sách sau khi áp dụng chương trình giảm giá.
         BigDecimal pricePerUnit = calculateBookPrice(book);
 
-        // Calculate subtotal
+        // Tính thành tiền trước khi áp dụng voucher.
         BigDecimal subtotal = pricePerUnit.multiply(new BigDecimal(quantity));
 
         // Apply voucher if provided

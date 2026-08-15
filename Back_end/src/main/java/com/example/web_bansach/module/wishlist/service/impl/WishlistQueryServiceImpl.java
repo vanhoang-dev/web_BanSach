@@ -47,7 +47,7 @@ public class WishlistQueryServiceImpl implements WishlistQueryService {
     }
 
     /**
-     * Lấy danh sách yêu thích của user (paged)
+     * Lấy danh sách yêu thích có phân trang của người dùng.
      */
     @Transactional(readOnly = true)
     @Override

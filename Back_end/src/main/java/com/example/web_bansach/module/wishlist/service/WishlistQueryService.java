@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 
 import com.example.web_bansach.module.wishlist.dto.response.WishlistResponse;
 
+// Định nghĩa thao tác kiểm tra, phân trang và đếm sách yêu thích.
 public interface WishlistQueryService {
 
     boolean isInWishlist(String username, Long bookId);

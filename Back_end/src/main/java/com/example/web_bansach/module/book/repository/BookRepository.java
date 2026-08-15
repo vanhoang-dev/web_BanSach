@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.example.web_bansach.module.book.entity.Book;
 
 @Repository
+// Truy cập sách và cung cấp truy vấn lọc, tìm kiếm, sắp xếp có phân trang.
 public interface BookRepository extends JpaRepository<Book, Long> {
 
         boolean existsByIsbn(String isbn);

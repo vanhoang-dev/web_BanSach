@@ -24,6 +24,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ giỏ hàng duy nhất thuộc về một tài khoản người dùng.
 public class Cart {
 
     @Id

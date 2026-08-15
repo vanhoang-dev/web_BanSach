@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
+// Quản lý kết nối SSE và phát thông báo đơn hàng/thanh toán tới frontend.
 public class RealtimeNotificationService {
 
     private static final long SSE_TIMEOUT = 15 * 60 * 1000L;

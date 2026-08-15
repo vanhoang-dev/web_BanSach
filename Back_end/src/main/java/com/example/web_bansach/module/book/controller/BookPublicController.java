@@ -15,15 +15,18 @@ import com.example.web_bansach.module.book.service.BookQueryService;
 
 @RestController
 @RequestMapping("/user/books")
+// Cung cấp API đọc danh sách và chi tiết sách cho khách hàng.
 public class BookPublicController {
 
     private final BookQueryService bookQueryService;
 
+    // Khởi tạo controller với service truy vấn sách.
     public BookPublicController(BookQueryService bookQueryService) {
         this.bookQueryService = bookQueryService;
     }
 
     @GetMapping
+    // Lọc, tìm kiếm, sắp xếp và phân trang sách cho trang catalog.
     public ResponseEntity<ApiResponse<PageResponse<BookResponse>>> getBooks(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -45,6 +48,7 @@ public class BookPublicController {
     }
 
     @GetMapping("/{id}")
+    // Trả thông tin chi tiết của một cuốn sách theo ID.
     public ResponseEntity<ApiResponse<BookResponse>> getBookDetail(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(bookQueryService.getBookDetail(id)));
     }

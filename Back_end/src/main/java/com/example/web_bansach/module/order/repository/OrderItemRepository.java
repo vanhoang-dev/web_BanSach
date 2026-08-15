@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.example.web_bansach.module.order.entity.OrderItem;
 
 @Repository
+// Truy cập dòng đơn hàng và tải kèm sách để tránh truy vấn N+1.
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     @Query("SELECT oi FROM OrderItem oi JOIN FETCH oi.book WHERE oi.order.id = :orderId")

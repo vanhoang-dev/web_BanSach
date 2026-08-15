@@ -13,7 +13,7 @@ import jakarta.persistence.LockModeType;
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
-	// Find inventory record by book id
+	// Tìm bản ghi tồn kho theo mã sách.
 	java.util.Optional<Inventory> findByBookId(Long bookId);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)

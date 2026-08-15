@@ -1,0 +1,24 @@
+name: Deploy project
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name : Deloy project vps
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_KEY }}
+          script: |
+            cd /root/docker_githubaction
+            git pull
+            docker-compose down
+            docker-compose build
+            docker-compose up -d
+            docker images -f "dangling=true" -q | xargs -r docker rmi

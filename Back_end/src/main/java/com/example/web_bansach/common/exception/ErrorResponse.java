@@ -8,9 +8,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Error payload returned by security handlers and global exception handlers.
+ * Dữ liệu lỗi được trả về bởi bộ xử lý bảo mật và bộ xử lý ngoại lệ tập trung.
  *
- * The fields are intentionally small and explicit so debugging is easier.
+ * Các trường được giữ ngắn gọn và rõ ràng để thuận tiện kiểm tra lỗi.
  */
 @Data
 @NoArgsConstructor

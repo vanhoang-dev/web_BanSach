@@ -26,6 +26,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ sách cùng tác giả, danh mục, giảm giá và ảnh bìa trong database.
 public class Book {
 
     @Id

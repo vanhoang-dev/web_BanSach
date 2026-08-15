@@ -40,7 +40,7 @@ public class CategoryValidationServiceImpl implements CategoryValidationService 
             throw new ValidationException("Category name cannot be empty");
         }
 
-        // Check if name is already used by another category
+        // Kiểm tra tên đã được một danh mục khác sử dụng hay chưa.
         if (request.getName() != null) {
             boolean exists = categoryRepository.existsByNameAndIdNot(request.getName(), id);
             if (exists) {
@@ -51,7 +51,7 @@ public class CategoryValidationServiceImpl implements CategoryValidationService 
 
     @Override
     public void validateDelete(Long id) {
-        // Check if category is in use by books
+        // Kiểm tra danh mục hiện có đang được sách sử dụng hay không.
         boolean isInUse = categoryRepository.isInUse(id);
         if (isInUse) {
             throw new BusinessException("Cannot delete category that is in use by books");

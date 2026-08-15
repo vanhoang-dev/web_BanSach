@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 
 import com.example.web_bansach.module.book.dto.response.BookResponse;
 
+// Định nghĩa các truy vấn catalog, tìm kiếm, lọc và chi tiết sách.
 public interface BookQueryService {
 
     Page<BookResponse> getAllBooks(Integer page, Integer size, String sortBy, String sortDirection);

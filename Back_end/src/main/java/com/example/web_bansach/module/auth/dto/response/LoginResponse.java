@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+// Trả JWT và thông tin định danh/quyền cho frontend sau khi đăng nhập thành công.
 public class LoginResponse {
     private String jwt;
     private Long userId;

@@ -68,7 +68,7 @@ class BookstoreFlowIntegrationTest {
         UserRequest request = new UserRequest();
         request.setUsername("student01");
         request.setEmail("student01@test.com");
-        request.setPassword("secret123");
+        request.setPassword("Secret123!");
         request.setFullName("Student One");
 
         authService.taoTaiKhoanMoi(request);

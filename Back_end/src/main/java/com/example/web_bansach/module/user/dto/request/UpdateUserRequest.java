@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * DTO Request để cập nhật thông tin User
+ * Dữ liệu yêu cầu cập nhật thông tin người dùng.
  */
 @Data
 public class UpdateUserRequest {

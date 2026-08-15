@@ -13,6 +13,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Đại diện khóa kép userId-bookId của bảng danh sách yêu thích.
 public class WishlistId implements Serializable {
 
     private Long userId; // ID người dùng

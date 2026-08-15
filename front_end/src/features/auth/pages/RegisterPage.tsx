@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import logoWeb from '@/assets/icons/logoweb.png';
 import { AccentButton, Field, Icon } from '@/components/ui/staticUi';
+import { isStrongPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '@/features/auth/passwordValidation';
 import authService from '@/features/auth/services';
 
 type PasswordFieldProps = {
@@ -58,6 +59,10 @@ const RegisterPage = () => {
       setError('Mật khẩu xác nhận chưa khớp.');
       return;
     }
+    if (!isStrongPassword(form.password)) {
+      setError(PASSWORD_REQUIREMENTS_MESSAGE);
+      return;
+    }
     if (!accepted) {
       setError('Bạn cần đồng ý điều khoản trước khi đăng ký.');
       return;
@@ -97,6 +102,7 @@ const RegisterPage = () => {
             <Field label="Địa chỉ" value={form.address} onChange={(e) => update('address', e.target.value)} placeholder="Số nhà, đường, phường/xã..." />
             <PasswordField label="Mật khẩu" value={form.password} onChange={(e) => update('password', e.target.value)} />
             <PasswordField label="Xác nhận mật khẩu" value={form.confirmPassword} onChange={(e) => update('confirmPassword', e.target.value)} />
+            <p className="-mt-2 text-xs font-medium text-on-surface-variant">{PASSWORD_REQUIREMENTS_MESSAGE}</p>
             <label className="flex items-start gap-3 text-sm text-on-surface-variant">
               <input checked={accepted} onChange={(e) => setAccepted(e.target.checked)} type="checkbox" className="mt-1 rounded border-outline-variant" />
               Tôi đồng ý với điều khoản sử dụng và chính sách bảo mật của Nhà Sách Tri Thức.

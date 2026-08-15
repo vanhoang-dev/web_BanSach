@@ -1,5 +1,6 @@
 package com.example.web_bansach.security.config;
 
+// Khai báo tập URL công khai, người dùng và admin dùng trong cấu hình bảo mật.
 public class Endpoints {
     private Endpoints() {
     }

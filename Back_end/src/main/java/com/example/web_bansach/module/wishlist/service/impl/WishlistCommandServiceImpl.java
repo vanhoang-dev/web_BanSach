@@ -93,7 +93,7 @@ public class WishlistCommandServiceImpl implements WishlistCommandService {
     }
 
     /**
-     * Xóa toàn bộ danh sách yêu thích (admin - khi xóa user)
+     * Xóa toàn bộ danh sách yêu thích khi quản trị viên xóa người dùng.
      */
     @Transactional(rollbackFor = Exception.class)
     @Override

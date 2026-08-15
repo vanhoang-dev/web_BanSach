@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import com.example.web_bansach.module.payment.dto.PaymentRequest;
 import com.example.web_bansach.module.payment.dto.PaymentResponse;
 
+// Định nghĩa nghiệp vụ khởi tạo, xác minh và truy vấn thanh toán.
 public interface PaymentService {
 
     PaymentResponse initiatePayment(String userEmail, PaymentRequest request) throws Exception;

@@ -8,6 +8,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
+// Cấu hình STOMP/WebSocket để phát sự kiện đơn hàng và thanh toán realtime.
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override

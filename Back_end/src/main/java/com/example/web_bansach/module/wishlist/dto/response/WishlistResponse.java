@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
+// Trả thông tin sách đã được người dùng lưu vào danh sách yêu thích.
 public class WishlistResponse {
     private Long bookId;
     private String bookTitle;

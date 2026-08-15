@@ -24,6 +24,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+// Lưu token khôi phục mật khẩu, chủ sở hữu, hạn dùng và trạng thái sử dụng.
 public class PasswordResetToken {
 
     @Id
@@ -47,6 +48,7 @@ public class PasswordResetToken {
     private LocalDateTime updatedAt;
 
     @PrePersist
+    // Gán thời gian tạo/cập nhật và giá trị mặc định trước khi insert vào database.
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
@@ -56,6 +58,7 @@ public class PasswordResetToken {
     }
 
     @PreUpdate
+    // Cập nhật thời điểm thay đổi gần nhất trước khi update bản ghi.
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }

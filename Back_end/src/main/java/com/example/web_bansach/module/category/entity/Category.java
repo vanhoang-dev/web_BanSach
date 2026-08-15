@@ -16,7 +16,7 @@ import lombok.Setter;
 
 /**
  * Category Entity
- * Represents a book category
+ * Biểu diễn một danh mục sách trong hệ thống.
  */
 @Entity
 @Table(name = "categories")

@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.Data;
 
 @Data
+// Trả toàn bộ dòng sản phẩm cùng tổng số lượng và tổng tiền của giỏ.
 public class CartResponse {
     private Long cartId;
     private Integer totalItems;

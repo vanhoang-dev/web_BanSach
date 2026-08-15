@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import com.example.web_bansach.common.exception.BusinessException;
 
 @Component
+// Hiện thực tạo mã QR và xác minh giao dịch thông qua SePay.
 public class SePayGateway implements PaymentGateway {
     private static final Logger logger = LoggerFactory.getLogger(SePayGateway.class);
 

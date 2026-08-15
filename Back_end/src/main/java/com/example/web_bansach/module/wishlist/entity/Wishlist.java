@@ -24,6 +24,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ quan hệ yêu thích giữa người dùng và sách.
 public class Wishlist {
 
     @EmbeddedId

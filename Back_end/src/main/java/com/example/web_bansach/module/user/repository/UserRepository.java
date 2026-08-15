@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.example.web_bansach.module.user.entity.Users;
 
 @Repository
+// Truy cập tài khoản theo ID, username, email và trạng thái xóa mềm.
 public interface UserRepository extends JpaRepository<Users, Long> {
     public Users findByUsername(String username);
 

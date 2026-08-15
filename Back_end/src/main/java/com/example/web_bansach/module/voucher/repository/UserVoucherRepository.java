@@ -15,6 +15,7 @@ import com.example.web_bansach.module.voucher.entity.Voucher;
 
 import jakarta.persistence.LockModeType;
 
+// Truy cập kho voucher cá nhân và khóa bản ghi khi sử dụng voucher.
 public interface UserVoucherRepository extends JpaRepository<UserVoucher, Long> {
 
     boolean existsByUser_IdAndVoucher_Id(Long userId, Long voucherId);

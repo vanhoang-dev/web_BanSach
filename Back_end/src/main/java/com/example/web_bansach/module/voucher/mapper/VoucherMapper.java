@@ -8,13 +8,13 @@ import com.example.web_bansach.module.voucher.dto.response.VoucherResponse;
 import com.example.web_bansach.module.voucher.entity.Voucher;
 
 /**
- * Mapper xử lý mapping Voucher entity sang VoucherResponse
+ * Chuyển thực thể voucher thành dữ liệu phản hồi.
  */
 @Component
 public class VoucherMapper {
 
     /**
-     * Map Voucher entity sang VoucherResponse
+     * Chuyển một thực thể voucher thành dữ liệu phản hồi.
      */
     public VoucherResponse mapToResponse(Voucher voucher) {
         if (voucher == null) {
@@ -29,12 +29,12 @@ public class VoucherMapper {
         response.setQuantity(voucher.getQuantity());
         response.setExpiredAt(voucher.getExpiredAt());
 
-        // Check expiration
+        // Kiểm tra thời hạn của voucher.
         LocalDate today = LocalDate.now();
         boolean isExpired = voucher.getExpiredAt().isBefore(today);
         response.setIsExpired(isExpired);
 
-        // Check if valid (not expired and still has quantity)
+        // Kiểm tra voucher còn hạn và vẫn còn số lượng sử dụng.
         boolean isValid = !isExpired && voucher.getQuantity() > 0;
         response.setIsValid(isValid);
 

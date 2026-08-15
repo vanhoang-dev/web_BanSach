@@ -13,16 +13,19 @@ import com.example.web_bansach.module.book.service.BookValidationService;
  * Xử lý validation cho Book
  */
 @Service
+// Tập trung các quy tắc kiểm tra dữ liệu trước khi tạo hoặc sửa sách.
 public class BookValidationServiceImpl implements BookValidationService {
 
     private final BookRepository bookRepository;
 
+    // Khởi tạo bộ kiểm tra với repository sách.
     public BookValidationServiceImpl(BookRepository bookRepository) {
         this.bookRepository = bookRepository;
     }
 
     @Transactional(readOnly = true)
     @Override
+    // Kiểm tra trường bắt buộc và ISBN duy nhất khi tạo sách.
     public void validateCreateBook(BookRequest request) {
         validateBookFields(request);
         validateIsbnUnique(request.getIsbn().trim(), null);
@@ -30,6 +33,7 @@ public class BookValidationServiceImpl implements BookValidationService {
 
     @Transactional(readOnly = true)
     @Override
+    // Kiểm tra sách tồn tại và dữ liệu cập nhật hợp lệ.
     public void validateUpdateBook(Long bookId, BookRequest request) {
         if (bookId == null || bookId <= 0) {
             throw new BusinessException("ID sách không hợp lệ");
@@ -49,6 +53,7 @@ public class BookValidationServiceImpl implements BookValidationService {
 
     @Transactional(readOnly = true)
     @Override
+    // Bảo đảm ISBN không thuộc sách khác, trừ ID đang chỉnh sửa.
     public void validateIsbnUnique(String isbn, Long excludeId) {
         if (isbn == null || isbn.trim().isEmpty()) {
             throw new BusinessException("ISBN không được để trống");
@@ -63,6 +68,7 @@ public class BookValidationServiceImpl implements BookValidationService {
         }
     }
 
+    // Kiểm tra các giá trị cơ bản như tiêu đề, giá và năm xuất bản.
     private void validateBookFields(BookRequest request) {
         if (request == null) {
             throw new BusinessException("Thông tin sách không được để trống");

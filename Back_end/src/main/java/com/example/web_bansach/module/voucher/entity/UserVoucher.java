@@ -24,6 +24,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+// Ánh xạ voucher người dùng đã nhận và trạng thái đã sử dụng hay chưa.
 public class UserVoucher {
 
     @Id

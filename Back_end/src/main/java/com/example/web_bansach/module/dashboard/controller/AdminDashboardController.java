@@ -13,14 +13,17 @@ import com.example.web_bansach.module.dashboard.service.AdminDashboardService;
 @RestController
 @RequestMapping("/admin/dashboard")
 @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+// Cung cấp số liệu tổng hợp phục vụ bảng điều khiển quản trị.
 public class AdminDashboardController {
     private final AdminDashboardService dashboardService;
 
+    // Khởi tạo controller với service tổng hợp thống kê.
     public AdminDashboardController(AdminDashboardService dashboardService) {
         this.dashboardService = dashboardService;
     }
 
     @GetMapping
+    // Trả các chỉ số và đơn hàng gần đây cho trang dashboard admin.
     public ResponseEntity<ApiResponse<AdminDashboardResponse>> getDashboard() {
         return ResponseEntity.ok(ApiResponse.success(dashboardService.getDashboard()));
     }

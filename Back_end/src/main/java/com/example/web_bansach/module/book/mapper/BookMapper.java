@@ -7,8 +7,10 @@ import com.example.web_bansach.module.book.dto.response.BookResponse;
 import com.example.web_bansach.module.book.entity.Book;
 
 @Component
+// Chuyển thực thể sách thành phản hồi riêng cho quản trị viên hoặc người dùng.
 public class BookMapper {
 
+    // Tạo phản hồi đầy đủ quan hệ để quản trị viên quản lý sách.
     public BookAdminResponse mapToAdminResponse(Book book) {
         BookAdminResponse response = new BookAdminResponse();
         response.setId(book.getId());
@@ -30,6 +32,7 @@ public class BookMapper {
         return response;
     }
 
+    // Tạo phản hồi gọn và tính phần trăm giảm để hiển thị cho khách hàng.
     public BookResponse mapToResponseForUser(Book book) {
         BookResponse response = new BookResponse();
         response.setId(book.getId());

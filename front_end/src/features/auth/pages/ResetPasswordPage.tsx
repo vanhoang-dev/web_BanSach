@@ -2,6 +2,7 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Field, Icon, PageShell, Panel, PrimaryButton } from '@/components/ui/staticUi';
+import { isStrongPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '@/features/auth/passwordValidation';
 import authService from '@/features/auth/services';
 
 const ResetPasswordPage = () => {
@@ -20,6 +21,10 @@ const ResetPasswordPage = () => {
     setMessage('');
     if (form.newPassword !== form.confirmPassword) {
       setError('Mật khẩu xác nhận chưa khớp.');
+      return;
+    }
+    if (!isStrongPassword(form.newPassword)) {
+      setError(PASSWORD_REQUIREMENTS_MESSAGE);
       return;
     }
     try {
@@ -47,6 +52,7 @@ const ResetPasswordPage = () => {
             <Field label="Token" value={form.token} onChange={(event) => update('token', event.target.value)} required />
             <Field label="Mật khẩu mới" value={form.newPassword} onChange={(event) => update('newPassword', event.target.value)} type="password" required />
             <Field label="Xác nhận mật khẩu" value={form.confirmPassword} onChange={(event) => update('confirmPassword', event.target.value)} type="password" required />
+            <p className="-mt-2 text-xs font-medium text-on-surface-variant">{PASSWORD_REQUIREMENTS_MESSAGE}</p>
             <PrimaryButton disabled={loading} className="w-full" type="submit">{loading ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}</PrimaryButton>
           </form>
           <Link to="/login" className="mt-6 inline-block text-sm font-bold text-secondary hover:underline">Quay lại đăng nhập</Link>

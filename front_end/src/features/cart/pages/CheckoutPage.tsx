@@ -1,9 +1,11 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AccentButton, Container, Field, Icon, Panel, SectionHeading } from '@/components/ui/staticUi';
 import { env } from '@/config/env';
 import authService from '@/features/auth/services';
+import bookService from '@/features/books/services/bookService';
+import cartService from '@/features/cart/services/cartService';
 import orderService from '@/features/orders/services/orderService';
 import paymentService from '@/features/payment/services/paymentService';
 import type { PaymentResponse } from '@/features/payment/services/paymentService';
@@ -14,8 +16,24 @@ type InlinePayment = PaymentResponse & {
   orderId: number;
 };
 
+type CheckoutItem = {
+  bookId: number;
+  title: string;
+  cover?: string;
+  unitPrice: number;
+  quantity: number;
+  subtotal: number;
+};
+
+type ConfirmedTotals = {
+  voucherCode?: string;
+  voucherDiscount: number;
+  totalAmount: number;
+};
+
 const successStatuses = ['SUCCESS', 'PAID', 'COMPLETED'];
 const failedStatuses = ['FAILED', 'CANCELLED'];
+const formatVnd = (value: number) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
 
 const statusLabel = (status?: string) => {
   switch ((status || 'PENDING').toUpperCase()) {
@@ -55,9 +73,27 @@ const CheckoutPage = () => {
   const [vouchersLoading, setVouchersLoading] = useState(true);
   const [vouchersError, setVouchersError] = useState('');
   const [useVoucher, setUseVoucher] = useState(false);
+  const [checkoutItems, setCheckoutItems] = useState<CheckoutItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
+  const [itemsError, setItemsError] = useState('');
+  const [confirmedTotals, setConfirmedTotals] = useState<ConfirmedTotals | null>(null);
   const paymentId = paymentInfo?.paymentId;
   const orderId = paymentInfo?.orderId;
   const currentPaymentStatus = String(paymentInfo?.status || 'PENDING').toUpperCase();
+
+  const itemsSubtotal = useMemo(
+    () => checkoutItems.reduce((total, item) => total + item.subtotal, 0),
+    [checkoutItems]
+  );
+  const selectedVoucher = useVoucher
+    ? myVouchers.find((voucher) => voucher.code === form.voucherCode)
+    : undefined;
+  const estimatedVoucherDiscount = selectedVoucher
+    ? Math.min(itemsSubtotal * selectedVoucher.discountPercent / 100, Number(selectedVoucher.maxDiscount || 0))
+    : 0;
+  const originalTotal = itemsSubtotal + Number(form.shippingFee || 0);
+  const displayedVoucherDiscount = confirmedTotals?.voucherDiscount ?? estimatedVoucherDiscount;
+  const displayedTotal = confirmedTotals?.totalAmount ?? Math.max(0, originalTotal - displayedVoucherDiscount);
 
   const update = (name: string, value: string) => setForm((current) => ({ ...current, [name]: value }));
 
@@ -87,6 +123,56 @@ const CheckoutPage = () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCheckoutItems = async () => {
+      setItemsLoading(true);
+      setItemsError('');
+      try {
+        if (bookId) {
+          const book = await bookService.getBookById(bookId);
+          if (!cancelled) {
+            const unitPrice = Number(book.price || 0);
+            setCheckoutItems([{
+              bookId,
+              title: book.title,
+              cover: book.cover,
+              unitPrice,
+              quantity,
+              subtotal: unitPrice * quantity,
+            }]);
+          }
+        } else {
+          const cart = await cartService.getCart();
+          if (!cancelled) {
+            setCheckoutItems(cart.items.map((item) => {
+              const unitPrice = Number(item.price ?? item.book?.price ?? 0);
+              const itemQuantity = Number(item.quantity || 0);
+              return {
+                bookId: item.bookId,
+                title: item.book?.title || `Sách #${item.bookId}`,
+                cover: item.book?.cover,
+                unitPrice,
+                quantity: itemQuantity,
+                subtotal: Number(item.subtotal ?? unitPrice * itemQuantity),
+              };
+            }));
+          }
+        }
+      } catch {
+        if (!cancelled) setItemsError('Không thể tải thông tin sách trong đơn hàng.');
+      } finally {
+        if (!cancelled) setItemsLoading(false);
+      }
+    };
+
+    loadCheckoutItems();
+    return () => {
+      cancelled = true;
+    };
+  }, [bookId, quantity]);
 
   useEffect(() => {
     let cancelled = false;
@@ -186,6 +272,12 @@ const CheckoutPage = () => {
       const order = bookId
         ? await orderService.buyNow({ ...payload, bookId, quantity })
         : await orderService.createOrder(payload);
+
+      setConfirmedTotals({
+        voucherCode: payload.voucherCode,
+        voucherDiscount: Number(order.voucherDiscount || 0),
+        totalAmount: Number(order.totalAmount ?? order.totalPrice ?? 0),
+      });
 
       if (payload.voucherCode) {
         setMyVouchers((current) => current.filter((voucher) => voucher.code !== payload.voucherCode));
@@ -289,7 +381,44 @@ const CheckoutPage = () => {
                 </label>
               ) : null}
             </div>
-            <AccentButton type="submit" disabled={loading || !!paymentInfo} className="mt-2">{loading ? 'Đang xử lý...' : paymentInfo ? 'Đơn hàng đã được tạo' : 'Xác nhận đặt hàng'}</AccentButton>
+            <div className="rounded-lg border border-outline-variant bg-surface p-4">
+              <h2 className="text-base font-bold text-primary">Thông tin đơn hàng</h2>
+              {itemsLoading ? (
+                <p className="mt-3 text-sm text-on-surface-variant">Đang tải thông tin sách...</p>
+              ) : itemsError ? (
+                <p className="mt-3 text-sm text-error">{itemsError}</p>
+              ) : checkoutItems.length === 0 ? (
+                <p className="mt-3 text-sm text-on-surface-variant">Chưa có sách trong đơn hàng.</p>
+              ) : (
+                <div className="mt-3 divide-y divide-outline-variant">
+                  {checkoutItems.map((item) => (
+                    <div key={item.bookId} className="flex gap-3 py-3 first:pt-0">
+                      {item.cover ? (
+                        <img src={item.cover} alt={item.title} className="h-20 w-14 shrink-0 rounded-md object-cover" />
+                      ) : (
+                        <div className="flex h-20 w-14 shrink-0 items-center justify-center rounded-md bg-surface-container-low text-primary"><Icon name="book" /></div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-on-surface">{item.title}</p>
+                        <p className="mt-1 text-sm text-on-surface-variant">{formatVnd(item.unitPrice)} × {item.quantity}</p>
+                      </div>
+                      <span className="shrink-0 text-sm font-bold text-primary">{formatVnd(item.subtotal)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-3 space-y-2 border-t border-outline-variant pt-3 text-sm">
+                <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Tạm tính ({checkoutItems.reduce((total, item) => total + item.quantity, 0)} sản phẩm)</span><span className="font-semibold">{formatVnd(itemsSubtotal)}</span></div>
+                <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Phí vận chuyển</span><span className="font-semibold">{formatVnd(Number(form.shippingFee || 0))}</span></div>
+                <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Giá gốc đơn hàng</span><span className="font-semibold">{formatVnd(originalTotal)}</span></div>
+                {(displayedVoucherDiscount > 0 || confirmedTotals?.voucherCode) ? (
+                  <div className="flex justify-between gap-4 text-emerald-700"><span>Voucher {confirmedTotals?.voucherCode || selectedVoucher?.code}</span><span className="font-semibold">−{formatVnd(displayedVoucherDiscount)}</span></div>
+                ) : null}
+                <div className="flex justify-between gap-4 border-t border-outline-variant pt-3 text-base"><span className="font-bold text-primary">Tổng thanh toán</span><span className="font-bold text-secondary">{formatVnd(displayedTotal)}</span></div>
+              </div>
+            </div>
+            <AccentButton type="submit" disabled={loading || itemsLoading || checkoutItems.length === 0 || !!paymentInfo} className="mt-2">{loading ? 'Đang xử lý...' : paymentInfo ? 'Đơn hàng đã được tạo' : 'Xác nhận đặt hàng'}</AccentButton>
           </form>
         </Panel>
 

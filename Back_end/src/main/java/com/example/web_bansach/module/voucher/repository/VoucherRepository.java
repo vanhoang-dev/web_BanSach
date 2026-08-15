@@ -18,24 +18,24 @@ import jakarta.persistence.LockModeType;
 @Repository
 public interface VoucherRepository extends JpaRepository<Voucher, Long> {
 
-    // Find voucher by code
+    // Tìm voucher theo mã.
     Optional<Voucher> findByCode(String code);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM Voucher v WHERE v.code = :code")
     Optional<Voucher> findByCodeForUpdate(@Param("code") String code);
 
-    // Find all valid vouchers (not expired and quantity > 0)
+    // Tìm các voucher còn hạn và vẫn còn số lượng sử dụng.
     @Query("SELECT v FROM Voucher v WHERE v.expiredAt >= :today AND v.quantity > 0 ORDER BY v.expiredAt ASC")
     Page<Voucher> findValidVouchers(@Param("today") LocalDate today, Pageable pageable);
 
-    // Check if voucher code exists
+    // Kiểm tra mã voucher đã tồn tại hay chưa.
     boolean existsByCode(String code);
 
-    // Find all vouchers (admin)
+    // Lấy toàn bộ voucher cho màn hình quản trị.
     Page<Voucher> findAll(Pageable pageable);
 
-    // Find expired vouchers
+    // Tìm các voucher đã hết hạn.
     @Query("SELECT v FROM Voucher v WHERE v.expiredAt < :today")
     Page<Voucher> findExpiredVouchers(@Param("today") LocalDate today, Pageable pageable);
 }

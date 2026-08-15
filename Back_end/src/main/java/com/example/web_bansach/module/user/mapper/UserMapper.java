@@ -8,13 +8,13 @@ import com.example.web_bansach.module.user.dto.response.UserResponse;
 import com.example.web_bansach.module.user.entity.Users;
 
 /**
- * Mapper xử lý mapping Users entity sang UserResponse
+ * Chuyển thực thể người dùng thành dữ liệu phản hồi.
  */
 @Component
 public class UserMapper {
 
     /**
-     * Map Users entity sang UserResponse
+     * Chuyển một thực thể người dùng thành dữ liệu phản hồi.
      */
     public UserResponse mapToResponse(Users user) {
         if (user == null) {
@@ -31,7 +31,7 @@ public class UserMapper {
         response.setIsActive(user.getIsActive());
         response.setCreatedAt(user.getCreatedAt());
 
-        // Map roles
+        // Chuyển danh sách quyền của người dùng.
         if (user.getRoles() != null) {
             response.setRoles(user.getRoles().stream()
                     .map(role -> role.getName())

@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom';
 
 import { Container, Field, Icon, Panel, PrimaryButton, SecondaryButton, SectionHeading } from '@/components/ui/staticUi';
+import { isStrongPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '@/features/auth/passwordValidation';
 import authService from '@/features/auth/services';
 
 const ProfilePage = () => {
@@ -62,6 +63,10 @@ const ProfilePage = () => {
     setMessage('');
     if (password.newPassword !== password.confirmPassword) {
       setError('Mật khẩu xác nhận chưa khớp.');
+      return;
+    }
+    if (!isStrongPassword(password.newPassword)) {
+      setError(PASSWORD_REQUIREMENTS_MESSAGE);
       return;
     }
     try {
@@ -131,6 +136,7 @@ const ProfilePage = () => {
                 <Field label="Mật khẩu hiện tại" value={password.currentPassword} onChange={(e) => updatePassword('currentPassword', e.target.value)} type="password" required />
                 <Field label="Mật khẩu mới" value={password.newPassword} onChange={(e) => updatePassword('newPassword', e.target.value)} type="password" required />
                 <Field label="Xác nhận" value={password.confirmPassword} onChange={(e) => updatePassword('confirmPassword', e.target.value)} type="password" required />
+                <p className="-mt-2 text-xs font-medium text-on-surface-variant md:col-span-3">{PASSWORD_REQUIREMENTS_MESSAGE}</p>
                 <PrimaryButton disabled={saving} className="md:col-span-3" type="submit">{saving ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}</PrimaryButton>
               </form>
             </Panel>

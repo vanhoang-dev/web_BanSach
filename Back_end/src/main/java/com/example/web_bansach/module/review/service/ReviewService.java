@@ -5,11 +5,14 @@ import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.web_bansach.common.exception.BusinessException;
+import com.example.web_bansach.common.cache.CacheNames;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
 import com.example.web_bansach.module.book.entity.Book;
 import com.example.web_bansach.module.book.repository.BookRepository;
@@ -23,8 +26,8 @@ import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.UserRepository;
 
 /**
- * Service xử lý đánh giá sách
- * Sử dụng constructor injection thay vì field injection
+ * Dịch vụ xử lý nghiệp vụ đánh giá sách.
+ * Nhận các thành phần phụ thuộc thông qua hàm khởi tạo.
  */
 @Service
 public class ReviewService {
@@ -51,9 +54,10 @@ public class ReviewService {
     }
 
     /**
-     * Tạo đánh giá mới (user)
+     * Tạo đánh giá mới cho người dùng.
      */
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = CacheNames.BOOK_REVIEWS, allEntries = true)
     public ReviewResponse createReview(String username, CreateReviewRequest request) {
         reviewValidationService.validateReviewRequest(request);
 
@@ -67,7 +71,7 @@ public class ReviewService {
 
         validatePurchasedBook(user.getId(), book.getId());
 
-        // Kiểm tra user đã review sách này chưa
+        // Kiểm tra người dùng đã đánh giá sách này chưa.
         if (reviewRepository.findByUserIdAndBookId(user.getId(), book.getId()).isPresent()) {
             throw new BusinessException("Bạn đã đánh giá sách này rồi");
         }
@@ -84,9 +88,10 @@ public class ReviewService {
     }
 
     /**
-     * Cập nhật đánh giá (user - chỉ đánh giá của chính mình)
+     * Cho phép người dùng cập nhật đánh giá của chính mình.
      */
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = CacheNames.BOOK_REVIEWS, allEntries = true)
     public ReviewResponse updateReview(String username, Long reviewId, CreateReviewRequest request) {
         reviewValidationService.validateReviewRequest(request);
 
@@ -98,7 +103,7 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đánh giá"));
 
-        // Kiểm tra đánh giá có thuộc user này không
+        // Kiểm tra đánh giá có thuộc người dùng này không.
         if (!review.getUser().getId().equals(user.getId())) {
             throw new BusinessException("Bạn không có quyền sửa đánh giá này");
         }
@@ -115,9 +120,10 @@ public class ReviewService {
     }
 
     /**
-     * Xóa đánh giá (user - chỉ đánh giá của chính mình)
+     * Cho phép người dùng xóa đánh giá của chính mình.
      */
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = CacheNames.BOOK_REVIEWS, allEntries = true)
     public void deleteReview(String username, Long reviewId) {
         Users user = userRepository.findByEmail(username);
         if (user == null) {
@@ -127,7 +133,7 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đánh giá"));
 
-        // Kiểm tra đánh giá có thuộc user này không
+        // Kiểm tra đánh giá có thuộc người dùng này không.
         if (!review.getUser().getId().equals(user.getId())) {
             throw new BusinessException("Bạn không có quyền xóa đánh giá này");
         }
@@ -143,7 +149,7 @@ public class ReviewService {
     }
 
     /**
-     * Lấy đánh giá của user cho một sách
+     * Lấy đánh giá của người dùng dành cho một cuốn sách.
      */
     @Transactional(readOnly = true)
     public ReviewResponse getMyReview(String username, Long bookId) {
@@ -159,9 +165,10 @@ public class ReviewService {
     }
 
     /**
-     * Lấy tất cả đánh giá của một sách (user)
+     * Lấy toàn bộ đánh giá của một cuốn sách cho người dùng.
      */
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.BOOK_REVIEWS, key = "'list:' + #bookId + ':' + #page + ':' + #size")
     public Page<ReviewResponse> getReviewsByBook(Long bookId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return reviewRepository.findByBookId(bookId, pageable)
@@ -169,7 +176,7 @@ public class ReviewService {
     }
 
     /**
-     * Lấy tất cả đánh giá của một user (admin)
+     * Lấy toàn bộ đánh giá của một người dùng cho quản trị viên.
      */
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getReviewsByUser(Long userId, int page, int size) {
@@ -189,9 +196,10 @@ public class ReviewService {
     }
 
     /**
-     * Xóa đánh giá (admin)
+     * Cho phép quản trị viên xóa đánh giá.
      */
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = CacheNames.BOOK_REVIEWS, allEntries = true)
     public void deleteReviewAdmin(Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đánh giá"));
@@ -202,6 +210,7 @@ public class ReviewService {
      * Lấy rating trung bình của sách
      */
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.BOOK_REVIEWS, key = "'average:' + #bookId")
     public Double getAverageRating(Long bookId) {
         return reviewRepository.getAverageRatingByBookId(bookId);
     }
@@ -210,6 +219,7 @@ public class ReviewService {
      * Lấy số lượng đánh giá của sách
      */
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.BOOK_REVIEWS, key = "'count:' + #bookId")
     public long getReviewCount(Long bookId) {
         return reviewRepository.countByBookId(bookId);
     }

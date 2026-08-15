@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 @Data
+// Chứa và kiểm tra dữ liệu admin gửi khi tạo hoặc cập nhật sách.
 public class BookRequest {
     @NotBlank(message = "Tên sách không được để trống")
     private String title;

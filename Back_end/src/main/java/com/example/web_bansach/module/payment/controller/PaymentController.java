@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -30,16 +28,20 @@ import com.example.web_bansach.module.payment.dto.PaymentResponse;
 import com.example.web_bansach.module.payment.service.PaymentService;
 import com.example.web_bansach.security.jwt.JwtTokenProvider;
 
+import lombok.extern.slf4j.Slf4j;
+
 @RestController
 @RequestMapping("/api/payment")
+@Slf4j
+// Điều phối khởi tạo SePay, webhook đối soát và truy vấn trạng thái thanh toán.
 public class PaymentController {
-    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
     private static final Pattern PAYMENT_CODE_PATTERN = Pattern.compile("(?i)SEP-?\\d+");
 
     private final PaymentService paymentService;
     private final RealtimeNotificationService realtimeNotificationService;
     private final JwtTokenProvider jwtTokenProvider;
 
+    // Khởi tạo controller với service thanh toán, realtime và bộ xử lý JWT.
     public PaymentController(PaymentService paymentService,
             RealtimeNotificationService realtimeNotificationService,
             JwtTokenProvider jwtTokenProvider) {
@@ -49,19 +51,28 @@ public class PaymentController {
     }
 
     @PostMapping("/initiate")
+    // Tạo giao dịch SePay và mã QR cho đơn hàng của người dùng.
     public ResponseEntity<ApiResponse<PaymentResponse>> initiatePayment(
             Authentication authentication,
             @RequestBody PaymentRequest request) throws Exception {
-        logger.info("Initiating payment for order: {}", request.getOrderId());
-        PaymentResponse response = paymentService.initiatePayment(authentication.getName(), request);
-        return ResponseEntity.ok(ApiResponse.success("Khoi tao thanh toan thanh cong", response));
+        try {
+            PaymentResponse response = paymentService.initiatePayment(authentication.getName(), request);
+            return ResponseEntity.ok(ApiResponse.success("Khoi tao thanh toan thanh cong", response));
+        } catch (Exception ex) {
+            log.warn("Initiate payment failed, orderId={}, paymentMethod={}",
+                    request != null ? request.getOrderId() : null,
+                    "SEPAY",
+                    ex);
+            throw ex;
+        }
     }
 
     @PostMapping("/sepay-webhook")
+    // Nhận callback từ SePay, kiểm tra dữ liệu và cập nhật kết quả giao dịch.
     public ResponseEntity<ApiResponse<Map<String, Object>>> sepayWebhook(
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody Map<String, Object> callbackData) {
-        logger.info("Received SePay webhook");
+        log.info("Received SePay webhook");
 
         String transactionId = extractTransactionId(callbackData);
         BigDecimal amount = parseAmount(callbackData);
@@ -76,7 +87,7 @@ public class PaymentController {
 
         boolean verified = paymentService.verifyPaymentCallback(transactionId, amount, authorization);
         if (!verified) {
-            logger.warn("SePay webhook verification failed for transaction {}", transactionId);
+            log.warn("SePay webhook verification failed, paymentMethod={}", "SEPAY");
             return ResponseEntity.ok(ApiResponse.success(Map.of(
                     "status", "FAILED",
                     "message", "Webhook verification failed")));
@@ -89,6 +100,7 @@ public class PaymentController {
     }
 
     @GetMapping("/status/{paymentId}")
+    // Trả trạng thái thanh toán theo ID giao dịch nếu người gọi có quyền xem.
     public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatus(
             Authentication authentication,
             @PathVariable Long paymentId) {
@@ -100,6 +112,7 @@ public class PaymentController {
     }
 
     @GetMapping("/status/order/{orderId}")
+    // Trả trạng thái thanh toán gắn với một đơn hàng.
     public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatusByOrderId(
             Authentication authentication,
             @PathVariable Long orderId) {
@@ -111,6 +124,7 @@ public class PaymentController {
     }
 
     @GetMapping("/sse/order/{orderId}")
+    // Mở kết nối SSE để frontend nhận thay đổi thanh toán theo thời gian thực.
     public SseEmitter streamPaymentStatusByOrderId(
             @PathVariable Long orderId,
             @RequestParam("token") String token) {
@@ -144,6 +158,7 @@ public class PaymentController {
         return emitter;
     }
 
+    // Kiểm tra người gọi hiện tại có quyền quản trị hay không.
     private boolean isAdmin(Authentication authentication) {
         return authentication != null
                 && authentication.getAuthorities().stream()
@@ -151,6 +166,7 @@ public class PaymentController {
                         .anyMatch("ROLE_ADMIN"::equals);
     }
 
+    // Chuẩn hóa số tiền từ các tên trường webhook SePay có thể gửi.
     private BigDecimal parseAmount(Map<String, Object> callbackData) {
         Object amountObj = callbackData.containsKey("transferAmount")
                 ? callbackData.get("transferAmount")
@@ -171,6 +187,7 @@ public class PaymentController {
         return null;
     }
 
+    // Trích mã giao dịch SEP từ dữ liệu trực tiếp hoặc nội dung chuyển khoản.
     private String extractTransactionId(Map<String, Object> callbackData) {
         String direct = firstPaymentCode(callbackData, "code", "transactionId", "paymentCode");
         if (direct != null) {
@@ -187,6 +204,7 @@ public class PaymentController {
         return matcher.find() ? matcher.group() : null;
     }
 
+    // Tìm mã thanh toán hợp lệ đầu tiên trong danh sách trường cho trước.
     private String firstPaymentCode(Map<String, Object> data, String... keys) {
         for (String key : keys) {
             Object value = data.get(key);
@@ -200,6 +218,7 @@ public class PaymentController {
         return null;
     }
 
+    // Lấy chuỗi có nội dung đầu tiên từ nhiều khóa webhook tương đương.
     private String firstText(Map<String, Object> data, String... keys) {
         for (String key : keys) {
             Object value = data.get(key);

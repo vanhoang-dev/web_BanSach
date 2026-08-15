@@ -1,5 +1,6 @@
 package com.example.web_bansach.module.dashboard.dto;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -12,7 +13,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdminDashboardResponse {
+// Đóng gói các chỉ số tổng quan và danh sách gần đây cho dashboard admin.
+public class AdminDashboardResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private long totalOrders;
     private long totalPaidPayments;
     private BigDecimal totalRevenue;

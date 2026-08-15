@@ -6,7 +6,7 @@ import com.example.web_bansach.module.inventory.dto.response.InventoryResponse;
 import com.example.web_bansach.module.inventory.entity.Inventory;
 
 /**
- * Mapper xử lý mapping Inventory entity sang InventoryResponse
+ * Chuyển thực thể tồn kho thành dữ liệu phản hồi.
  */
 @Component
 public class InventoryMapper {
@@ -14,7 +14,7 @@ public class InventoryMapper {
     private static final int DEFAULT_LOW_STOCK_THRESHOLD = 5;
 
     /**
-     * Map Inventory entity sang InventoryResponse
+     * Chuyển một thực thể tồn kho thành dữ liệu phản hồi.
      */
     public InventoryResponse mapToResponse(Inventory inventory) {
         if (inventory == null) {

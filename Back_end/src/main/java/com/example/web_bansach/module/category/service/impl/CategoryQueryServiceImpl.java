@@ -3,6 +3,7 @@ package com.example.web_bansach.module.category.service.impl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,7 @@ import com.example.web_bansach.module.category.entity.Category;
 import com.example.web_bansach.module.category.mapper.CategoryMapper;
 import com.example.web_bansach.module.category.repository.CategoryRepository;
 import com.example.web_bansach.module.category.service.CategoryQueryService;
+import com.example.web_bansach.common.cache.CacheNames;
 import com.example.web_bansach.common.constant.AppConstants;
 import com.example.web_bansach.common.constant.MessageConstants;
 import com.example.web_bansach.common.exception.ResourceNotFoundException;
@@ -33,6 +35,7 @@ public class CategoryQueryServiceImpl implements CategoryQueryService {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.CATEGORIES, key = "'page:' + #pageNumber + ':' + #pageSize")
     public Page<CategoryResponse> getAllActive(int pageNumber, int pageSize) {
         validatePagination(pageNumber, pageSize);
 
@@ -43,6 +46,7 @@ public class CategoryQueryServiceImpl implements CategoryQueryService {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.CATEGORIES, key = "'detail:' + #id")
     public CategoryResponse getById(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));
@@ -51,6 +55,8 @@ public class CategoryQueryServiceImpl implements CategoryQueryService {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.CATEGORIES,
+            key = "'search:' + (#keyword == null ? '' : #keyword.toLowerCase()) + ':' + #pageNumber + ':' + #pageSize")
     public Page<CategoryResponse> search(String keyword, int pageNumber, int pageSize) {
         validatePagination(pageNumber, pageSize);
 
@@ -66,7 +72,7 @@ public class CategoryQueryServiceImpl implements CategoryQueryService {
     }
 
     /**
-     * Validate pagination parameters
+     * Kiểm tra các tham số phân trang.
      */
     private void validatePagination(int pageNumber, int pageSize) {
         if (pageNumber < AppConstants.DEFAULT_PAGE_NUMBER || pageSize <= 0) {

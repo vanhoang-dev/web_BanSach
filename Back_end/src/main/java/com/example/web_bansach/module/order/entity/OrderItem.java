@@ -24,6 +24,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+// Ánh xạ sách, số lượng và giá tại thời điểm người dùng đặt hàng.
 public class OrderItem {
 
     @Id

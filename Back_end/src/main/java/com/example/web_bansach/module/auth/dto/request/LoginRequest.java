@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+// Chứa email và mật khẩu người dùng gửi lên để đăng nhập.
 public class LoginRequest {
 
     @NotBlank(message = "Email không được để trống")
