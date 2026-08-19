@@ -1,7 +1,8 @@
 ﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { AccentButton, BookCard, Container, EmptyState, Icon, Panel, PrimaryButton, SecondaryButton, StatCard, Surface } from '@/components/ui/staticUi';
+import { AccentButton, BookCard, Container, EmptyState, Icon, Panel, SecondaryButton, Surface } from '@/components/ui/staticUi';
+import authorService, { AuthorItem } from '@/features/authors/services/authorService';
 import bookService, { Book, Category } from '@/features/books/services/bookService';
 import cartService from '@/features/cart/services/cartService';
 
@@ -21,28 +22,37 @@ const fallbackCategories: Category[] = [
   { id: 6, name: 'Lịch sử', description: 'Thế giới, con người, văn minh' },
 ];
 
+const fallbackAuthors: AuthorItem[] = [
+  { id: 1, authorName: 'Daniel Kahneman', biography: 'Tác giả của những đầu sách nổi bật về tư duy, hành vi và ra quyết định.' },
+  { id: 2, authorName: 'James Clear', biography: 'Cây bút nổi tiếng với các nội dung về thói quen, hiệu suất và phát triển bản thân.' },
+  { id: 3, authorName: 'Yuval Noah Harari', biography: 'Tác giả được yêu thích trong dòng sách lịch sử, văn minh và tư duy hiện đại.' },
+];
+
 const heroImage = 'https://images.unsplash.com/photo-1526243741027-444d633d7365?auto=format&fit=crop&w=1600&q=95';
 const fallbackCover = 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=520&q=90';
 
 const HomePage = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [authors, setAuthors] = useState<AuthorItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
 
-    Promise.all([bookService.getFeaturedBooks(8), bookService.getCategories()])
-      .then(([bookData, categoryData]) => {
+    Promise.all([bookService.getFeaturedBooks(8), bookService.getCategories(), authorService.getAuthors(0, 3)])
+      .then(([bookData, categoryData, authorData]) => {
         if (!active) return;
         setBooks(bookData.length ? bookData : fallbackBooks);
         setCategories(categoryData.length ? categoryData : fallbackCategories);
+        setAuthors(authorData.data.content?.length ? authorData.data.content : fallbackAuthors);
       })
       .catch(() => {
         if (!active) return;
         setBooks(fallbackBooks);
         setCategories(fallbackCategories);
+        setAuthors(fallbackAuthors);
         setError('Đang hiển thị dữ liệu mẫu vì chưa kết nối được máy chủ.');
       })
       .finally(() => {
@@ -175,33 +185,38 @@ const HomePage = () => {
         </Container>
       </Surface>
 
-      <Container className="grid gap-5 py-10 md:grid-cols-3">
-        <StatCard label="Phân hệ người dùng" value="7" detail="Danh mục sách, giỏ hàng, thanh toán, yêu thích, đơn hàng..." icon="users" />
-        <StatCard label="Phân hệ quản trị" value="8" detail="Tổng quan, sách, đơn hàng, tồn kho..." icon="chart" tone="success" />
-        <StatCard label="Thanh toán" value="SePay" detail="Có trạng thái thanh toán và webhook đối soát" icon="ticket" tone="warning" />
-      </Container>
-
-      <Container className="pb-12">
-        <Panel className="relative overflow-hidden border-secondary-container bg-white p-8 shadow-sm md:p-10">
-          <div className="absolute inset-y-0 left-0 w-2 bg-secondary" />
-          <div className="absolute right-0 top-0 h-full w-1/3 bg-secondary-container/35" />
-          <div className="relative z-10 grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
-            <div>
-              <p className="text-sm font-bold uppercase text-secondary">Ưu đãi thành viên</p>
-              <h2 className="mt-2 max-w-3xl text-3xl font-bold leading-tight text-primary">
-                Nhận mã giảm giá và gợi ý sách phù hợp với bạn
-              </h2>
-              <p className="mt-3 max-w-2xl text-base leading-7 text-on-surface-variant">
-                Lưu sách yêu thích, theo dõi đơn hàng và nhận voucher theo lịch sử mua sách.
-              </p>
-            </div>
-            <Link to="/register">
-              <PrimaryButton className="bg-secondary text-on-secondary hover:bg-secondary/90">
-                Tạo tài khoản
-              </PrimaryButton>
-            </Link>
+      <Container className="py-12">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase text-secondary">Gợi ý từ nhà sách</p>
+            <h2 className="border-l-4 border-secondary pl-4 text-2xl font-bold text-primary">Tác giả nổi bật</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-on-surface-variant">Khám phá các cây bút được nhiều độc giả quan tâm và xem nhanh những đầu sách đang có trong hệ thống.</p>
           </div>
-        </Panel>
+          <Link to="/authors" className="shrink-0 text-sm font-bold text-secondary hover:underline">Tất cả tác giả</Link>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-3">
+          {authors.slice(0, 3).map((author, index) => (
+            <Panel key={author.id || author.authorName} className="h-full p-6 transition hover:-translate-y-1 hover:shadow-md">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/5 text-primary">
+                  <Icon name="user" className="h-6 w-6" />
+                </div>
+                <span className="rounded-full bg-secondary-container/40 px-3 py-1 text-xs font-bold text-secondary">#{index + 1}</span>
+              </div>
+              <h3 className="text-xl font-bold text-primary">{author.authorName}</h3>
+              <p className="mt-3 line-clamp-3 min-h-[72px] text-sm leading-6 text-on-surface-variant">
+                {author.biography || 'Tiểu sử tác giả đang được cập nhật.'}
+              </p>
+              <Link
+                to={`/catalog?authorId=${author.id}&authorName=${encodeURIComponent(author.authorName)}`}
+                className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-secondary hover:underline"
+              >
+                Xem sách <Icon name="arrow" className="h-4 w-4" />
+              </Link>
+            </Panel>
+          ))}
+        </div>
       </Container>
     </div>
   );
