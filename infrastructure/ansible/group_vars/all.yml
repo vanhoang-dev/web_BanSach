@@ -1,0 +1,4 @@
+k3s_version: v1.30.6+k3s1
+k3s_server_url: "https://{{ hostvars[groups['k3s_master'][0]].private_ip | default(hostvars[groups['k3s_master'][0]].ansible_default_ipv4.address) }}:6443"
+kubeconfig_local_path: "{{ playbook_dir }}/../kubeconfig"
+app_namespace: web-bansach

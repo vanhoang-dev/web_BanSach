@@ -1,0 +1,4 @@
+- import_playbook: playbooks/00-prepare.yml
+- import_playbook: playbooks/01-install-k3s-master.yml
+- import_playbook: playbooks/02-install-k3s-workers.yml
+- import_playbook: playbooks/03-deploy-app.yml

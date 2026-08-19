@@ -5,3 +5,15 @@
 
 # Local logs
 *.log
+
+# Terraform local state
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+
+# Generated deployment files
+infrastructure/ansible/inventory/aws.ini
+infrastructure/ansible/kubeconfig
+infrastructure/kubernetes/02-secret.yaml
