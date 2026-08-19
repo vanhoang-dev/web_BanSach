@@ -30,7 +30,7 @@ jobs:
 
       - name: Test backend
         working-directory: Back_end
-        run: ./mvnw test
+        run: mvn test
 
       - name: Test and build frontend
         working-directory: front_end
