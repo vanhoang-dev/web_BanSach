@@ -1,0 +1,37 @@
+- name: Deploy application manifests
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yml
+  vars:
+    kubeconfig: "{{ kubeconfig_local_path }}"
+    manifests_dir: "{{ playbook_dir }}/../../kubernetes"
+  tasks:
+    - name: Apply namespaces
+      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ manifests_dir }}/00-namespace.yaml"
+      changed_when: true
+
+    - name: Apply app config
+      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ manifests_dir }}/01-configmap.yaml"
+      changed_when: true
+
+    - name: Check optional app secret
+      ansible.builtin.stat:
+        path: "{{ manifests_dir }}/02-secret.yaml"
+      register: app_secret
+
+    - name: Apply app secret if present
+      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ manifests_dir }}/02-secret.yaml"
+      when: app_secret.stat.exists
+      changed_when: true
+
+    - name: Apply remaining manifests
+      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ item }}"
+      loop:
+        - "{{ manifests_dir }}/03-storage.yaml"
+        - "{{ manifests_dir }}/04-datastores.yaml"
+        - "{{ manifests_dir }}/08-monitoring.yaml"
+        - "{{ manifests_dir }}/05-backend.yaml"
+        - "{{ manifests_dir }}/06-frontend.yaml"
+        - "{{ manifests_dir }}/07-ingress.yaml"
+      changed_when: true

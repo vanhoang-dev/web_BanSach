@@ -103,6 +103,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Cho phép các đường dẫn WebSocket để thiết lập kết nối nhận thông báo thời gian thực.
                         .requestMatchers("/ws/**", "/app/**", "/topic/**", "/queue/**").permitAll()
+                        .requestMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
 
                         // Các API công khai không yêu cầu đăng nhập.
                         .requestMatchers(HttpMethod.GET, Endpoints.PUBLIC_GET_ENDPOINTS).permitAll()

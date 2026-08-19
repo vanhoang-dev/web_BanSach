@@ -1,0 +1,44 @@
+- name: Install k3s master
+  hosts: k3s_master
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+  tasks:
+    - name: Install k3s server
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s - server \
+          --node-name vps1 \
+          --write-kubeconfig-mode 644 \
+          --tls-san "{{ ansible_host }}"
+      args:
+        creates: /etc/systemd/system/k3s.service
+
+    - name: Wait for k3s node
+      ansible.builtin.command: k3s kubectl get nodes
+      register: k3s_nodes
+      retries: 20
+      delay: 6
+      until: k3s_nodes.rc == 0
+      changed_when: false
+
+    - name: Read k3s token
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_raw
+
+    - name: Store k3s token for workers
+      ansible.builtin.set_fact:
+        k3s_token: "{{ k3s_token_raw.content | b64decode | trim }}"
+
+    - name: Read kubeconfig
+      ansible.builtin.slurp:
+        src: /etc/rancher/k3s/k3s.yaml
+      register: kubeconfig_raw
+
+    - name: Save kubeconfig locally
+      ansible.builtin.copy:
+        dest: "{{ kubeconfig_local_path }}"
+        content: "{{ (kubeconfig_raw.content | b64decode) | replace('https://127.0.0.1:6443', 'https://' ~ ansible_host ~ ':6443') }}"
+        mode: "0600"
+      delegate_to: localhost
+      become: false

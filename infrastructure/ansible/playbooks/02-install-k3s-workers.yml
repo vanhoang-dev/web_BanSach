@@ -1,0 +1,11 @@
+- name: Install k3s workers
+  hosts: k3s_workers
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+  tasks:
+    - name: Install k3s agent
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" K3S_URL="{{ k3s_server_url }}" K3S_TOKEN="{{ hostvars[groups['k3s_master'][0]].k3s_token }}" sh -s - agent --node-name "{{ inventory_hostname }}"
+      args:
+        creates: /etc/systemd/system/k3s-agent.service

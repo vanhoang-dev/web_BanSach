@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-bansach
+  namespace: web-bansach
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-http01
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - hoanghh.xyz
+        - api.hoanghh.xyz
+      secretName: web-bansach-tls
+  rules:
+    - host: hoanghh.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+    - host: api.hoanghh.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8080
