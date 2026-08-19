@@ -1,0 +1,17 @@
+services:
+  devops-tools:
+    build:
+      context: ./infrastructure/toolbox
+    image: web-bansach-devops-tools:latest
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+      - ${USERPROFILE:-$HOME}/.aws:/root/.aws
+      - ${USERPROFILE:-$HOME}/.ssh:/root/.ssh
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      AWS_PROFILE: ${AWS_PROFILE:-default}
+    ports:
+      - "3307:3307"
+    stdin_open: true
+    tty: true
