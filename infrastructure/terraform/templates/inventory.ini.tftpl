@@ -1,16 +1,27 @@
+# Nhóm master k3s
 [k3s_master]
+# VPS master
 vps1 ansible_host=${master_public_ip} private_ip=${master_private_ip}
 
+# Nhóm worker k3s
 [k3s_workers]
 %{ for index, ip in worker_public_ips ~}
+# VPS worker
 vps${index + 2} ansible_host=${ip}
 %{ endfor ~}
 
+# Nhóm chung gồm master và worker
 [k3s_cluster:children]
+# Bao gồm nhóm master
 k3s_master
+# Bao gồm nhóm worker
 k3s_workers
 
+# Biến chung cho toàn bộ VPS
 [all:vars]
+# User SSH mặc định của Ubuntu EC2
 ansible_user=ubuntu
+# Private key SSH
 ansible_ssh_private_key_file=/root/.ssh/web-bansach-key.pem
+# Python dùng cho Ansible
 ansible_python_interpreter=/usr/bin/python3

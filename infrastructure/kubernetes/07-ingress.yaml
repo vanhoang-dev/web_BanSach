@@ -1,35 +1,35 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: networking.k8s.io/v1 # API Ingress
+kind: Ingress # Route domain vào service
 metadata:
-  name: web-bansach
-  namespace: web-bansach
+  name: web-bansach # Tên Ingress
+  namespace: web-bansach # Namespace ứng dụng
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-http01
+    cert-manager.io/cluster-issuer: letsencrypt-http01 # Issuer dùng để xin SSL
 spec:
-  ingressClassName: traefik
+  ingressClassName: traefik # Ingress controller mặc định của k3s
   tls:
     - hosts:
-        - hoanghh.xyz
-        - api.hoanghh.xyz
-      secretName: web-bansach-tls
+        - hoanghh.xyz # Domain frontend
+        - api.hoanghh.xyz # Domain backend API
+      secretName: web-bansach-tls # Secret chứa certificate TLS
   rules:
-    - host: hoanghh.xyz
+    - host: hoanghh.xyz # Route frontend
       http:
         paths:
-          - path: /
-            pathType: Prefix
+          - path: / # Match mọi path frontend
+            pathType: Prefix # Match theo prefix
             backend:
               service:
-                name: frontend
+                name: frontend # Service frontend
                 port:
-                  number: 80
-    - host: api.hoanghh.xyz
+                  number: 80 # Port frontend service
+    - host: api.hoanghh.xyz # Route backend API
       http:
         paths:
-          - path: /
-            pathType: Prefix
+          - path: / # Match mọi path API
+            pathType: Prefix # Match theo prefix
             backend:
               service:
-                name: backend
+                name: backend # Service backend
                 port:
-                  number: 8080
+                  number: 8080 # Port backend service

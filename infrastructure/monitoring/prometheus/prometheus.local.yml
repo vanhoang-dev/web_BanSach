@@ -1,21 +1,21 @@
-global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+global: # Cấu hình chung của Prometheus local
+  scrape_interval: 15s # Chu kỳ lấy metrics
+  evaluation_interval: 15s # Chu kỳ đánh giá rule/alert
 
-scrape_configs:
-  - job_name: prometheus
+scrape_configs: # Danh sách mục tiêu Prometheus cần theo dõi
+  - job_name: prometheus # Theo dõi chính Prometheus
     static_configs:
-      - targets: ["prometheus:9090"]
+      - targets: ["prometheus:9090"] # Container Prometheus trong docker-compose
 
-  - job_name: backend
-    metrics_path: /actuator/prometheus
+  - job_name: backend # Theo dõi backend Spring Boot
+    metrics_path: /actuator/prometheus # Endpoint metrics của Spring Actuator
     static_configs:
-      - targets: ["backend:8080"]
+      - targets: ["backend:8080"] # Service backend trong docker-compose
 
-  - job_name: node-exporter
+  - job_name: node-exporter # Theo dõi CPU/RAM/disk máy host
     static_configs:
-      - targets: ["node-exporter:9100"]
+      - targets: ["node-exporter:9100"] # Container node-exporter
 
-  - job_name: mysql
+  - job_name: mysql # Theo dõi trạng thái MySQL
     static_configs:
-      - targets: ["mysqld-exporter:9104"]
+      - targets: ["mysqld-exporter:9104"] # Container mysqld-exporter

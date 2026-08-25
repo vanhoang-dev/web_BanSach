@@ -1,115 +1,115 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1 # API Deployment
+kind: Deployment # Chạy nhiều pod backend
 metadata:
-  name: backend
-  namespace: web-bansach
+  name: backend # Tên deployment backend
+  namespace: web-bansach # Namespace ứng dụng
 spec:
-  replicas: 2
+  replicas: 2 # Chạy 2 pod backend
   selector:
     matchLabels:
-      app: backend
+      app: backend # Label chọn pod backend
   template:
     metadata:
       labels:
-        app: backend
+        app: backend # Label gắn cho pod backend
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/path: /actuator/prometheus
-        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true" # Cho Prometheus scrape pod này
+        prometheus.io/path: /actuator/prometheus # Endpoint metrics backend
+        prometheus.io/port: "8080" # Port metrics backend
     spec:
       containers:
-        - name: backend
-          image: hoangdev311/web-bansach-backend:latest
-          imagePullPolicy: Always
+        - name: backend # Tên container backend
+          image: hoangdev311/web-bansach-backend:latest # Image backend trên Docker Hub
+          imagePullPolicy: Always # Luôn kéo image mới khi tạo pod
           ports:
-            - containerPort: 8080
+            - containerPort: 8080 # Port Spring Boot
           envFrom:
             - configMapRef:
-                name: web-bansach-config
+                name: web-bansach-config # Nạp cấu hình từ ConfigMap
           env:
-            - name: PORT
-              value: "8080"
+            - name: PORT # Port app đọc từ env
+              value: "8080" # Backend chạy port 8080
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: MYSQL_ROOT_PASSWORD
+                  name: web-bansach-secret # Secret chứa mật khẩu MySQL
+                  key: MYSQL_ROOT_PASSWORD # Key mật khẩu MySQL
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: REDIS_PASSWORD
+                  name: web-bansach-secret # Secret chứa mật khẩu Redis
+                  key: REDIS_PASSWORD # Key mật khẩu Redis
             - name: RABBITMQ_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: RABBITMQ_PASSWORD
+                  name: web-bansach-secret # Secret chứa mật khẩu RabbitMQ
+                  key: RABBITMQ_PASSWORD # Key mật khẩu RabbitMQ
             - name: APP_JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: APP_JWT_SECRET
+                  name: web-bansach-secret # Secret chứa JWT secret
+                  key: APP_JWT_SECRET # Key JWT secret
             - name: GMAIL_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: GMAIL_USERNAME
+                  name: web-bansach-secret # Secret chứa Gmail
+                  key: GMAIL_USERNAME # Key Gmail username
             - name: GMAIL_APP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: GMAIL_APP_PASSWORD
+                  name: web-bansach-secret # Secret chứa Gmail app password
+                  key: GMAIL_APP_PASSWORD # Key Gmail app password
             - name: CLOUDINARY_CLOUD_NAME
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: CLOUDINARY_CLOUD_NAME
+                  name: web-bansach-secret # Secret chứa Cloudinary
+                  key: CLOUDINARY_CLOUD_NAME # Key Cloudinary cloud name
             - name: CLOUDINARY_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: CLOUDINARY_API_KEY
+                  name: web-bansach-secret # Secret chứa Cloudinary API key
+                  key: CLOUDINARY_API_KEY # Key Cloudinary API key
             - name: CLOUDINARY_API_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: CLOUDINARY_API_SECRET
+                  name: web-bansach-secret # Secret chứa Cloudinary API secret
+                  key: CLOUDINARY_API_SECRET # Key Cloudinary API secret
             - name: SEPAY_ACCOUNT_NUMBER
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: SEPAY_ACCOUNT_NUMBER
+                  name: web-bansach-secret # Secret chứa SePay
+                  key: SEPAY_ACCOUNT_NUMBER # Key số tài khoản SePay
             - name: SEPAY_ACCOUNT_NAME
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: SEPAY_ACCOUNT_NAME
+                  name: web-bansach-secret # Secret chứa SePay
+                  key: SEPAY_ACCOUNT_NAME # Key tên tài khoản SePay
             - name: SEPAY_WEBHOOK_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: SEPAY_WEBHOOK_API_KEY
+                  name: web-bansach-secret # Secret chứa SePay webhook key
+                  key: SEPAY_WEBHOOK_API_KEY # Key xác thực webhook SePay
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
-              port: 8080
-            initialDelaySeconds: 30
-            periodSeconds: 10
+              path: /actuator/health/readiness # Kiểm tra backend sẵn sàng nhận traffic
+              port: 8080 # Port health check
+            initialDelaySeconds: 30 # Chờ 30s trước khi check
+            periodSeconds: 10 # Check mỗi 10s
           livenessProbe:
             httpGet:
-              path: /actuator/health/liveness
-              port: 8080
-            initialDelaySeconds: 60
-            periodSeconds: 20
+              path: /actuator/health/liveness # Kiểm tra backend còn sống
+              port: 8080 # Port health check
+            initialDelaySeconds: 60 # Chờ 60s trước khi check
+            periodSeconds: 20 # Check mỗi 20s
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1 # API core Kubernetes
+kind: Service # Service nội bộ cho backend
 metadata:
-  name: backend
-  namespace: web-bansach
+  name: backend # Tên service backend
+  namespace: web-bansach # Namespace ứng dụng
 spec:
   selector:
-    app: backend
+    app: backend # Chọn pod backend
   ports:
-    - port: 8080
-      targetPort: 8080
+    - port: 8080 # Port service
+      targetPort: 8080 # Port container backend

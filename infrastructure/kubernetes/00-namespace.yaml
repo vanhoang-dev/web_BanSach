@@ -1,9 +1,9 @@
-apiVersion: v1
-kind: Namespace
+apiVersion: v1 # API core Kubernetes
+kind: Namespace # Tạo namespace
 metadata:
-  name: web-bansach
+  name: web-bansach # Namespace chạy ứng dụng
 ---
-apiVersion: v1
-kind: Namespace
+apiVersion: v1 # API core Kubernetes
+kind: Namespace # Tạo namespace
 metadata:
-  name: monitoring
+  name: monitoring # Namespace chạy Prometheus/Grafana

@@ -1,14 +1,14 @@
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
+apiVersion: cert-manager.io/v1 # API cert-manager
+kind: ClusterIssuer # Issuer dùng toàn cluster
 metadata:
-  name: letsencrypt-http01
+  name: letsencrypt-http01 # Tên issuer Let's Encrypt
 spec:
   acme:
-    email: admin@hoanghh.xyz
-    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@hoanghh.xyz # Email đăng ký Let's Encrypt
+    server: https://acme-v02.api.letsencrypt.org/directory # ACME production endpoint
     privateKeySecretRef:
-      name: letsencrypt-http01-account-key
+      name: letsencrypt-http01-account-key # Secret lưu private key ACME
     solvers:
       - http01:
           ingress:
-            class: traefik
+            class: traefik # Dùng Traefik xử lý HTTP-01 challenge

@@ -6,7 +6,7 @@ import { AccentButton, Icon, IconButton } from '@/components/ui/staticUi';
 import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
-  { label: 'Danh mục', to: '/categories' },
+  { label: 'DANH MỤC', to: '/categories' },
   { label: 'Sách mới', to: '/new-books' },
   { label: 'Tác giả', to: '/authors' },
   { label: 'Khuyến mãi', to: '/promotions' },

@@ -1,14 +1,18 @@
+# Nhóm VPS master k3s
 [k3s_master]
 vps1 ansible_host=1.2.3.4 private_ip=10.30.1.10
 
+# Nhóm VPS worker k3s
 [k3s_workers]
 vps2 ansible_host=1.2.3.5
 vps3 ansible_host=1.2.3.6
 
+# Gom master và worker thành một cluster
 [k3s_cluster:children]
 k3s_master
 k3s_workers
 
+# Biến SSH dùng chung cho tất cả VPS
 [all:vars]
 ansible_user=ubuntu
 ansible_ssh_private_key_file=~/.ssh/id_rsa

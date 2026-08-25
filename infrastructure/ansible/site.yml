@@ -1,4 +1,4 @@
-- import_playbook: playbooks/00-prepare.yml
-- import_playbook: playbooks/01-install-k3s-master.yml
-- import_playbook: playbooks/02-install-k3s-workers.yml
-- import_playbook: playbooks/03-deploy-app.yml
+- import_playbook: playbooks/00-prepare.yml # Cài package và cấu hình kernel cho tất cả VPS
+- import_playbook: playbooks/01-install-k3s-master.yml # Cài k3s master trên vps1
+- import_playbook: playbooks/02-install-k3s-workers.yml # Join vps2/vps3 vào cluster
+- import_playbook: playbooks/03-deploy-app.yml # Deploy manifest Kubernetes của dự án

@@ -1,64 +1,105 @@
-# Lệnh Deploy Dự Án Web Bán Sách
+# Hướng Dẫn Chạy Server Và Deploy Dự Án
 
-File này là checklist lệnh deploy. Chạy theo thứ tự từ trên xuống.
+Tài liệu này là checklist lệnh deploy cho dự án Web Bán Sách. Các lệnh được chia theo từng giai đoạn để tránh nhầm giữa tạo server, deploy lần đầu, cập nhật code và kiểm tra hệ thống.
 
-## 1. Mở Docker Toolbox
+## Mục Lục
+
+1. Chuẩn bị toolbox
+2. Cấu hình AWS
+3. Tạo VPS bằng Terraform
+4. Cài Kubernetes k3s bằng Ansible
+5. Deploy ứng dụng lần đầu
+6. Deploy lại khi sửa code
+7. Cấu hình HTTPS
+8. Kiểm tra website
+9. Import dữ liệu vào database
+10. Kết nối database bằng HeidiSQL
+11. Kiểm tra Grafana và Prometheus
+12. SSH vào VPS
+13. GitHub Actions CI/CD
+14. Debug nhanh
+15. Xóa hạ tầng
+
+## 1. Chuẩn Bị Toolbox
 
 Chạy trên PowerShell tại thư mục gốc dự án.
 
+### 1.1. Build toolbox
+
 ```powershell
+# Build container chứa Terraform, Ansible, kubectl, AWS CLI và Docker CLI
 docker compose -f docker-compose.tools.yml build
 ```
 
-Build container chứa Terraform, Ansible, kubectl, AWS CLI, Docker CLI.
+### 1.2. Vào toolbox
 
 ```powershell
+# Mở container toolbox để chạy các lệnh deploy
 docker compose -f docker-compose.tools.yml run --rm --service-ports devops-tools
 ```
 
-Vào container toolbox.
+### 1.3. Kiểm tra công cụ trong toolbox
 
 ```bash
+# Kiểm tra Terraform
 terraform version
+
+# Kiểm tra Ansible
 ansible --version
+
+# Kiểm tra kubectl
 kubectl version --client
+
+# Kiểm tra AWS CLI
 aws --version
+
+# Kiểm tra Docker CLI có kết nối được Docker Desktop không
 docker version
 ```
 
-Kiểm tra các tool đã cài.
+## 2. Cấu Hình AWS
 
-## 2. Cấu Hình AWS CLI
+Chạy trong container toolbox.
+
+### 2.1. Tắt AWS pager
 
 ```bash
+# Tránh lỗi AWS CLI thiếu chương trình less
 export AWS_PAGER=""
 ```
 
-Tắt pager AWS CLI.
+### 2.2. Đăng nhập AWS CLI
 
 ```bash
+# Cấu hình Access Key, Secret Key, region và output
 aws configure
 ```
 
-Nhập AWS key, region `ap-southeast-1`, output `json`.
+Nhập:
+
+```text
+AWS Access Key ID: key của IAM user
+AWS Secret Access Key: secret của IAM user
+Default region name: ap-southeast-1
+Default output format: json
+```
+
+### 2.3. Kiểm tra tài khoản AWS
 
 ```bash
+# Xem AWS CLI đang dùng IAM user/account nào
 aws sts get-caller-identity
 ```
 
-Kiểm tra AWS CLI đã đăng nhập đúng.
-
-## 3. Tạo SSH Key Pair
-
-Chỉ chạy nếu chưa có key `web-bansach-key`.
+### 2.4. Tạo SSH key pair nếu chưa có
 
 ```bash
+# Tạo thư mục lưu private key
 mkdir -p /root/.ssh
 ```
 
-Tạo thư mục chứa key.
-
 ```bash
+# Tạo key pair trên AWS và lưu private key vào toolbox
 aws ec2 create-key-pair \
   --region ap-southeast-1 \
   --key-name web-bansach-key \
@@ -66,354 +107,374 @@ aws ec2 create-key-pair \
   --output text > /root/.ssh/web-bansach-key.pem
 ```
 
-Tạo key pair trên AWS.
-
 ```bash
+# Cấp quyền an toàn cho private key để SSH chấp nhận
 chmod 400 /root/.ssh/web-bansach-key.pem
 ```
 
-Cấp quyền đúng cho private key.
-
 ```bash
+# Kiểm tra key pair đã tồn tại trên AWS
 aws ec2 describe-key-pairs \
   --region ap-southeast-1 \
   --key-names web-bansach-key
 ```
 
-Kiểm tra key đã tồn tại.
+## 3. Tạo VPS Bằng Terraform
 
-## 4. Tạo 3 VPS Bằng Terraform
+Chỉ chạy phần này khi chưa có VPS hoặc muốn tạo lại hạ tầng.
+
+### 3.1. Tạo file biến Terraform
 
 ```bash
+# Copy file mẫu thành file cấu hình thật
 cp /workspace/infrastructure/terraform/terraform.tfvars.example /workspace/infrastructure/terraform/terraform.tfvars
 ```
 
-Tạo file biến Terraform.
+### 3.2. Lấy IP máy hiện tại
 
 ```bash
+# Lấy IP public của máy bạn để cấu hình admin_cidr
 curl https://checkip.amazonaws.com
 ```
 
-Lấy IP máy hiện tại để điền vào `terraform.tfvars`.
+Sau đó mở `infrastructure/terraform/terraform.tfvars` và điền IP vào biến `admin_cidr`.
+
+### 3.3. Chạy Terraform
 
 ```bash
+# Vào thư mục chứa Terraform
 cd /workspace/infrastructure/terraform
 ```
 
-Vào thư mục Terraform.
-
 ```bash
+# Tải provider và khởi tạo Terraform
 terraform init
 ```
 
-Khởi tạo Terraform.
-
 ```bash
+# Xem trước các tài nguyên AWS sẽ được tạo
 terraform plan
 ```
 
-Xem tài nguyên sẽ tạo.
-
 ```bash
+# Tạo VPC, Security Group và 3 VPS EC2
 terraform apply
 ```
 
-Tạo VPS, nhập `yes` để xác nhận.
+Khi Terraform hỏi xác nhận, nhập:
+
+```text
+yes
+```
 
 ```bash
+# Xem IP VPS master/worker và đường dẫn inventory Ansible
 terraform output
 ```
 
-Xem IP VPS và inventory Ansible.
+## 4. Cài Kubernetes k3s Bằng Ansible
 
-## 5. Cài k3s Bằng Ansible
+Chỉ chạy phần này sau khi Terraform đã tạo VPS.
+
+### 4.1. Vào thư mục Ansible
 
 ```bash
+# Chuyển tới thư mục chứa playbook Ansible
 cd /workspace/infrastructure/ansible
 ```
 
-Vào thư mục Ansible.
+### 4.2. Kiểm tra SSH tới VPS
 
 ```bash
+# Kiểm tra Ansible có SSH được tới vps1, vps2, vps3 không
 ANSIBLE_HOST_KEY_CHECKING=False ansible -i inventory/aws.ini all -m ping
 ```
 
-Kiểm tra SSH tới 3 VPS.
+### 4.3. Cài k3s và deploy manifest ban đầu
 
 ```bash
+# Cài k3s master, join worker và apply manifest Kubernetes
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory/aws.ini site.yml
 ```
 
-Cài k3s và deploy manifest.
+### 4.4. Kiểm tra node Kubernetes
 
 ```bash
+# Kiểm tra 3 VPS đã vào cluster và ở trạng thái Ready chưa
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig get nodes
 ```
 
-Kiểm tra 3 node Kubernetes.
+## 5. Deploy Ứng Dụng Lần Đầu
 
-## 6. Apply Secret Kubernetes
+Dùng khi cluster đã có nhưng ứng dụng chưa chạy hoặc muốn apply lại toàn bộ manifest.
 
-Tạo file secret thật tại:
-
-```text
-/workspace/infrastructure/kubernetes/02-secret.yaml
-```
-
-Apply secret:
+### 5.1. Apply namespace
 
 ```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
-  apply -f /workspace/infrastructure/kubernetes/02-secret.yaml
+# Tạo namespace web-bansach và monitoring
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/00-namespace.yaml
 ```
 
-Tạo secret cho backend/database.
-
-Restart các service:
+### 5.2. Apply ConfigMap
 
 ```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
-  -n web-bansach rollout restart deployment/mysql
+# Tạo cấu hình chung cho backend: database URL, Redis, RabbitMQ, domain, CORS
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/01-configmap.yaml
 ```
 
+### 5.3. Apply Secret
+
 ```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
-  -n web-bansach rollout restart deployment/redis
+# Tạo secret chứa password/token/API key cho backend và database
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/02-secret.yaml
 ```
 
+### 5.4. Apply storage
+
 ```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
-  -n web-bansach rollout restart deployment/rabbitmq
+# Tạo volume lưu dữ liệu MySQL, Redis, RabbitMQ
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/03-storage.yaml
 ```
 
+### 5.5. Deploy database/cache/message broker
+
 ```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
-  -n web-bansach rollout restart deployment/backend
+# Deploy MySQL, Redis và RabbitMQ
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/04-datastores.yaml
 ```
 
-## 7. Build Và Push Docker Hub
+### 5.6. Deploy backend
 
 ```bash
+# Deploy backend Spring Boot
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/05-backend.yaml
+```
+
+### 5.7. Deploy frontend
+
+```bash
+# Deploy frontend React/Nginx
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/06-frontend.yaml
+```
+
+### 5.8. Apply ingress
+
+```bash
+# Cấu hình domain hoanghh.xyz và api.hoanghh.xyz qua Traefik
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/07-ingress.yaml
+```
+
+### 5.9. Deploy monitoring
+
+```bash
+# Deploy Prometheus, Grafana, node-exporter và mysqld-exporter
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/08-monitoring.yaml
+```
+
+### 5.10. Kiểm tra pod
+
+```bash
+# Kiểm tra pod backend, frontend, MySQL, Redis, RabbitMQ
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig get pods -n web-bansach
+```
+
+## 6. Deploy Lại Khi Sửa Code
+
+Dùng phần này khi server đã chạy và chỉ muốn cập nhật code mới.
+
+### 6.1. Đăng nhập Docker Hub
+
+```bash
+# Đăng nhập Docker Hub để push image
 docker login -u hoangdev311
 ```
 
-Đăng nhập Docker Hub.
+### 6.2. Build backend image
 
 ```bash
+# Build image backend từ thư mục Back_end
 docker build -t hoangdev311/web-bansach-backend:latest /workspace/Back_end
 ```
 
-Build backend image.
+### 6.3. Build frontend image
 
 ```bash
+# Build image frontend và nhúng API URL production
 docker build \
   --build-arg VITE_API_BASE_URL=https://api.hoanghh.xyz \
   -t hoangdev311/web-bansach-frontend:latest \
   /workspace/front_end
 ```
 
-Build frontend image.
+### 6.4. Push image lên Docker Hub
 
 ```bash
+# Push backend image lên Docker Hub
 docker push hoangdev311/web-bansach-backend:latest
 ```
 
-Push backend lên Docker Hub.
-
 ```bash
+# Push frontend image lên Docker Hub
 docker push hoangdev311/web-bansach-frontend:latest
 ```
 
-Push frontend lên Docker Hub.
+### 6.5. Cập nhật image trong Kubernetes
 
 ```bash
+# Cho backend deployment dùng image mới
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach set image deployment/backend \
   backend=hoangdev311/web-bansach-backend:latest
 ```
 
-Cập nhật image backend.
-
 ```bash
+# Cho frontend deployment dùng image mới
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach set image deployment/frontend \
   frontend=hoangdev311/web-bansach-frontend:latest
 ```
 
-Cập nhật image frontend.
+### 6.6. Chờ rollout
 
 ```bash
+# Chờ backend cập nhật xong
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach rollout status deployment/backend --timeout=180s
 ```
 
-Chờ backend deploy xong.
-
 ```bash
+# Chờ frontend cập nhật xong
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach rollout status deployment/frontend --timeout=180s
 ```
 
-Chờ frontend deploy xong.
+## 7. Cấu Hình HTTPS
 
-## 8. Apply Kubernetes Manifest
+Chỉ chạy khi chưa cài HTTPS hoặc cần apply lại certificate.
 
-```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/00-namespace.yaml
-```
-
-Tạo namespace.
+### 7.1. Cài cert-manager
 
 ```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/01-configmap.yaml
-```
-
-Apply ConfigMap.
-
-```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/03-storage.yaml
-```
-
-Tạo storage.
-
-```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/04-datastores.yaml
-```
-
-Deploy MySQL, Redis, RabbitMQ.
-
-```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/05-backend.yaml
-```
-
-Deploy backend.
-
-```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/06-frontend.yaml
-```
-
-Deploy frontend.
-
-```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/07-ingress.yaml
-```
-
-Apply Ingress.
-
-```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/08-monitoring.yaml
-```
-
-Deploy monitoring.
-
-```bash
-kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/09-cert-manager-issuer.yaml
-```
-
-Apply HTTPS issuer.
-
-## 9. HTTPS
-
-```bash
+# Cài cert-manager để tự động xin SSL Let's Encrypt
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.3/cert-manager.yaml
 ```
 
-Cài cert-manager.
+### 7.2. Kiểm tra cert-manager
 
 ```bash
+# Kiểm tra cert-manager đã chạy chưa
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig get pods -n cert-manager
 ```
 
-Kiểm tra cert-manager.
+### 7.3. Apply issuer
 
 ```bash
+# Tạo ClusterIssuer dùng Let's Encrypt
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/09-cert-manager-issuer.yaml
 ```
 
-Apply issuer.
+### 7.4. Apply ingress TLS
 
 ```bash
+# Apply Ingress có khai báo TLS
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig apply -f /workspace/infrastructure/kubernetes/07-ingress.yaml
 ```
 
-Apply ingress TLS.
+### 7.5. Kiểm tra SSL
 
 ```bash
+# Kiểm tra certificate đã Ready chưa
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig get certificate -n web-bansach
 ```
 
-Kiểm tra SSL.
+### 7.6. Xem lỗi SSL
 
 ```bash
+# Xem lỗi khi certificate chưa Ready
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig describe challenge -n web-bansach
 ```
 
-Xem lỗi SSL nếu có.
+## 8. Kiểm Tra Website
 
-## 10. Kiểm Tra Web
+### 8.1. Kiểm tra pod
 
 ```bash
+# Xem trạng thái pod của dự án
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig get pods -n web-bansach
 ```
 
-Kiểm tra pod dự án.
+### 8.2. Kiểm tra backend
 
 ```bash
+# Kiểm tra backend health
 curl https://api.hoanghh.xyz/actuator/health
 ```
 
-Kiểm tra backend.
+Backend ổn khi trả:
+
+```json
+{"status":"UP"}
+```
+
+### 8.3. Mở frontend
 
 ```text
 https://hoanghh.xyz
 ```
 
-Mở website.
+Mở website production.
 
-## 11. Import data.sql
+## 9. Import Dữ Liệu Vào Database
+
+Dùng khi cần nạp dữ liệu mẫu từ `Back_end/data.sql`.
+
+### 9.1. Lấy pod MySQL
 
 ```bash
+# Lưu tên pod MySQL vào biến MYSQL_POD
 MYSQL_POD=$(kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach get pod -l app=mysql \
   -o jsonpath='{.items[0].metadata.name}')
 ```
 
-Lấy pod MySQL.
+### 9.2. Copy file data.sql
 
 ```bash
+# Copy file data.sql từ source code vào pod MySQL
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach cp /workspace/Back_end/data.sql $MYSQL_POD:/tmp/data.sql
 ```
 
-Copy data.sql vào pod.
+### 9.3. Import data
 
 ```bash
+# Import dữ liệu vào database DUAN_WEBBANSACH
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach exec -it $MYSQL_POD -- sh -c \
   'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" DUAN_WEBBANSACH < /tmp/data.sql'
 ```
 
-Import dữ liệu.
+### 9.4. Kiểm tra dữ liệu
 
 ```bash
+# Đếm số sách và user sau khi import
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach exec -it $MYSQL_POD -- sh -c \
   'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "USE DUAN_WEBBANSACH; SELECT COUNT(*) AS books FROM books; SELECT COUNT(*) AS users FROM users;"'
 ```
 
-Kiểm tra dữ liệu.
+## 10. Kết Nối Database Bằng HeidiSQL
 
-## 12. HeidiSQL
+### 10.1. Mở port-forward
 
 ```bash
+# Mở MySQL trong Kubernetes ra máy local tại port 3307
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach port-forward --address 0.0.0.0 svc/mysql 3307:3306
 ```
 
-Mở MySQL ra local.
-
-HeidiSQL:
+### 10.2. Cấu hình HeidiSQL
 
 ```text
 Host: 127.0.0.1
@@ -423,70 +484,86 @@ Password: MYSQL_ROOT_PASSWORD
 Database: DUAN_WEBBANSACH
 ```
 
-## 13. Monitoring
+## 11. Kiểm Tra Grafana Và Prometheus
+
+### 11.1. Kiểm tra pod monitoring
 
 ```bash
+# Xem Grafana, Prometheus và exporter đã chạy chưa
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig get pods -n monitoring
 ```
 
-Kiểm tra monitoring.
+### 11.2. Mở Grafana
 
 ```text
 http://13.251.26.43:30300
 ```
 
-Mở Grafana.
+Tài khoản:
 
 ```text
 admin / admin123
 ```
 
-Tài khoản Grafana.
+### 11.3. Thêm Prometheus datasource trong Grafana
 
 ```text
 http://prometheus.monitoring.svc.cluster.local:9090
 ```
 
-Prometheus datasource trong Grafana.
+URL nội bộ để Grafana đọc dữ liệu từ Prometheus.
+
+### 11.4. Mở Prometheus bằng port-forward
 
 ```bash
+# Forward Prometheus ra local port 9090
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n monitoring port-forward --address 0.0.0.0 svc/prometheus 9090:9090
 ```
 
-Mở Prometheus local.
+Sau đó mở:
 
-## 14. SSH VPS
+```text
+http://127.0.0.1:9090
+```
+
+## 12. SSH Vào VPS
+
+### 12.1. SSH vào master
 
 ```bash
+# Đăng nhập VPS master
 ssh -i /root/.ssh/web-bansach-key.pem ubuntu@13.251.26.43
 ```
 
-SSH vào master.
+### 12.2. Kiểm tra node trên VPS
 
 ```bash
+# Xem node Kubernetes trực tiếp trên master
 sudo kubectl get nodes
 ```
 
-Kiểm tra node trên VPS.
+### 12.3. Thoát VPS
 
 ```bash
+# Thoát SSH
 exit
 ```
 
-Thoát VPS.
+## 13. GitHub Actions CI/CD
 
-## 15. GitHub Actions
+Khi đã cấu hình CI/CD, chỉ cần push hoặc merge vào `main`.
 
-Tạo `KUBE_CONFIG_B64`:
+### 13.1. Tạo KUBE_CONFIG_B64
 
 ```bash
+# Mã hóa kubeconfig để đưa vào GitHub Secret
 base64 -w 0 /workspace/infrastructure/ansible/kubeconfig
 ```
 
-Copy vào GitHub Secret.
+Copy output vào GitHub Secret `KUBE_CONFIG_B64`.
 
-Secrets cần có:
+### 13.2. GitHub Secrets cần có
 
 ```text
 DOCKERHUB_USERNAME
@@ -508,49 +585,80 @@ SEPAY_ACCOUNT_NAME
 SEPAY_WEBHOOK_API_KEY
 ```
 
-Push vào `main` để tự deploy:
+### 13.3. Push code để deploy
+
+Nếu đang ở `main`:
 
 ```powershell
+# Commit và push vào main để GitHub Actions tự deploy
 git add .
-git commit -m "Update deployment configuration"
+git commit -m "Update deployment"
 git push origin main
 ```
 
-## 16. Debug Nhanh
+Nếu đang ở nhánh phụ:
+
+```powershell
+# Push nhánh phụ, sau đó tạo Pull Request vào main
+git add .
+git commit -m "Update deployment"
+git push origin feature/Code_ux
+```
+
+## 14. Debug Nhanh
+
+### 14.1. Xem toàn bộ pod
 
 ```bash
+# Kiểm tra toàn bộ pod trong cluster
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig get pods -A
 ```
 
-Xem toàn bộ pod.
+### 14.2. Xem log backend
 
 ```bash
+# Xem 100 dòng log cuối của backend
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach logs deployment/backend --tail=100
 ```
 
-Xem log backend.
+### 14.3. Xem lỗi pod backend
 
 ```bash
+# Xem event và cấu hình pod backend
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach describe pod -l app=backend
 ```
 
-Xem lỗi backend.
+### 14.4. Restart backend
 
 ```bash
+# Khởi động lại backend deployment
 kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
   -n web-bansach rollout restart deployment/backend
 ```
 
-Restart backend.
-
-## 17. Xóa Hạ Tầng
+### 14.5. Chờ backend rollout
 
 ```bash
+# Chờ backend chạy lại xong
+kubectl --kubeconfig /workspace/infrastructure/ansible/kubeconfig \
+  -n web-bansach rollout status deployment/backend --timeout=180s
+```
+
+## 15. Xóa Hạ Tầng
+
+Chỉ chạy khi muốn xóa toàn bộ VPS AWS do Terraform tạo.
+
+```bash
+# Xóa EC2, network và security group do Terraform quản lý
 cd /workspace/infrastructure/terraform
 terraform destroy
 ```
 
-Xóa toàn bộ hạ tầng AWS do Terraform tạo.
+Khi Terraform hỏi xác nhận, nhập:
+
+```text
+yes
+```
 

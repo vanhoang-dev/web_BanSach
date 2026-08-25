@@ -1,14 +1,14 @@
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = ">= 1.6.0" # Phiên bản Terraform tối thiểu
 
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+      source  = "hashicorp/aws" # Provider quản lý AWS
+      version = "~> 5.0"        # Phiên bản provider AWS
     }
     local = {
-      source  = "hashicorp/local"
-      version = "~> 2.5"
+      source  = "hashicorp/local" # Provider tạo file local
+      version = "~> 2.5"          # Phiên bản provider local
     }
   }
 }
