@@ -1,11 +1,11 @@
-apiVersion: 1
+apiVersion: 1 # Phiên bản cấu hình provisioning của Grafana
 
-providers:
-  - name: WebBanSach
-    orgId: 1
-    folder: WebBanSach
-    type: file
-    disableDeletion: false
-    updateIntervalSeconds: 30
+providers: # Danh sách nguồn dashboard Grafana
+  - name: WebBanSach # Tên provider dashboard
+    orgId: 1 # Tổ chức mặc định trong Grafana
+    folder: WebBanSach # Folder chứa dashboard trong Grafana UI
+    type: file # Load dashboard từ file JSON
+    disableDeletion: false # Cho phép xóa dashboard khi file bị xóa
+    updateIntervalSeconds: 30 # Mỗi 30 giây quét lại file dashboard
     options:
-      path: /etc/grafana/provisioning/dashboards
+      path: /etc/grafana/provisioning/dashboards # Thư mục chứa dashboard JSON

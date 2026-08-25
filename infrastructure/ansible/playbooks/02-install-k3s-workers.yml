@@ -1,11 +1,11 @@
-- name: Install k3s workers
-  hosts: k3s_workers
-  become: true
+- name: Install k3s workers # Cài worker node
+  hosts: k3s_workers # Chạy trên vps2 và vps3
+  become: true # Chạy với quyền sudo
   vars_files:
-    - ../group_vars/all.yml
+    - ../group_vars/all.yml # Nạp biến dùng chung
   tasks:
-    - name: Install k3s agent
-      ansible.builtin.shell: |
+    - name: Install k3s agent # Cài k3s agent và join vào master
+      ansible.builtin.shell: | # Chạy script cài k3s worker
         curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" K3S_URL="{{ k3s_server_url }}" K3S_TOKEN="{{ hostvars[groups['k3s_master'][0]].k3s_token }}" sh -s - agent --node-name "{{ inventory_hostname }}"
       args:
-        creates: /etc/systemd/system/k3s-agent.service
+        creates: /etc/systemd/system/k3s-agent.service # Nếu agent đã tồn tại thì không cài lại

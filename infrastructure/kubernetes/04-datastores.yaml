@@ -1,164 +1,164 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1 # API dùng để tạo Deployment
+kind: Deployment # Chạy MySQL dưới dạng pod quản lý bởi Deployment
 metadata:
-  name: mysql
-  namespace: web-bansach
+  name: mysql # Tên deployment MySQL
+  namespace: web-bansach # Namespace của dự án
 spec:
-  replicas: 1
+  replicas: 1 # Chạy 1 pod MySQL
   strategy:
-    type: Recreate
+    type: Recreate # Tắt pod cũ rồi mới tạo pod mới để tránh tranh chấp volume
   selector:
     matchLabels:
-      app: mysql
+      app: mysql # Nhãn dùng để chọn pod MySQL
   template:
     metadata:
       labels:
-        app: mysql
+        app: mysql # Gắn nhãn cho pod MySQL
     spec:
       containers:
-        - name: mysql
-          image: mysql:8.0
+        - name: mysql # Container MySQL
+          image: mysql:8.0 # Image MySQL chính thức
           ports:
-            - containerPort: 3306
+            - containerPort: 3306 # Cổng MySQL trong container
           env:
-            - name: MYSQL_DATABASE
+            - name: MYSQL_DATABASE # Tên database khởi tạo
               valueFrom:
                 configMapKeyRef:
-                  name: web-bansach-config
-                  key: MYSQL_DATABASE
-            - name: MYSQL_ROOT_PASSWORD
+                  name: web-bansach-config # Lấy từ ConfigMap
+                  key: MYSQL_DATABASE # Key chứa tên database
+            - name: MYSQL_ROOT_PASSWORD # Mật khẩu root MySQL
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: MYSQL_ROOT_PASSWORD
+                  name: web-bansach-secret # Lấy từ Secret
+                  key: MYSQL_ROOT_PASSWORD # Key chứa mật khẩu MySQL
           readinessProbe:
             exec:
-              command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD --silent"]
-            initialDelaySeconds: 20
-            periodSeconds: 10
+              command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD --silent"] # Kiểm tra MySQL đã sẵn sàng
+            initialDelaySeconds: 20 # Chờ MySQL khởi động trước khi check
+            periodSeconds: 10 # Mỗi 10 giây kiểm tra một lần
           volumeMounts:
-            - name: mysql-data
-              mountPath: /var/lib/mysql
+            - name: mysql-data # Volume lưu dữ liệu MySQL
+              mountPath: /var/lib/mysql # Thư mục dữ liệu của MySQL
       volumes:
-        - name: mysql-data
+        - name: mysql-data # Khai báo volume MySQL
           persistentVolumeClaim:
-            claimName: mysql-data
+            claimName: mysql-data # PVC giữ dữ liệu không mất khi pod restart
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1 # API tạo Service
+kind: Service # Service nội bộ cho MySQL
 metadata:
-  name: mysql
-  namespace: web-bansach
+  name: mysql # Tên DNS nội bộ: mysql.web-bansach.svc
+  namespace: web-bansach # Namespace của dự án
 spec:
   selector:
-    app: mysql
+    app: mysql # Trỏ traffic tới pod MySQL
   ports:
-    - port: 3306
-      targetPort: 3306
+    - port: 3306 # Cổng service MySQL
+      targetPort: 3306 # Cổng container MySQL
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1 # API dùng để tạo Deployment
+kind: Deployment # Chạy Redis dưới dạng Deployment
 metadata:
-  name: redis
-  namespace: web-bansach
+  name: redis # Tên deployment Redis
+  namespace: web-bansach # Namespace của dự án
 spec:
-  replicas: 1
+  replicas: 1 # Chạy 1 pod Redis
   strategy:
-    type: Recreate
+    type: Recreate # Tránh nhiều pod ghi cùng volume
   selector:
     matchLabels:
-      app: redis
+      app: redis # Nhãn dùng để chọn pod Redis
   template:
     metadata:
       labels:
-        app: redis
+        app: redis # Gắn nhãn cho pod Redis
     spec:
       containers:
-        - name: redis
-          image: redis:7.4-alpine
-          command: ["sh", "-c", "redis-server --appendonly yes --requirepass $REDIS_PASSWORD"]
+        - name: redis # Container Redis
+          image: redis:7.4-alpine # Image Redis nhẹ
+          command: ["sh", "-c", "redis-server --appendonly yes --requirepass $REDIS_PASSWORD"] # Bật lưu dữ liệu và mật khẩu
           ports:
-            - containerPort: 6379
+            - containerPort: 6379 # Cổng Redis
           env:
-            - name: REDIS_PASSWORD
+            - name: REDIS_PASSWORD # Mật khẩu Redis
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: REDIS_PASSWORD
+                  name: web-bansach-secret # Lấy từ Secret
+                  key: REDIS_PASSWORD # Key chứa mật khẩu Redis
           volumeMounts:
-            - name: redis-data
-              mountPath: /data
+            - name: redis-data # Volume lưu dữ liệu Redis
+              mountPath: /data # Thư mục dữ liệu Redis
       volumes:
-        - name: redis-data
+        - name: redis-data # Khai báo volume Redis
           persistentVolumeClaim:
-            claimName: redis-data
+            claimName: redis-data # PVC giữ dữ liệu Redis
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1 # API tạo Service
+kind: Service # Service nội bộ cho Redis
 metadata:
-  name: redis
-  namespace: web-bansach
+  name: redis # Tên DNS nội bộ Redis
+  namespace: web-bansach # Namespace của dự án
 spec:
   selector:
-    app: redis
+    app: redis # Trỏ traffic tới pod Redis
   ports:
-    - port: 6379
-      targetPort: 6379
+    - port: 6379 # Cổng service Redis
+      targetPort: 6379 # Cổng container Redis
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1 # API dùng để tạo Deployment
+kind: Deployment # Chạy RabbitMQ dưới dạng Deployment
 metadata:
-  name: rabbitmq
-  namespace: web-bansach
+  name: rabbitmq # Tên deployment RabbitMQ
+  namespace: web-bansach # Namespace của dự án
 spec:
-  replicas: 1
+  replicas: 1 # Chạy 1 pod RabbitMQ
   strategy:
-    type: Recreate
+    type: Recreate # Tránh tranh chấp volume khi cập nhật
   selector:
     matchLabels:
-      app: rabbitmq
+      app: rabbitmq # Nhãn dùng để chọn pod RabbitMQ
   template:
     metadata:
       labels:
-        app: rabbitmq
+        app: rabbitmq # Gắn nhãn cho pod RabbitMQ
     spec:
       containers:
-        - name: rabbitmq
-          image: rabbitmq:3.13-management-alpine
+        - name: rabbitmq # Container RabbitMQ
+          image: rabbitmq:3.13-management-alpine # Image có giao diện quản trị
           ports:
-            - containerPort: 5672
-            - containerPort: 15672
+            - containerPort: 5672 # Cổng AMQP cho backend
+            - containerPort: 15672 # Cổng giao diện quản trị RabbitMQ
           env:
-            - name: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_DEFAULT_USER # User mặc định RabbitMQ
               valueFrom:
                 configMapKeyRef:
-                  name: web-bansach-config
-                  key: RABBITMQ_USERNAME
-            - name: RABBITMQ_DEFAULT_PASS
+                  name: web-bansach-config # Lấy từ ConfigMap
+                  key: RABBITMQ_USERNAME # Key chứa username RabbitMQ
+            - name: RABBITMQ_DEFAULT_PASS # Password mặc định RabbitMQ
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: RABBITMQ_PASSWORD
+                  name: web-bansach-secret # Lấy từ Secret
+                  key: RABBITMQ_PASSWORD # Key chứa password RabbitMQ
           volumeMounts:
-            - name: rabbitmq-data
-              mountPath: /var/lib/rabbitmq
+            - name: rabbitmq-data # Volume lưu dữ liệu RabbitMQ
+              mountPath: /var/lib/rabbitmq # Thư mục dữ liệu RabbitMQ
       volumes:
-        - name: rabbitmq-data
+        - name: rabbitmq-data # Khai báo volume RabbitMQ
           persistentVolumeClaim:
-            claimName: rabbitmq-data
+            claimName: rabbitmq-data # PVC giữ dữ liệu RabbitMQ
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1 # API tạo Service
+kind: Service # Service nội bộ cho RabbitMQ
 metadata:
-  name: rabbitmq
-  namespace: web-bansach
+  name: rabbitmq # Tên DNS nội bộ RabbitMQ
+  namespace: web-bansach # Namespace của dự án
 spec:
   selector:
-    app: rabbitmq
+    app: rabbitmq # Trỏ traffic tới pod RabbitMQ
   ports:
-    - name: amqp
-      port: 5672
-      targetPort: 5672
-    - name: management
-      port: 15672
-      targetPort: 15672
+    - name: amqp # Cổng backend dùng để gửi/nhận message
+      port: 5672 # Cổng service AMQP
+      targetPort: 5672 # Cổng container AMQP
+    - name: management # Cổng giao diện quản trị
+      port: 15672 # Cổng service management
+      targetPort: 15672 # Cổng container management

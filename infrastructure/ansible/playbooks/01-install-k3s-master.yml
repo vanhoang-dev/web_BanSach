@@ -1,44 +1,44 @@
-- name: Install k3s master
-  hosts: k3s_master
-  become: true
+- name: Install k3s master # Cài node master/control-plane
+  hosts: k3s_master # Chỉ chạy trên vps1
+  become: true # Chạy với quyền sudo
   vars_files:
-    - ../group_vars/all.yml
+    - ../group_vars/all.yml # Nạp biến dùng chung
   tasks:
-    - name: Install k3s server
-      ansible.builtin.shell: |
+    - name: Install k3s server # Cài k3s server trên master
+      ansible.builtin.shell: | # Chạy script cài k3s chính thức
         curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s - server \
           --node-name vps1 \
           --write-kubeconfig-mode 644 \
           --tls-san "{{ ansible_host }}"
       args:
-        creates: /etc/systemd/system/k3s.service
+        creates: /etc/systemd/system/k3s.service # Nếu service đã tồn tại thì không cài lại
 
-    - name: Wait for k3s node
-      ansible.builtin.command: k3s kubectl get nodes
-      register: k3s_nodes
-      retries: 20
-      delay: 6
-      until: k3s_nodes.rc == 0
-      changed_when: false
+    - name: Wait for k3s node # Chờ master sẵn sàng
+      ansible.builtin.command: k3s kubectl get nodes # Kiểm tra node bằng kubectl của k3s
+      register: k3s_nodes # Lưu kết quả lệnh
+      retries: 20 # Thử tối đa 20 lần
+      delay: 6 # Mỗi lần cách nhau 6 giây
+      until: k3s_nodes.rc == 0 # Dừng khi lệnh thành công
+      changed_when: false # Không đánh dấu changed
 
-    - name: Read k3s token
+    - name: Read k3s token # Đọc token để worker join cluster
       ansible.builtin.slurp:
-        src: /var/lib/rancher/k3s/server/node-token
-      register: k3s_token_raw
+        src: /var/lib/rancher/k3s/server/node-token # File token trên master
+      register: k3s_token_raw # Lưu token dạng base64
 
-    - name: Store k3s token for workers
+    - name: Store k3s token for workers # Lưu token vào biến Ansible
       ansible.builtin.set_fact:
-        k3s_token: "{{ k3s_token_raw.content | b64decode | trim }}"
+        k3s_token: "{{ k3s_token_raw.content | b64decode | trim }}" # Token dùng cho worker
 
-    - name: Read kubeconfig
+    - name: Read kubeconfig # Đọc kubeconfig từ master
       ansible.builtin.slurp:
-        src: /etc/rancher/k3s/k3s.yaml
-      register: kubeconfig_raw
+        src: /etc/rancher/k3s/k3s.yaml # File kubeconfig mặc định của k3s
+      register: kubeconfig_raw # Lưu kubeconfig dạng base64
 
-    - name: Save kubeconfig locally
+    - name: Save kubeconfig locally # Lưu kubeconfig về máy chạy Ansible
       ansible.builtin.copy:
-        dest: "{{ kubeconfig_local_path }}"
-        content: "{{ (kubeconfig_raw.content | b64decode) | replace('https://127.0.0.1:6443', 'https://' ~ ansible_host ~ ':6443') }}"
-        mode: "0600"
-      delegate_to: localhost
-      become: false
+        dest: "{{ kubeconfig_local_path }}" # Đường dẫn kubeconfig local
+        content: "{{ (kubeconfig_raw.content | b64decode) | replace('https://127.0.0.1:6443', 'https://' ~ ansible_host ~ ':6443') }}" # Đổi 127.0.0.1 thành public IP master
+        mode: "0600" # Chỉ owner được đọc kubeconfig
+      delegate_to: localhost # Ghi file ở máy chạy Ansible, không phải VPS
+      become: false # Không dùng sudo khi ghi local

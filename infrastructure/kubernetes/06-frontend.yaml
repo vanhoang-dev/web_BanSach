@@ -1,39 +1,39 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1 # API Deployment
+kind: Deployment # Chạy nhiều pod frontend
 metadata:
-  name: frontend
-  namespace: web-bansach
+  name: frontend # Tên deployment frontend
+  namespace: web-bansach # Namespace ứng dụng
 spec:
-  replicas: 2
+  replicas: 2 # Chạy 2 pod frontend
   selector:
     matchLabels:
-      app: frontend
+      app: frontend # Label chọn pod frontend
   template:
     metadata:
       labels:
-        app: frontend
+        app: frontend # Label gắn cho pod frontend
     spec:
       containers:
-        - name: frontend
-          image: hoangdev311/web-bansach-frontend:latest
-          imagePullPolicy: Always
+        - name: frontend # Tên container frontend
+          image: hoangdev311/web-bansach-frontend:latest # Image frontend trên Docker Hub
+          imagePullPolicy: Always # Luôn kéo image mới khi tạo pod
           ports:
-            - containerPort: 80
+            - containerPort: 80 # Port Nginx frontend
           readinessProbe:
             httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+              path: / # Kiểm tra frontend trả trang chủ
+              port: 80 # Port frontend
+            initialDelaySeconds: 10 # Chờ 10s trước khi check
+            periodSeconds: 10 # Check mỗi 10s
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1 # API core Kubernetes
+kind: Service # Service nội bộ cho frontend
 metadata:
-  name: frontend
-  namespace: web-bansach
+  name: frontend # Tên service frontend
+  namespace: web-bansach # Namespace ứng dụng
 spec:
   selector:
-    app: frontend
+    app: frontend # Chọn pod frontend
   ports:
-    - port: 80
-      targetPort: 80
+    - port: 80 # Port service
+      targetPort: 80 # Port container frontend

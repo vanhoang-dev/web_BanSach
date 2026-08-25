@@ -1,226 +1,226 @@
-apiVersion: v1
-kind: ServiceAccount
+apiVersion: v1 # API tạo ServiceAccount
+kind: ServiceAccount # Tài khoản cho Prometheus truy cập Kubernetes API
 metadata:
-  name: prometheus
-  namespace: monitoring
+  name: prometheus # Tên service account của Prometheus
+  namespace: monitoring # Namespace monitoring
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1 # API phân quyền RBAC
+kind: ClusterRole # Quyền đọc tài nguyên toàn cluster
 metadata:
-  name: prometheus-discovery
+  name: prometheus-discovery # Quyền service discovery cho Prometheus
 rules:
-  - apiGroups: [""]
-    resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
-    verbs: ["get", "list", "watch"]
+  - apiGroups: [""] # Nhóm API core của Kubernetes
+    resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"] # Tài nguyên Prometheus cần đọc
+    verbs: ["get", "list", "watch"] # Quyền chỉ đọc và theo dõi thay đổi
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1 # API gán quyền RBAC
+kind: ClusterRoleBinding # Gắn ClusterRole cho ServiceAccount
 metadata:
-  name: prometheus-discovery
+  name: prometheus-discovery # Tên binding quyền Prometheus
 roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: prometheus-discovery
+  apiGroup: rbac.authorization.k8s.io # Nhóm API RBAC
+  kind: ClusterRole # Loại quyền được gắn
+  name: prometheus-discovery # Tên ClusterRole cần gắn
 subjects:
-  - kind: ServiceAccount
-    name: prometheus
-    namespace: monitoring
+  - kind: ServiceAccount # Đối tượng nhận quyền
+    name: prometheus # ServiceAccount của Prometheus
+    namespace: monitoring # Namespace chứa ServiceAccount
 ---
-apiVersion: v1
-kind: ConfigMap
+apiVersion: v1 # API tạo ConfigMap
+kind: ConfigMap # Lưu file cấu hình Prometheus
 metadata:
-  name: prometheus-config
-  namespace: monitoring
+  name: prometheus-config # Tên ConfigMap Prometheus
+  namespace: monitoring # Namespace monitoring
 data:
-  prometheus.yml: |
+  prometheus.yml: | # Nội dung cấu hình scrape metrics
     global:
-      scrape_interval: 15s
+      scrape_interval: 15s # Chu kỳ lấy metrics
     scrape_configs:
-      - job_name: kubernetes-pods
+      - job_name: kubernetes-pods # Tự động quét pod có annotation prometheus
         kubernetes_sd_configs:
-          - role: pod
+          - role: pod # Service discovery theo pod
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-            action: keep
-            regex: "true"
+            action: keep # Chỉ giữ pod bật scrape
+            regex: "true" # Annotation prometheus.io/scrape phải là true
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-            action: replace
-            target_label: __metrics_path__
-            regex: (.+)
+            action: replace # Thay đường dẫn metrics nếu pod khai báo
+            target_label: __metrics_path__ # Label đường dẫn metrics
+            regex: (.+) # Chỉ thay khi có giá trị
           - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-            action: replace
-            regex: ([^:]+)(?::\d+)?;(\d+)
-            replacement: $1:$2
-            target_label: __address__
-      - job_name: node-exporter
+            action: replace # Thay địa chỉ scrape theo port annotation
+            regex: ([^:]+)(?::\d+)?;(\d+) # Tách IP pod và port metrics
+            replacement: $1:$2 # Ghép lại thành IP:port
+            target_label: __address__ # Label địa chỉ scrape
+      - job_name: node-exporter # Lấy metrics CPU/RAM/disk của VPS
         static_configs:
-          - targets: ["node-exporter.monitoring.svc.cluster.local:9100"]
-      - job_name: mysql
+          - targets: ["node-exporter.monitoring.svc.cluster.local:9100"] # Service node-exporter
+      - job_name: mysql # Lấy metrics trạng thái MySQL
         static_configs:
-          - targets: ["mysqld-exporter.web-bansach.svc.cluster.local:9104"]
+          - targets: ["mysqld-exporter.web-bansach.svc.cluster.local:9104"] # Service mysqld-exporter
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1 # API tạo Deployment
+kind: Deployment # Chạy Prometheus
 metadata:
-  name: prometheus
-  namespace: monitoring
+  name: prometheus # Tên deployment Prometheus
+  namespace: monitoring # Namespace monitoring
 spec:
-  replicas: 1
+  replicas: 1 # Chạy 1 pod Prometheus
   selector:
     matchLabels:
-      app: prometheus
+      app: prometheus # Nhãn chọn pod Prometheus
   template:
     metadata:
       labels:
-        app: prometheus
+        app: prometheus # Gắn nhãn cho pod Prometheus
     spec:
-      serviceAccountName: prometheus
+      serviceAccountName: prometheus # Dùng quyền đọc cluster đã khai báo
       containers:
-        - name: prometheus
-          image: prom/prometheus:v2.55.1
+        - name: prometheus # Container Prometheus
+          image: prom/prometheus:v2.55.1 # Image Prometheus
           args:
-            - --config.file=/etc/prometheus/prometheus.yml
+            - --config.file=/etc/prometheus/prometheus.yml # Đường dẫn file cấu hình
           ports:
-            - containerPort: 9090
+            - containerPort: 9090 # Cổng Prometheus
           volumeMounts:
-            - name: config
-              mountPath: /etc/prometheus
+            - name: config # Volume chứa config
+              mountPath: /etc/prometheus # Nơi Prometheus đọc config
       volumes:
-        - name: config
+        - name: config # Khai báo volume config
           configMap:
-            name: prometheus-config
+            name: prometheus-config # Lấy từ ConfigMap
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1 # API tạo Service
+kind: Service # Service nội bộ cho Prometheus
 metadata:
-  name: prometheus
-  namespace: monitoring
+  name: prometheus # Tên service Prometheus
+  namespace: monitoring # Namespace monitoring
 spec:
   selector:
-    app: prometheus
+    app: prometheus # Trỏ tới pod Prometheus
   ports:
-    - port: 9090
-      targetPort: 9090
+    - port: 9090 # Cổng service
+      targetPort: 9090 # Cổng container
 ---
-apiVersion: apps/v1
-kind: DaemonSet
+apiVersion: apps/v1 # API tạo DaemonSet
+kind: DaemonSet # Chạy node-exporter trên mọi VPS
 metadata:
-  name: node-exporter
-  namespace: monitoring
+  name: node-exporter # Tên DaemonSet node-exporter
+  namespace: monitoring # Namespace monitoring
 spec:
   selector:
     matchLabels:
-      app: node-exporter
+      app: node-exporter # Nhãn chọn pod node-exporter
   template:
     metadata:
       labels:
-        app: node-exporter
+        app: node-exporter # Gắn nhãn cho pod node-exporter
     spec:
-      hostPID: true
+      hostPID: true # Cho phép đọc thông tin process của host
       containers:
-        - name: node-exporter
-          image: prom/node-exporter:v1.8.2
+        - name: node-exporter # Container node-exporter
+          image: prom/node-exporter:v1.8.2 # Image thu thập metrics phần cứng
           args:
-            - --path.rootfs=/host
+            - --path.rootfs=/host # Đọc filesystem của VPS qua mount /host
           ports:
-            - containerPort: 9100
+            - containerPort: 9100 # Cổng metrics node-exporter
           volumeMounts:
-            - name: root
-              mountPath: /host
-              readOnly: true
+            - name: root # Volume root filesystem của VPS
+              mountPath: /host # Mount vào container
+              readOnly: true # Chỉ đọc để an toàn
       volumes:
-        - name: root
+        - name: root # Khai báo volume root host
           hostPath:
-            path: /
+            path: / # Root filesystem của VPS
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1 # API tạo Service
+kind: Service # Service cho node-exporter
 metadata:
-  name: node-exporter
-  namespace: monitoring
+  name: node-exporter # Tên service node-exporter
+  namespace: monitoring # Namespace monitoring
 spec:
   selector:
-    app: node-exporter
+    app: node-exporter # Trỏ tới pod node-exporter
   ports:
-    - port: 9100
-      targetPort: 9100
+    - port: 9100 # Cổng service metrics
+      targetPort: 9100 # Cổng container metrics
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1 # API tạo Deployment
+kind: Deployment # Chạy exporter cho MySQL
 metadata:
-  name: mysqld-exporter
-  namespace: web-bansach
+  name: mysqld-exporter # Tên deployment mysqld-exporter
+  namespace: web-bansach # Đặt cùng namespace với MySQL
 spec:
-  replicas: 1
+  replicas: 1 # Chạy 1 pod exporter
   selector:
     matchLabels:
-      app: mysqld-exporter
+      app: mysqld-exporter # Nhãn chọn pod exporter
   template:
     metadata:
       labels:
-        app: mysqld-exporter
+        app: mysqld-exporter # Gắn nhãn cho pod exporter
     spec:
       containers:
-        - name: mysqld-exporter
-          image: prom/mysqld-exporter:v0.16.0
+        - name: mysqld-exporter # Container exporter MySQL
+          image: prom/mysqld-exporter:v0.16.0 # Image mysqld-exporter
           args:
-            - --mysqld.username=root:$(MYSQL_ROOT_PASSWORD)
-            - --mysqld.address=mysql.web-bansach.svc.cluster.local:3306
+            - --mysqld.username=root:$(MYSQL_ROOT_PASSWORD) # Tài khoản exporter dùng để đọc metrics
+            - --mysqld.address=mysql.web-bansach.svc.cluster.local:3306 # Địa chỉ service MySQL
           env:
-            - name: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_ROOT_PASSWORD # Mật khẩu MySQL
               valueFrom:
                 secretKeyRef:
-                  name: web-bansach-secret
-                  key: MYSQL_ROOT_PASSWORD
+                  name: web-bansach-secret # Lấy từ Secret
+                  key: MYSQL_ROOT_PASSWORD # Key chứa mật khẩu MySQL
           ports:
-            - containerPort: 9104
+            - containerPort: 9104 # Cổng metrics MySQL
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1 # API tạo Service
+kind: Service # Service cho mysqld-exporter
 metadata:
-  name: mysqld-exporter
-  namespace: web-bansach
+  name: mysqld-exporter # Tên service exporter MySQL
+  namespace: web-bansach # Namespace web-bansach
 spec:
   selector:
-    app: mysqld-exporter
+    app: mysqld-exporter # Trỏ tới pod exporter
   ports:
-    - port: 9104
-      targetPort: 9104
+    - port: 9104 # Cổng service metrics
+      targetPort: 9104 # Cổng container metrics
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1 # API tạo Deployment
+kind: Deployment # Chạy Grafana
 metadata:
-  name: grafana
-  namespace: monitoring
+  name: grafana # Tên deployment Grafana
+  namespace: monitoring # Namespace monitoring
 spec:
-  replicas: 1
+  replicas: 1 # Chạy 1 pod Grafana
   selector:
     matchLabels:
-      app: grafana
+      app: grafana # Nhãn chọn pod Grafana
   template:
     metadata:
       labels:
-        app: grafana
+        app: grafana # Gắn nhãn cho pod Grafana
     spec:
       containers:
-        - name: grafana
-          image: grafana/grafana:11.4.0
+        - name: grafana # Container Grafana
+          image: grafana/grafana:11.4.0 # Image Grafana
           ports:
-            - containerPort: 3000
+            - containerPort: 3000 # Cổng Grafana
           env:
-            - name: GF_SECURITY_ADMIN_PASSWORD
-              value: admin123
+            - name: GF_SECURITY_ADMIN_PASSWORD # Mật khẩu admin Grafana
+              value: admin123 # Mật khẩu demo, nên đổi khi production
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1 # API tạo Service
+kind: Service # Service expose Grafana
 metadata:
-  name: grafana
-  namespace: monitoring
+  name: grafana # Tên service Grafana
+  namespace: monitoring # Namespace monitoring
 spec:
-  type: NodePort
+  type: NodePort # Mở Grafana ra ngoài qua port trên VPS
   selector:
-    app: grafana
+    app: grafana # Trỏ tới pod Grafana
   ports:
-    - port: 3000
-      targetPort: 3000
-      nodePort: 30300
+    - port: 3000 # Cổng service Grafana
+      targetPort: 3000 # Cổng container Grafana
+      nodePort: 30300 # Cổng truy cập ngoài: http://IP_VPS:30300

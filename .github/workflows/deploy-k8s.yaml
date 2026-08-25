@@ -1,110 +1,114 @@
-name: Build and deploy to k3s
+name: Build and deploy to k3s # Tên workflow hiển thị trên GitHub Actions
 
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+on: # Cấu hình các sự kiện kích hoạt workflow
+  push: # Tự động chạy khi có code được push
+    branches: [main] # Chỉ chạy khi push lên nhánh main
+  workflow_dispatch: # Cho phép chạy thủ công từ giao diện GitHub Actions
 
-env:
-  DOCKERHUB_NAMESPACE: hoangdev311
-  BACKEND_IMAGE: hoangdev311/web-bansach-backend
-  FRONTEND_IMAGE: hoangdev311/web-bansach-frontend
-  VITE_API_BASE_URL: https://api.hoanghh.xyz
-  AWS_REGION: ap-southeast-1
-  K3S_SECURITY_GROUP_ID: sg-0b1a4b0ee86ab5d5b
+env: # Biến môi trường dùng chung cho các job
+  DOCKERHUB_NAMESPACE: hoangdev311 # Namespace tài khoản Docker Hub
+  BACKEND_IMAGE: hoangdev311/web-bansach-backend # Tên image Docker của backend
+  FRONTEND_IMAGE: hoangdev311/web-bansach-frontend # Tên image Docker của frontend
+  VITE_API_BASE_URL: https://api.hoanghh.xyz # URL API backend được frontend sử dụng khi build
+  AWS_REGION: ap-southeast-1 # Region AWS chứa máy chủ/k3s
+  K3S_SECURITY_GROUP_ID: sg-0b1a4b0ee86ab5d5b # Security group cần mở cổng API k3s tạm thời
 
-jobs:
-  test-build-push:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+jobs: # Danh sách các job trong workflow
+  test-build-push: # Job kiểm thử, build và đẩy image lên Docker Hub
+    runs-on: ubuntu-latest # Chạy job trên runner Ubuntu mới nhất
+    steps: # Các bước thực thi trong job
+      - uses: actions/checkout@v4 # Lấy mã nguồn từ repository về runner
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+      - uses: actions/setup-java@v4 # Cài đặt Java để build/test backend
+        with: # Tham số truyền vào action setup-java
+          distribution: temurin # Sử dụng bản phân phối Eclipse Temurin
+          java-version: "17" # Cài đặt Java 17
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: front_end/package-lock.json
+      - uses: actions/setup-node@v4 # Cài đặt Node.js để test/build frontend
+        with: # Tham số truyền vào action setup-node
+          node-version: "22" # Sử dụng Node.js phiên bản 22
+          cache: npm # Bật cache npm để tăng tốc cài dependency
+          cache-dependency-path: front_end/package-lock.json # File lock dùng làm khóa cache
 
-      - name: Test backend
-        working-directory: Back_end
-        run: mvn test
+      - name: Test backend # Đặt tên bước kiểm thử backend
+        working-directory: Back_end # Chạy lệnh trong thư mục backend
+        run: mvn test # Chạy test Maven cho backend
 
-      - name: Test and build frontend
-        working-directory: front_end
+      - name: Test and build frontend # Đặt tên bước kiểm thử và build frontend
+        working-directory: front_end # Chạy lệnh trong thư mục frontend
         run: |
-          npm ci
-          npm test
-          VITE_API_BASE_URL=${{ env.VITE_API_BASE_URL }} npm run build
+          # Chạy nhiều lệnh shell liên tiếp
+          npm ci # Cài dependency đúng theo package-lock.json
+          npm test # Chạy bộ test frontend
+          VITE_API_BASE_URL=${{ env.VITE_API_BASE_URL }} npm run build # Build frontend với URL API đã cấu hình
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to Docker Hub # Đăng nhập Docker Hub để có quyền push image
+        uses: docker/login-action@v3 # Action đăng nhập Docker registry
+        with: # Tham số đăng nhập
+          username: ${{ secrets.DOCKERHUB_USERNAME }} # Tên đăng nhập Docker Hub lấy từ GitHub Secrets
+          password: ${{ secrets.DOCKERHUB_TOKEN }} # Token Docker Hub lấy từ GitHub Secrets
 
-      - name: Build and push backend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./Back_end
-          push: true
-          tags: |
-            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
-            ${{ env.BACKEND_IMAGE }}:latest
+      - name: Build and push backend # Build image backend và push lên Docker Hub
+        uses: docker/build-push-action@v6 # Action build/push Docker image
+        with: # Tham số build image
+          context: ./Back_end # Thư mục Docker build context của backend
+          push: true # Cho phép push image sau khi build
+          tags: | # Danh sách tag gắn cho image backend
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }} # Tag theo commit SHA để deploy đúng phiên bản
+            ${{ env.BACKEND_IMAGE }}:latest # Tag latest cho phiên bản mới nhất
 
-      - name: Build and push frontend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./front_end
-          push: true
-          build-args: |
-            VITE_API_BASE_URL=${{ env.VITE_API_BASE_URL }}
-          tags: |
-            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
-            ${{ env.FRONTEND_IMAGE }}:latest
+      - name: Build and push frontend # Build image frontend và push lên Docker Hub
+        uses: docker/build-push-action@v6 # Action build/push Docker image
+        with: # Tham số build image
+          context: ./front_end # Thư mục Docker build context của frontend
+          push: true # Cho phép push image sau khi build
+          build-args: | # Biến build-time truyền vào Dockerfile frontend
+            VITE_API_BASE_URL=${{ env.VITE_API_BASE_URL }} # URL API để frontend đóng gói vào bản build
+          tags: | # Danh sách tag gắn cho image frontend
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }} # Tag theo commit SHA để deploy đúng phiên bản
+            ${{ env.FRONTEND_IMAGE }}:latest # Tag latest cho phiên bản mới nhất
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: test-build-push
-    steps:
-      - uses: actions/checkout@v4
+  deploy: # Job triển khai ứng dụng lên cụm k3s
+    runs-on: ubuntu-latest # Chạy job trên runner Ubuntu mới nhất
+    needs: test-build-push # Chỉ deploy sau khi job test-build-push thành công
+    steps: # Các bước thực thi trong job deploy
+      - uses: actions/checkout@v4 # Lấy mã nguồn để có các manifest Kubernetes
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials # Cấu hình thông tin đăng nhập AWS
+        uses: aws-actions/configure-aws-credentials@v4 # Action nạp AWS credentials cho AWS CLI
+        with: # Tham số đăng nhập AWS
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} # Access key AWS lấy từ GitHub Secrets
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # Secret key AWS lấy từ GitHub Secrets
+          aws-region: ${{ env.AWS_REGION }} # Region AWS mặc định cho các lệnh AWS CLI
 
-      - name: Allow GitHub runner to access k3s API
+      - name: Allow GitHub runner to access k3s API # Mở tạm cổng API k3s cho IP runner hiện tại
         run: |
-          RUNNER_IP="$(curl -fsSL https://checkip.amazonaws.com | tr -d '\n')"
-          echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
+          # Chạy các lệnh shell trên runner
+          RUNNER_IP="$(curl -fsSL https://checkip.amazonaws.com | tr -d '\n')" # Lấy public IP của GitHub runner
+          echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV" # Lưu IP vào biến môi trường cho các step sau
           aws ec2 authorize-security-group-ingress \
             --group-id "${{ env.K3S_SECURITY_GROUP_ID }}" \
             --protocol tcp \
             --port 6443 \
             --cidr "$RUNNER_IP/32" \
             --tag-specifications 'ResourceType=security-group-rule,Tags=[{Key=Name,Value=github-actions-k3s-api}]' \
-          || echo "Ingress rule may already exist"
+          || echo "Ingress rule may already exist" # Nếu rule đã tồn tại thì tiếp tục workflow
 
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
+      - name: Install kubectl # Cài đặt kubectl trên GitHub runner
+        uses: azure/setup-kubectl@v4 # Action cài công cụ kubectl
 
-      - name: Configure kubeconfig
+      - name: Configure kubeconfig # Tạo file kubeconfig để kết nối đến cụm k3s
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG_B64 }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
+          # Chạy các lệnh shell cấu hình kubectl
+          mkdir -p ~/.kube # Tạo thư mục cấu hình Kubernetes nếu chưa có
+          echo "${{ secrets.KUBE_CONFIG_B64 }}" | base64 -d > ~/.kube/config # Giải mã kubeconfig từ GitHub Secrets
+          chmod 600 ~/.kube/config # Giới hạn quyền đọc/ghi file kubeconfig
 
-      - name: Apply manifests
+      - name: Apply manifests # Áp dụng các manifest Kubernetes lên cụm k3s
         run: |
-          kubectl apply -f infrastructure/kubernetes/00-namespace.yaml
-          kubectl apply -f infrastructure/kubernetes/01-configmap.yaml
+          # Chạy các lệnh kubectl apply
+          kubectl apply -f infrastructure/kubernetes/00-namespace.yaml # Tạo/cập nhật namespace ứng dụng
+          kubectl apply -f infrastructure/kubernetes/01-configmap.yaml # Tạo/cập nhật ConfigMap cấu hình chung
           kubectl -n web-bansach create secret generic web-bansach-secret \
             --from-literal=MYSQL_ROOT_PASSWORD='${{ secrets.MYSQL_ROOT_PASSWORD }}' \
             --from-literal=REDIS_PASSWORD='${{ secrets.REDIS_PASSWORD }}' \
@@ -118,30 +122,32 @@ jobs:
             --from-literal=SEPAY_ACCOUNT_NUMBER='${{ secrets.SEPAY_ACCOUNT_NUMBER }}' \
             --from-literal=SEPAY_ACCOUNT_NAME='${{ secrets.SEPAY_ACCOUNT_NAME }}' \
             --from-literal=SEPAY_WEBHOOK_API_KEY='${{ secrets.SEPAY_WEBHOOK_API_KEY }}' \
-            --dry-run=client -o yaml | kubectl apply -f -
-          kubectl apply -f infrastructure/kubernetes/03-storage.yaml
-          kubectl apply -f infrastructure/kubernetes/04-datastores.yaml
-          kubectl apply -f infrastructure/kubernetes/08-monitoring.yaml
-          kubectl apply -f infrastructure/kubernetes/09-cert-manager-issuer.yaml
-          kubectl apply -f infrastructure/kubernetes/05-backend.yaml
-          kubectl apply -f infrastructure/kubernetes/06-frontend.yaml
-          kubectl apply -f infrastructure/kubernetes/07-ingress.yaml
+            --dry-run=client -o yaml | kubectl apply -f - # Tạo YAML secret từ các secret GitHub rồi apply lên cluster
+          kubectl apply -f infrastructure/kubernetes/03-storage.yaml # Tạo/cập nhật PersistentVolumeClaim và cấu hình lưu trữ
+          kubectl apply -f infrastructure/kubernetes/04-datastores.yaml # Tạo/cập nhật MySQL, Redis, RabbitMQ và các service liên quan
+          kubectl apply -f infrastructure/kubernetes/08-monitoring.yaml # Tạo/cập nhật thành phần monitoring
+          kubectl apply -f infrastructure/kubernetes/09-cert-manager-issuer.yaml # Tạo/cập nhật issuer chứng chỉ TLS
+          kubectl apply -f infrastructure/kubernetes/05-backend.yaml # Tạo/cập nhật Deployment và Service backend
+          kubectl apply -f infrastructure/kubernetes/06-frontend.yaml # Tạo/cập nhật Deployment và Service frontend
+          kubectl apply -f infrastructure/kubernetes/07-ingress.yaml # Tạo/cập nhật Ingress điều hướng domain
 
-      - name: Rollout images
+      - name: Rollout images # Cập nhật Deployment dùng image vừa build
         run: |
-          kubectl -n web-bansach set image deployment/backend backend=${{ env.BACKEND_IMAGE }}:${{ github.sha }}
-          kubectl -n web-bansach set image deployment/frontend frontend=${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
-          kubectl -n web-bansach rollout status deployment/backend --timeout=180s
-          kubectl -n web-bansach rollout status deployment/frontend --timeout=180s
+          # Chạy các lệnh rollout
+          kubectl -n web-bansach set image deployment/backend backend=${{ env.BACKEND_IMAGE }}:${{ github.sha }} # Cập nhật image backend theo commit hiện tại
+          kubectl -n web-bansach set image deployment/frontend frontend=${{ env.FRONTEND_IMAGE }}:${{ github.sha }} # Cập nhật image frontend theo commit hiện tại
+          kubectl -n web-bansach rollout status deployment/backend --timeout=180s # Chờ backend rollout xong trong tối đa 180 giây
+          kubectl -n web-bansach rollout status deployment/frontend --timeout=180s # Chờ frontend rollout xong trong tối đa 180 giây
 
-      - name: Revoke GitHub runner k3s API access
-        if: always()
+      - name: Revoke GitHub runner k3s API access # Đóng lại quyền truy cập API k3s của runner
+        if: always() # Luôn chạy bước này dù các bước trước thành công hay thất bại
         run: |
-          if [ -n "${RUNNER_IP:-}" ]; then
+          # Chạy các lệnh shell dọn dẹp security group
+          if [ -n "${RUNNER_IP:-}" ]; then # Chỉ thu hồi rule nếu đã lấy được IP runner
             aws ec2 revoke-security-group-ingress \
               --group-id "${{ env.K3S_SECURITY_GROUP_ID }}" \
               --protocol tcp \
               --port 6443 \
               --cidr "$RUNNER_IP/32" \
-            || echo "Ingress rule was already removed"
-          fi
+            || echo "Ingress rule was already removed" # Nếu rule đã bị xóa thì bỏ qua lỗi
+          fi # Kết thúc câu lệnh kiểm tra RUNNER_IP

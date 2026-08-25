@@ -1,37 +1,37 @@
-- name: Deploy application manifests
-  hosts: localhost
-  gather_facts: false
+- name: Deploy application manifests # Apply toàn bộ manifest Kubernetes của dự án
+  hosts: localhost # Chạy lệnh kubectl trên máy local/toolbox
+  gather_facts: false # Không cần thu thập facts local
   vars_files:
-    - ../group_vars/all.yml
+    - ../group_vars/all.yml # Nạp biến dùng chung
   vars:
-    kubeconfig: "{{ kubeconfig_local_path }}"
-    manifests_dir: "{{ playbook_dir }}/../../kubernetes"
+    kubeconfig: "{{ kubeconfig_local_path }}" # File kubeconfig dùng để kết nối cluster
+    manifests_dir: "{{ playbook_dir }}/../../kubernetes" # Thư mục chứa manifest Kubernetes
   tasks:
-    - name: Apply namespaces
-      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ manifests_dir }}/00-namespace.yaml"
-      changed_when: true
+    - name: Apply namespaces # Tạo namespace web-bansach và monitoring
+      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ manifests_dir }}/00-namespace.yaml" # Apply namespace
+      changed_when: true # Luôn ghi nhận task có thay đổi
 
-    - name: Apply app config
-      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ manifests_dir }}/01-configmap.yaml"
-      changed_when: true
+    - name: Apply app config # Apply ConfigMap cấu hình ứng dụng
+      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ manifests_dir }}/01-configmap.yaml" # Apply config không nhạy cảm
+      changed_when: true # Luôn ghi nhận task có thay đổi
 
-    - name: Check optional app secret
+    - name: Check optional app secret # Kiểm tra có file Secret local hay không
       ansible.builtin.stat:
-        path: "{{ manifests_dir }}/02-secret.yaml"
-      register: app_secret
+        path: "{{ manifests_dir }}/02-secret.yaml" # File secret không commit git
+      register: app_secret # Lưu trạng thái tồn tại của file
 
-    - name: Apply app secret if present
-      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ manifests_dir }}/02-secret.yaml"
-      when: app_secret.stat.exists
-      changed_when: true
+    - name: Apply app secret if present # Apply Secret nếu bạn đã tạo file 02-secret.yaml
+      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ manifests_dir }}/02-secret.yaml" # Apply biến nhạy cảm
+      when: app_secret.stat.exists # Chỉ chạy khi file tồn tại
+      changed_when: true # Luôn ghi nhận task có thay đổi
 
-    - name: Apply remaining manifests
-      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ item }}"
-      loop:
-        - "{{ manifests_dir }}/03-storage.yaml"
-        - "{{ manifests_dir }}/04-datastores.yaml"
-        - "{{ manifests_dir }}/08-monitoring.yaml"
-        - "{{ manifests_dir }}/05-backend.yaml"
-        - "{{ manifests_dir }}/06-frontend.yaml"
-        - "{{ manifests_dir }}/07-ingress.yaml"
-      changed_when: true
+    - name: Apply remaining manifests # Apply storage, database, app, monitoring, ingress
+      ansible.builtin.command: kubectl --kubeconfig "{{ kubeconfig }}" apply -f "{{ item }}" # Apply từng file manifest
+      loop: # Danh sách manifest còn lại
+        - "{{ manifests_dir }}/03-storage.yaml" # PVC lưu dữ liệu
+        - "{{ manifests_dir }}/04-datastores.yaml" # MySQL, Redis, RabbitMQ
+        - "{{ manifests_dir }}/08-monitoring.yaml" # Prometheus, Grafana, exporters
+        - "{{ manifests_dir }}/05-backend.yaml" # Backend Spring Boot
+        - "{{ manifests_dir }}/06-frontend.yaml" # Frontend React/Nginx
+        - "{{ manifests_dir }}/07-ingress.yaml" # Domain và route HTTP/HTTPS
+      changed_when: true # Luôn ghi nhận task có thay đổi

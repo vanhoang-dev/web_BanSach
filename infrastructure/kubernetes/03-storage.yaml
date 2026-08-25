@@ -1,32 +1,32 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
+apiVersion: v1 # API core Kubernetes
+kind: PersistentVolumeClaim # Yêu cầu volume lưu dữ liệu
 metadata:
-  name: mysql-data
-  namespace: web-bansach
+  name: mysql-data # Volume cho MySQL
+  namespace: web-bansach # Namespace ứng dụng
 spec:
-  accessModes: ["ReadWriteOnce"]
+  accessModes: ["ReadWriteOnce"] # Một node ghi tại một thời điểm
   resources:
     requests:
-      storage: 10Gi
+      storage: 10Gi # Dung lượng MySQL
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
+apiVersion: v1 # API core Kubernetes
+kind: PersistentVolumeClaim # Yêu cầu volume lưu dữ liệu
 metadata:
-  name: redis-data
-  namespace: web-bansach
+  name: redis-data # Volume cho Redis
+  namespace: web-bansach # Namespace ứng dụng
 spec:
-  accessModes: ["ReadWriteOnce"]
+  accessModes: ["ReadWriteOnce"] # Một node ghi tại một thời điểm
   resources:
     requests:
-      storage: 2Gi
+      storage: 2Gi # Dung lượng Redis
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
+apiVersion: v1 # API core Kubernetes
+kind: PersistentVolumeClaim # Yêu cầu volume lưu dữ liệu
 metadata:
-  name: rabbitmq-data
-  namespace: web-bansach
+  name: rabbitmq-data # Volume cho RabbitMQ
+  namespace: web-bansach # Namespace ứng dụng
 spec:
-  accessModes: ["ReadWriteOnce"]
+  accessModes: ["ReadWriteOnce"] # Một node ghi tại một thời điểm
   resources:
     requests:
-      storage: 2Gi
+      storage: 2Gi # Dung lượng RabbitMQ
