@@ -11,7 +11,7 @@ env: # Biến môi trường dùng chung cho các job
   FRONTEND_IMAGE: hoangdev311/web-bansach-frontend # Tên image Docker của frontend
   VITE_API_BASE_URL: https://api.hoanghh.xyz # URL API backend được frontend sử dụng khi build
   AWS_REGION: ap-southeast-1 # Region AWS chứa máy chủ/k3s
-  K3S_SECURITY_GROUP_ID: sg-0b1a4b0ee86ab5d5b # Security group cần mở cổng API k3s tạm thời
+  K3S_SECURITY_GROUP_ID: sg-031c85ae4faf16f5c # Security group cần mở cổng API k3s tạm thời
 
 jobs: # Danh sách các job trong workflow
   test-build-push: # Job kiểm thử, build và đẩy image lên Docker Hub
