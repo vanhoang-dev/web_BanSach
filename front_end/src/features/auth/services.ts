@@ -99,7 +99,7 @@ const authService = {
 
   resetPassword: async (data: ResetPasswordRequest): Promise<any> =>
     unwrapApiData(await api.post('/tai-khoan/dat-lai-mat-khau', {
-      token: data.token,
+      resetToken: data.token,
       newPassword: data.newPassword,
       confirmPassword: data.confirmPassword || data.newPassword,
     })),
