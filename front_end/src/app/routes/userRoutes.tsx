@@ -1,13 +1,14 @@
+import { lazy } from 'react';
 import { Route } from 'react-router-dom';
 
 import { ProtectedRoute } from '@/app/routes/protectedRoutes';
 import { MainLayout } from '@/components/layout/Layout';
-import ProfilePage from '@/features/auth/pages/ProfilePage';
-import CartPage from '@/features/cart/pages/CartPage';
-import CheckoutPage from '@/features/cart/pages/CheckoutPage';
-import OrderDetailPage from '@/features/orders/pages/OrderDetailPage';
-import OrdersPage from '@/features/orders/pages/OrdersPage';
-import WishlistPage from '@/features/wishlist/pages/WishlistPage';
+const ProfilePage = lazy(() => import('@/features/auth/pages/ProfilePage'));
+const CartPage = lazy(() => import('@/features/cart/pages/CartPage'));
+const CheckoutPage = lazy(() => import('@/features/cart/pages/CheckoutPage'));
+const OrderDetailPage = lazy(() => import('@/features/orders/pages/OrderDetailPage'));
+const OrdersPage = lazy(() => import('@/features/orders/pages/OrdersPage'));
+const WishlistPage = lazy(() => import('@/features/wishlist/pages/WishlistPage'));
 
 export const userRoutes = (
   <>

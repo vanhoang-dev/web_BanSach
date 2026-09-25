@@ -1,16 +1,16 @@
-import type { ReactNode } from 'react';
+import { lazy, type ReactNode } from 'react';
 import { Navigate, Route } from 'react-router-dom';
 
 import { ProtectedRoute } from '@/app/routes/protectedRoutes';
 import AdminLayout from '@/features/admin/components/AdminLayout';
-import AdminAuthorManagementPage from '@/features/admin/pages/AdminAuthorManagementPage';
-import AdminBookManagementPage from '@/features/admin/pages/AdminBookManagementPage';
-import AdminCategoryManagementPage from '@/features/admin/pages/AdminCategoryManagementPage';
-import AdminDashboard from '@/features/admin/pages/AdminDashboard';
-import AdminInventoryPage from '@/features/admin/pages/AdminInventoryPage';
-import AdminOrderManagementPage from '@/features/admin/pages/AdminOrderManagementPage';
-import AdminUserManagementPage from '@/features/admin/pages/AdminUserManagementPage';
-import AdminVoucherManagementPage from '@/features/admin/pages/AdminVoucherManagementPage';
+const AdminAuthorManagementPage = lazy(() => import('@/features/admin/pages/AdminAuthorManagementPage'));
+const AdminBookManagementPage = lazy(() => import('@/features/admin/pages/AdminBookManagementPage'));
+const AdminCategoryManagementPage = lazy(() => import('@/features/admin/pages/AdminCategoryManagementPage'));
+const AdminDashboard = lazy(() => import('@/features/admin/pages/AdminDashboard'));
+const AdminInventoryPage = lazy(() => import('@/features/admin/pages/AdminInventoryPage'));
+const AdminOrderManagementPage = lazy(() => import('@/features/admin/pages/AdminOrderManagementPage'));
+const AdminUserManagementPage = lazy(() => import('@/features/admin/pages/AdminUserManagementPage'));
+const AdminVoucherManagementPage = lazy(() => import('@/features/admin/pages/AdminVoucherManagementPage'));
 
 const adminRoute = (page: ReactNode) => (
   <ProtectedRoute adminOnly>

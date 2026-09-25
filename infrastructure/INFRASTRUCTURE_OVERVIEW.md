@@ -6,8 +6,8 @@ File này giải thích tên các file trong thư mục `infrastructure` và m�
 
 | File | Dùng để làm gì |
 | --- | --- |
-| `README.md` | Hướng dẫn các bước chạy server, tạo hạ tầng, cài k3s, deploy ứng dụng, kiểm tra website, debug và xóa hạ tầng. |
-| `README_MO_TA_FILE.md` | File hiện tại, dùng để mô tả ý nghĩa và công dụng của các file trong `infrastructure`. |
+| `INSTALLATION.md` | Hướng dẫn các bước chạy server, tạo hạ tầng, cài k3s, deploy ứng dụng, kiểm tra website, debug và xóa hạ tầng. |
+| `INFRASTRUCTURE_OVERVIEW.md` | File hiện tại, dùng để mô tả ý nghĩa và công dụng của các file trong `infrastructure`. |
 
 ## 2. Thư mục `terraform`
 

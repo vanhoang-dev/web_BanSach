@@ -23,20 +23,24 @@ export type PageData<T> = {
   size: number;
 };
 
-const isApiResponse = (value: any) =>
-  value && typeof value === 'object' && ('statusCode' in value || 'timestamp' in value || 'message' in value) && 'data' in value;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
 
-export const unwrapApiData = <T = unknown>(response: any): T => {
+const isApiResponse = (value: unknown): value is ApiResponse<unknown> =>
+  isRecord(value) && ('statusCode' in value || 'timestamp' in value || 'message' in value) && 'data' in value;
+
+export const unwrapApiData = <T = unknown>(response: unknown): T => {
   if (isApiResponse(response)) {
     return response.data as T;
   }
   return response as T;
 };
 
-export const unwrapPage = <T = unknown>(response: any): PageData<T> => {
-  const raw: any = unwrapApiData(response) || {};
-  const content = Array.isArray(raw.content) ? raw.content : [];
-  const meta = raw.meta || {};
+export const unwrapPage = <T = unknown>(response: unknown): PageData<T> => {
+  const unwrapped = unwrapApiData<unknown>(response);
+  const raw = isRecord(unwrapped) ? unwrapped : {};
+  const content = Array.isArray(raw.content) ? raw.content as T[] : [];
+  const meta = isRecord(raw.meta) ? raw.meta : {};
 
   return {
     content,

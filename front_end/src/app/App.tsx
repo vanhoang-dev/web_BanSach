@@ -1,12 +1,13 @@
-import '@/assets/styles/app.css';
-
 import { AppProvider } from '@/app/providers/AppProvider';
 import { RouterProvider } from '@/app/providers/RouterProvider';
+import AppErrorBoundary from '@/features/errors/components/AppErrorBoundary';
 
 function App() {
   return (
     <AppProvider>
-      <RouterProvider />
+      <AppErrorBoundary>
+        <RouterProvider />
+      </AppErrorBoundary>
     </AppProvider>
   );
 }

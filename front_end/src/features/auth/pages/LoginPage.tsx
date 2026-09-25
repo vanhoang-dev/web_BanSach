@@ -33,6 +33,7 @@ const PasswordField = ({
           type={visible ? 'text' : 'password'}
           value={value}
           onChange={onChange}
+          autoComplete="current-password"
           placeholder="********"
           className="h-11 w-full rounded-lg border border-outline-variant bg-surface px-4 pr-20 text-sm text-on-surface shadow-sm outline-none transition placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
@@ -81,16 +82,16 @@ const LoginPage = () => {
       <aside className="relative hidden overflow-hidden p-10 text-white lg:flex lg:flex-col lg:justify-between">
         <img src={authHeroImage} alt="Kệ sách trong thư viện" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-primary/70" />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/45 to-primary/20" />
+        <div className="absolute inset-0 bg-primary/75" />
 
         <div className="relative z-10">
           <BrandLink />
         </div>
         <div className="relative z-10">
           <p className="text-xs font-bold uppercase text-secondary-fixed">Chào mừng trở lại</p>
-          <h1 className="mt-4 max-w-xl text-5xl font-bold leading-tight">
+          <p className="mt-4 max-w-xl text-5xl font-bold leading-tight">
             Quay lại không gian mua sách và quản lý đơn hàng của bạn.
-          </h1>
+          </p>
         </div>
       </aside>
 
@@ -99,10 +100,10 @@ const LoginPage = () => {
           <div className="mb-8 lg:hidden">
             <BrandLink mobile />
           </div>
-          <h2 className="text-3xl font-bold text-primary">Đăng nhập</h2>
+          <h1 className="text-3xl font-bold text-primary">Đăng nhập</h1>
           <p className="mt-2 text-sm text-on-surface-variant">Nhập tài khoản để tiếp tục mua sắm.</p>
           {error ? (
-            <div className="mt-5 rounded-lg border border-error-container bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">
+            <div role="alert" className="mt-5 rounded-lg border border-error-container bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">
               {error}
             </div>
           ) : null}
@@ -110,6 +111,8 @@ const LoginPage = () => {
             <Field
               label="Email"
               type="email"
+              autoComplete="email"
+              required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="email@example.com"

@@ -1,5 +1,8 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import type { LinkProps } from 'react-router-dom';
+
+import bookCoverPlaceholder from '@/assets/icons/book-cover-placeholder.svg';
 
 type BaseProps = {
   children?: ReactNode;
@@ -19,6 +22,10 @@ type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & BaseProps;
+
+type LinkButtonProps = LinkProps & BaseProps & {
+  variant?: 'primary' | 'secondary' | 'accent' | 'ghost';
+};
 
 type StatCardProps = {
   label: string;
@@ -57,25 +64,25 @@ export const PageShell = ({ children, className = '' }: BaseProps) => (
 );
 
 export const Container = ({ children, className = '' }: BaseProps) => (
-  <div className={`mx-auto w-full max-w-container-max px-4 sm:px-6 lg:px-8 ${className}`}>{children}</div>
+  <div className={`mx-auto min-w-0 w-full max-w-container-max px-4 sm:px-6 lg:px-8 ${className}`}>{children}</div>
 );
 
-export const Panel = ({ children, className = '' }: BaseProps) => (
-  <div className={`rounded-xl border border-outline-variant bg-surface shadow-sm ${className}`}>{children}</div>
+export const Panel = ({ children, className = '', ...props }: HTMLAttributes<HTMLDivElement>) => (
+  <div {...props} className={`rounded-lg border border-outline-variant bg-surface ${className}`}>{children}</div>
 );
 
 export const Surface = ({ children, className = '' }: BaseProps) => (
-  <section className={`border-y border-outline-variant bg-surface-container-low ${className}`}>{children}</section>
+  <section className={`border-y border-outline-variant bg-surface ${className}`}>{children}</section>
 );
 
 export const SectionHeading = ({ eyebrow, title, description, action }: SectionHeadingProps) => (
-  <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-    <div className="max-w-3xl">
-      {eyebrow ? <p className="mb-2 text-xs font-bold uppercase text-secondary">{eyebrow}</p> : null}
-      <h1 className="border-l-4 border-secondary pl-4 text-3xl font-bold leading-tight text-primary md:text-4xl">{title}</h1>
-      {description ? <p className="mt-3 max-w-2xl text-base leading-7 text-on-surface-variant">{description}</p> : null}
+  <div className="mb-8 flex min-w-0 flex-col gap-5 md:flex-row md:items-end md:justify-between">
+    <div className="min-w-0 max-w-3xl">
+      {eyebrow ? <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-secondary">{eyebrow}</p> : null}
+      <h1 className="font-serif text-[30px] font-bold leading-[1.22] text-primary sm:text-3xl md:text-4xl">{title}</h1>
+      {description ? <p className="mt-3 max-w-2xl break-words text-base leading-7 text-on-surface-variant">{description}</p> : null}
     </div>
-    {action ? <div className="flex shrink-0 flex-wrap gap-3">{action}</div> : null}
+    {action ? <div className="flex w-full flex-wrap gap-3 md:w-auto md:shrink-0">{action}</div> : null}
   </div>
 );
 
@@ -85,12 +92,12 @@ export const Field = ({ label, textarea = false, className = '', ...props }: Fie
     {textarea ? (
       <textarea
         {...(props as any)}
-        className="min-h-28 w-full rounded-lg border-outline-variant bg-surface px-4 py-3 text-sm text-on-surface shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+        className="min-h-28 w-full rounded-md border-border-strong bg-surface px-4 py-3 text-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
       />
     ) : (
       <input
         {...props}
-        className="h-11 w-full rounded-lg border-outline-variant bg-surface px-4 text-sm text-on-surface shadow-sm outline-none transition placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20"
+        className="h-11 w-full rounded-md border-border-strong bg-surface px-4 text-sm text-on-surface outline-none transition placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/15"
       />
     )}
   </label>
@@ -100,17 +107,33 @@ export const PrimaryButton = ({ children, className = '', type = 'button', ...pr
   <button
     {...props}
     type={type}
-    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary shadow-sm transition hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
   >
     {children}
   </button>
+);
+
+const linkButtonVariants = {
+  primary: 'bg-primary text-on-primary hover:bg-primary-container',
+  secondary: 'border border-border-strong bg-surface text-[#344054] hover:bg-surface-container',
+  accent: 'bg-secondary-container text-on-secondary-container hover:bg-secondary',
+  ghost: 'text-on-surface-variant hover:bg-surface-container hover:text-primary',
+};
+
+export const LinkButton = ({ children, className = '', variant = 'primary', ...props }: LinkButtonProps) => (
+  <Link
+    {...props}
+    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition ${linkButtonVariants[variant]} ${className}`}
+  >
+    {children}
+  </Link>
 );
 
 export const SecondaryButton = ({ children, className = '', type = 'button', ...props }: ButtonProps) => (
   <button
     {...props}
     type={type}
-    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface px-4 py-2 text-sm font-bold text-primary shadow-sm transition hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-surface px-4 py-2 text-sm font-semibold text-[#344054] transition hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
   >
     {children}
   </button>
@@ -120,7 +143,7 @@ export const AccentButton = ({ children, className = '', type = 'button', ...pro
   <button
     {...props}
     type={type}
-    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-secondary-container px-4 py-2 text-sm font-bold text-on-secondary-container shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-secondary-container px-4 py-2 text-sm font-semibold text-on-secondary-container transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
   >
     {children}
   </button>
@@ -130,7 +153,7 @@ export const GhostButton = ({ children, className = '', type = 'button', ...prop
   <button
     {...props}
     type={type}
-    className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-on-surface-variant transition hover:bg-surface-container hover:text-primary ${className}`}
+    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-on-surface-variant transition hover:bg-surface-container hover:text-primary ${className}`}
   >
     {children}
   </button>
@@ -140,7 +163,7 @@ export const IconButton = ({ children, className = '', type = 'button', ...props
   <button
     {...props}
     type={type}
-    className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-surface text-on-surface-variant shadow-sm transition hover:bg-surface-container-low hover:text-primary ${className}`}
+    className={`inline-flex h-11 w-11 items-center justify-center rounded-md border border-border-strong bg-surface text-on-surface-variant transition hover:bg-surface-container hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
   >
     {children}
   </button>
@@ -220,31 +243,35 @@ export const EmptyState = ({ title, description, action }: { title: string; desc
 );
 
 export const BookCard = ({ id, title, author, category, price, cover, discount, onAdd }: BookCardProps) => (
-  <Panel className="group overflow-hidden transition hover:-translate-y-1 hover:shadow-md">
-    <Link to={`/books/${id || 1}`} className="block bg-surface-container-low p-4">
+  <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface transition duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-sm">
+    <Link to={`/books/${id || 1}`} className="block bg-surface-container-low p-5">
       <img
-        src={cover || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=520&q=80'}
+        src={cover || bookCoverPlaceholder}
+        onError={(event) => { event.currentTarget.src = bookCoverPlaceholder; }}
         alt={title}
-        className="mx-auto aspect-[3/4] h-64 rounded-lg object-cover shadow"
+        loading="lazy"
+        width="192"
+        height="256"
+        className="mx-auto aspect-[3/4] h-64 rounded-md bg-white object-contain shadow-sm"
       />
     </Link>
-    <div className="p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <StatusBadge>{category || 'Sách'}</StatusBadge>
-        {discount ? <span className="rounded-full bg-secondary-container px-2 py-1 text-xs font-bold text-on-secondary-container">-{discount}%</span> : null}
+    <div className="flex flex-1 flex-col p-4">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="truncate text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{category || 'Sách'}</span>
+        {discount ? <span className="rounded-sm bg-secondary-fixed px-2 py-1 text-xs font-semibold text-on-secondary-fixed-variant">-{discount}%</span> : null}
       </div>
-      <Link to={`/books/${id || 1}`} className="line-clamp-2 min-h-12 text-base font-bold leading-6 text-primary group-hover:text-secondary">
+      <Link to={`/books/${id || 1}`} className="line-clamp-2 min-h-12 font-serif text-base font-bold leading-6 text-on-surface transition group-hover:text-primary">
         {title}
       </Link>
       <p className="mt-1 truncate text-sm text-on-surface-variant">{author || 'Đang cập nhật'}</p>
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <span className="font-bold text-primary">{formatVnd(price)}</span>
+      <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+        <span className="text-base font-bold text-primary">{formatVnd(price)}</span>
         <IconButton onClick={onAdd} aria-label="Thêm vào giỏ">
           <Icon name="cart" />
         </IconButton>
       </div>
     </div>
-  </Panel>
+  </article>
 );
 
 export const AdminTable = ({ children, minWidth = '760px' }: BaseProps & { minWidth?: string }) => (

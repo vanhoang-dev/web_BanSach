@@ -1,19 +1,63 @@
 # Environment variables and secrets
 .env
 .env.*
+**/.env
+**/.env.*
+*.env
+*.env.*
+!.env.example
 !.env.*.example
+!**/.env.example
+!**/.env.*.example
+
+# Private keys, certificates and local credentials
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+.aws/
+*.vault-password
+.vault_pass
+*.kubeconfig
 
 # Local logs
 *.log
+
+# Local AI agents and coding-assistant configuration
+.agents/
+.codex/
+.claude/
+.cursor/
+.continue/
+.windsurf/
+.aider*
+*.code-workspace
 
 # Terraform local state
 *.tfstate
 *.tfstate.*
 .terraform/
-.terraform.lock.hcl
 terraform.tfvars
+*.tfvars
+!*.tfvars.example
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
 # Generated deployment files
 infrastructure/ansible/inventory/aws.ini
 infrastructure/ansible/kubeconfig
+infrastructure/ansible/kubeconfig.*
+**/kubeconfig
+**/kubeconfig.*
 infrastructure/kubernetes/02-secret.yaml
+infrastructure/kubernetes/02-secret.*.yaml
+!infrastructure/kubernetes/02-secret.example.yaml

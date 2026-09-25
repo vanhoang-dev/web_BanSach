@@ -1,42 +1,35 @@
 ﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { AccentButton, BookCard, Container, EmptyState, Icon, Panel, SecondaryButton, Surface } from '@/components/ui/staticUi';
+import bookCoverPlaceholder from '@/assets/icons/book-cover-placeholder.svg';
+import { BookCard, Container, EmptyState, Icon, LinkButton, Panel, Surface } from '@/components/ui/staticUi';
 import authorService, { AuthorItem } from '@/features/authors/services/authorService';
 import bookService, { Book, Category } from '@/features/books/services/bookService';
 import cartService from '@/features/cart/services/cartService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
-const fallbackBooks: Book[] = [
-  { id: 1, title: 'Tư duy nhanh và chậm', author: { id: 1, name: 'Daniel Kahneman' }, category: { id: 1, name: 'Tâm lý học' }, price: 189000, cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=520&q=80', discount: 15 },
-  { id: 2, title: 'Atomic Habits', author: { id: 2, name: 'James Clear' }, category: { id: 2, name: 'Kỹ năng' }, price: 168000, cover: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&w=520&q=80' },
-  { id: 3, title: 'Sapiens', author: { id: 3, name: 'Yuval Noah Harari' }, category: { id: 3, name: 'Lịch sử' }, price: 210000, cover: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=520&q=80' },
-  { id: 4, title: 'Nhà giả kim', author: { id: 4, name: 'Paulo Coelho' }, category: { id: 4, name: 'Văn học' }, price: 79000, cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=520&q=80', discount: 10 },
+const heroSlides = [
+  {
+    src: 'https://images.unsplash.com/photo-1526243741027-444d633d7365?auto=format&fit=crop&w=1600&q=90',
+    alt: 'Kệ sách chọn lọc trong một hiệu sách',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=90',
+    alt: 'Không gian thư viện với những kệ sách lớn',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=1600&q=90',
+    alt: 'Những cuốn sách được sắp xếp trong thư viện',
+  },
 ];
-
-const fallbackCategories: Category[] = [
-  { id: 1, name: 'Kinh doanh', description: 'Quản trị, tài chính, bán hàng' },
-  { id: 2, name: 'Kỹ năng sống', description: 'Thói quen, tư duy, giao tiếp' },
-  { id: 3, name: 'Văn học', description: 'Tiểu thuyết và tác phẩm kinh điển' },
-  { id: 4, name: 'Thiếu nhi', description: 'Sách học tập và khám phá' },
-  { id: 5, name: 'Công nghệ', description: 'Lập trình và chuyển đổi số' },
-  { id: 6, name: 'Lịch sử', description: 'Thế giới, con người, văn minh' },
-];
-
-const fallbackAuthors: AuthorItem[] = [
-  { id: 1, authorName: 'Daniel Kahneman', biography: 'Tác giả của những đầu sách nổi bật về tư duy, hành vi và ra quyết định.' },
-  { id: 2, authorName: 'James Clear', biography: 'Cây bút nổi tiếng với các nội dung về thói quen, hiệu suất và phát triển bản thân.' },
-  { id: 3, authorName: 'Yuval Noah Harari', biography: 'Tác giả được yêu thích trong dòng sách lịch sử, văn minh và tư duy hiện đại.' },
-];
-
-const heroImage = 'https://images.unsplash.com/photo-1526243741027-444d633d7365?auto=format&fit=crop&w=1600&q=95';
-const fallbackCover = 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=520&q=90';
-
 const HomePage = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [authors, setAuthors] = useState<AuthorItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [heroSlide, setHeroSlide] = useState(0);
+  const [heroPaused, setHeroPaused] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -44,16 +37,16 @@ const HomePage = () => {
     Promise.all([bookService.getFeaturedBooks(8), bookService.getCategories(), authorService.getAuthors(0, 3)])
       .then(([bookData, categoryData, authorData]) => {
         if (!active) return;
-        setBooks(bookData.length ? bookData : fallbackBooks);
-        setCategories(categoryData.length ? categoryData : fallbackCategories);
-        setAuthors(authorData.data.content?.length ? authorData.data.content : fallbackAuthors);
+        setBooks(bookData);
+        setCategories(categoryData);
+        setAuthors(authorData.data.content || []);
       })
       .catch(() => {
         if (!active) return;
-        setBooks(fallbackBooks);
-        setCategories(fallbackCategories);
-        setAuthors(fallbackAuthors);
-        setError('Đang hiển thị dữ liệu mẫu vì chưa kết nối được máy chủ.');
+        setBooks([]);
+        setCategories([]);
+        setAuthors([]);
+        setError('Không thể tải dữ liệu từ máy chủ. Vui lòng thử lại sau.');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -64,17 +57,29 @@ const HomePage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const reduceMotion = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || heroPaused) return;
+
+    const timer = window.setInterval(() => {
+      setHeroSlide((current) => (current + 1) % heroSlides.length);
+    }, 5500);
+
+    return () => window.clearInterval(timer);
+  }, [heroPaused]);
+
   const addToCart = async (bookId?: number) => {
     if (!bookId) return;
     try {
       await cartService.addToCart(bookId, 1);
-      window.alert('Đã thêm sách vào giỏ hàng');
+      notify.success('Đã thêm sách vào giỏ hàng');
     } catch {
-      window.alert('Không thể thêm vào giỏ hàng. Vui lòng đăng nhập hoặc thử lại.');
+      notify.error('Không thể thêm vào giỏ hàng. Vui lòng đăng nhập hoặc thử lại.');
     }
   };
 
-  const featured = books[0] || fallbackBooks[0];
+  const featured = books[0];
 
   return (
     <div>
@@ -82,68 +87,116 @@ const HomePage = () => {
       {error ? <Container className="pt-4"><div className="rounded-lg border border-secondary-container bg-secondary-container/20 px-4 py-3 text-sm font-semibold text-secondary">{error}</div></Container> : null}
 
       <Container className="py-8">
-        <div className="grid gap-6 lg:grid-cols-12 lg:[grid-auto-rows:260px]">
-          <Panel className="relative overflow-hidden bg-primary text-on-primary lg:col-span-8 lg:row-span-2">
-            <img
-              src={heroImage}
-              alt="Không gian đọc sách"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/70 to-primary/20" />
-            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-primary/80 to-transparent" />
-            <div className="relative flex h-full min-h-[420px] flex-col justify-end p-8 md:p-12">
-              <span className="mb-4 w-fit rounded-sm bg-secondary px-3 py-1 text-xs font-bold uppercase text-on-secondary shadow-sm">Sự kiện sách mới</span>
-              <h1 className="max-w-2xl text-4xl font-bold leading-tight text-white drop-shadow md:text-5xl">Khám phá thế giới qua từng trang sách chọn lọc</h1>
-              <p className="mt-5 max-w-xl text-lg leading-8 text-white/95 drop-shadow-sm">Mua sách nhanh, theo dõi đơn rõ ràng và nhận các ưu đãi tốt nhất từ Nhà Sách Tri Thức.</p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link to="/catalog"><AccentButton>Khám phá ngay <Icon name="arrow" /></AccentButton></Link>
-                <Link to="/promotions"><SecondaryButton className="border-white/70 bg-white text-primary hover:bg-white/90">Xem khuyến mãi</SecondaryButton></Link>
+        <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <section
+            className="grid min-w-0 overflow-hidden rounded-lg bg-primary text-on-primary md:min-h-[500px] md:grid-cols-[minmax(0,1.08fr)_minmax(320px,.92fr)] xl:min-h-[520px]"
+            aria-roledescription="carousel"
+            aria-label="Bộ sưu tập sách nổi bật"
+            onMouseEnter={() => setHeroPaused(true)}
+            onMouseLeave={() => setHeroPaused(false)}
+            onFocusCapture={() => setHeroPaused(true)}
+            onBlurCapture={() => setHeroPaused(false)}
+          >
+            <div className="flex min-w-0 flex-col justify-center px-6 py-9 sm:p-10 lg:p-12">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-secondary-container">Tủ sách chọn lọc</p>
+              <h1 className="max-w-[620px] font-serif text-[30px] font-bold leading-[1.25] text-white sm:text-4xl sm:leading-[1.24] lg:text-[42px] xl:text-[44px]">Những cuốn sách đáng đọc cho hành trình của bạn</h1>
+              <p className="mt-5 max-w-xl text-base leading-7 text-white/75 lg:text-lg">Khám phá sách hay theo chủ đề, mua sắm minh bạch và theo dõi đơn hàng dễ dàng tại Nhà Sách Tri Thức.</p>
+              <div className="mt-7 grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 sm:flex sm:flex-wrap">
+                <LinkButton to="/catalog" variant="accent" className="w-full sm:w-auto">Khám phá ngay <Icon name="arrow" /></LinkButton>
+                <LinkButton to="/promotions" variant="secondary" className="w-full border-white/30 bg-transparent text-white hover:bg-white/10 sm:w-auto">Xem khuyến mãi</LinkButton>
               </div>
             </div>
-          </Panel>
+            <div className="relative min-h-64 overflow-hidden bg-primary-container md:min-h-full">
+              <div
+                className="flex h-full transition-transform duration-700 ease-out motion-reduce:transition-none"
+                style={{ transform: `translateX(-${heroSlide * 100}%)` }}
+              >
+                {heroSlides.map((slide, index) => (
+                  <img
+                    key={slide.src}
+                    src={slide.src}
+                    alt={slide.alt}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    className="h-64 min-w-full object-cover md:h-full"
+                  />
+                ))}
+              </div>
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-primary/70 to-transparent px-4 pb-4 pt-10">
+                <div className="flex gap-2" role="tablist" aria-label="Chọn ảnh giới thiệu">
+                  {heroSlides.map((slide, index) => (
+                    <button
+                      key={slide.src}
+                      type="button"
+                      onClick={() => setHeroSlide(index)}
+                      className={`h-2.5 rounded-full transition-all ${heroSlide === index ? 'w-7 bg-secondary-container' : 'w-2.5 bg-white/70 hover:bg-white'}`}
+                      aria-label={`Hiển thị ảnh ${index + 1}`}
+                      aria-selected={heroSlide === index}
+                      role="tab"
+                    />
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setHeroSlide((current) => (current - 1 + heroSlides.length) % heroSlides.length)} className="flex h-10 w-10 items-center justify-center rounded-md border border-white/40 bg-primary/70 text-white transition hover:bg-primary" aria-label="Ảnh trước">
+                    <span aria-hidden="true">←</span>
+                  </button>
+                  <button type="button" onClick={() => setHeroSlide((current) => (current + 1) % heroSlides.length)} className="flex h-10 w-10 items-center justify-center rounded-md border border-white/40 bg-primary/70 text-white transition hover:bg-primary" aria-label="Ảnh tiếp theo">
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
 
-          <Panel className="overflow-hidden lg:col-span-4">
-            <div className="grid h-full grid-cols-[160px_1fr] bg-white">
-              <div className="bg-surface-container-low p-4">
+          <aside className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-1">
+            {featured ? <Panel className="min-h-[248px] overflow-hidden">
+              <div className="grid h-full min-w-0 grid-cols-[128px_minmax(0,1fr)] bg-white sm:grid-cols-[140px_minmax(0,1fr)]">
+              <div className="flex items-center bg-surface-container-low p-4">
                 <img
-                  src={featured.cover || fallbackCover}
+                  src={featured.cover || bookCoverPlaceholder}
                   alt={featured.title}
-                  onError={(event) => { event.currentTarget.src = fallbackCover; }}
-                  className="h-full min-h-60 w-full rounded-lg object-cover shadow-md"
+                  onError={(event) => { event.currentTarget.src = bookCoverPlaceholder; }}
+                  className="aspect-[3/4] w-full rounded-md bg-white object-contain shadow-sm"
                 />
               </div>
-              <div className="flex flex-col justify-between p-5">
+              <div className="flex min-w-0 flex-col justify-between p-4 sm:p-5">
                 <div>
-                  <p className="text-xs font-bold uppercase text-secondary">Nổi bật tuần này</p>
-                  <h2 className="mt-2 text-xl font-bold text-primary">{featured.title}</h2>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-secondary">Nổi bật tuần này</p>
+                  <h2 className="mt-2 font-serif text-lg font-bold leading-7 text-primary sm:text-xl">{featured.title}</h2>
                   <p className="mt-2 text-sm text-on-surface-variant">{featured.author?.name}</p>
                 </div>
-                <button onClick={() => addToCart(featured.id)} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-secondary hover:underline">
+                <button onClick={() => addToCart(featured.id)} className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-primary hover:text-secondary">
                   Thêm vào giỏ <Icon name="cart" className="h-4 w-4" />
                 </button>
               </div>
             </div>
-          </Panel>
+            </Panel> : <EmptyState title="Chưa có sách nổi bật" description="Sách nổi bật sẽ xuất hiện khi hệ thống có dữ liệu." />}
 
-          <Panel className="bg-secondary-container p-6 text-on-secondary-container lg:col-span-4">
-            <p className="text-sm font-bold uppercase">Voucher hôm nay</p>
-            <h2 className="mt-3 text-3xl font-bold">Giảm 25%</h2>
-            <p className="mt-2 text-sm leading-6">Áp dụng cho danh mục kỹ năng và kinh doanh. Số lượng có hạn.</p>
-            <Link to="/promotions" className="mt-5 inline-flex text-sm font-bold underline">Nhận mã ngay</Link>
-          </Panel>
+            <Panel className="min-h-[248px] border-secondary-container !bg-secondary-fixed p-6 text-on-secondary-container">
+            <p className="text-xs font-semibold uppercase tracking-wide">Ưu đãi từ hệ thống</p>
+            <h2 className="mt-3 font-serif text-2xl font-bold">Khám phá voucher đang áp dụng</h2>
+            <p className="mt-2 text-sm leading-6">Đăng nhập để xem chính xác mức giảm, số lượng và thời hạn của từng voucher.</p>
+            <Link to="/promotions" className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Xem ưu đãi <Icon name="arrow" className="ml-2 h-4 w-4" /></Link>
+            </Panel>
+          </aside>
+        </div>
+
+        <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-outline-variant bg-outline-variant sm:grid-cols-3">
+          {['Sách chọn lọc, thông tin rõ ràng', 'Thanh toán an toàn, theo dõi dễ dàng', 'Hỗ trợ tận tâm trong mỗi đơn hàng'].map((item) => (
+            <div key={item} className="bg-surface px-5 py-4 text-center text-sm font-medium text-on-surface-variant">{item}</div>
+          ))}
         </div>
       </Container>
 
       <Container className="py-10">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <h2 className="border-l-4 border-secondary pl-4 text-2xl font-bold text-primary">Danh mục nổi bật</h2>
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+          <h2 className="min-w-0 font-serif text-2xl font-bold leading-snug text-primary">Khám phá theo danh mục</h2>
           <Link to="/categories" className="text-sm font-bold text-secondary hover:underline">Tất cả danh mục</Link>
         </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+        {categories.length ? <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           {categories.slice(0, 6).map((category) => (
             <Link key={category.id} to={`/catalog?category=${category.id}`}>
-              <Panel className="h-full p-5 text-center transition hover:-translate-y-1 hover:shadow-md">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/5 text-primary">
+              <Panel className="h-full p-5 text-center transition hover:-translate-y-0.5 hover:border-border-strong hover:shadow-sm">
+                <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-primary-fixed text-primary">
                   <Icon name="category" />
                 </div>
                 <h3 className="font-bold text-primary">{category.name}</h3>
@@ -151,15 +204,15 @@ const HomePage = () => {
               </Panel>
             </Link>
           ))}
-        </div>
+        </div> : <EmptyState title="Chưa có danh mục" description="Danh mục sách sẽ hiển thị khi hệ thống có dữ liệu." />}
       </Container>
 
       <Surface className="py-12">
         <Container>
-          <div className="mb-8 flex items-center justify-between gap-4">
+          <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-primary">Sách bán chạy</h2>
-              <p className="mt-2 text-sm text-on-surface-variant">Danh sách lấy từ API sách công khai của hệ thống.</p>
+              <p className="mt-2 text-sm text-on-surface-variant">Những tựa sách được nhiều độc giả quan tâm và lựa chọn.</p>
             </div>
             <Link to="/catalog" className="text-sm font-bold text-secondary hover:underline">Xem tất cả</Link>
           </div>
@@ -186,23 +239,23 @@ const HomePage = () => {
       </Surface>
 
       <Container className="py-12">
-        <div className="mb-8 flex items-center justify-between gap-4">
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="mb-2 text-xs font-bold uppercase text-secondary">Gợi ý từ nhà sách</p>
-            <h2 className="border-l-4 border-secondary pl-4 text-2xl font-bold text-primary">Tác giả nổi bật</h2>
+            <h2 className="font-serif text-2xl font-bold text-primary">Tác giả nổi bật</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-on-surface-variant">Khám phá các cây bút được nhiều độc giả quan tâm và xem nhanh những đầu sách đang có trong hệ thống.</p>
           </div>
           <Link to="/authors" className="shrink-0 text-sm font-bold text-secondary hover:underline">Tất cả tác giả</Link>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
+        {authors.length ? <div className="grid gap-5 md:grid-cols-3">
           {authors.slice(0, 3).map((author, index) => (
-            <Panel key={author.id || author.authorName} className="h-full p-6 transition hover:-translate-y-1 hover:shadow-md">
+            <Panel key={author.id || author.authorName} className="h-full p-6 transition hover:-translate-y-0.5 hover:border-border-strong hover:shadow-sm">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/5 text-primary">
                   <Icon name="user" className="h-6 w-6" />
                 </div>
-                <span className="rounded-full bg-secondary-container/40 px-3 py-1 text-xs font-bold text-secondary">#{index + 1}</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">Gợi ý {index + 1}</span>
               </div>
               <h3 className="text-xl font-bold text-primary">{author.authorName}</h3>
               <p className="mt-3 line-clamp-3 min-h-[72px] text-sm leading-6 text-on-surface-variant">
@@ -216,7 +269,7 @@ const HomePage = () => {
               </Link>
             </Panel>
           ))}
-        </div>
+        </div> : <EmptyState title="Chưa có tác giả" description="Danh sách tác giả sẽ hiển thị khi hệ thống có dữ liệu." />}
       </Container>
     </div>
   );

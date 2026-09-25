@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import bookCoverPlaceholder from '@/assets/icons/book-cover-placeholder.svg';
 import { Container, formatVnd, Icon, Panel, SecondaryButton, SectionHeading, StatusBadge } from '@/components/ui/staticUi';
 import bookService from '@/features/books/services/bookService';
 import orderService, { type Order } from '@/features/orders/services/orderService';
 import paymentService, { type PaymentResponse } from '@/features/payment/services/paymentService';
 
 const steps = ['PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED'];
-const fallbackBookCover = 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=360&q=85';
 const stepDetails: Record<string, { title: string; description: string }> = {
   PENDING: { title: 'Chờ xác nhận', description: 'Đơn hàng đã được tạo' },
   CONFIRMED: { title: 'Đã xác nhận', description: 'Đã duyệt và chuẩn bị sách' },
@@ -96,8 +96,8 @@ const OrderDetailPage = () => {
       {loading ? <div className="h-64 animate-pulse rounded-xl bg-surface-container" /> : error ? (
         <Panel className="p-6 text-sm font-semibold text-error">{error}</Panel>
       ) : order ? (
-        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-          <div className="space-y-6">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 space-y-6">
             <Panel className="overflow-hidden">
               <div className="flex flex-col gap-3 border-b border-outline-variant bg-surface-container-low px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
                 <div>
@@ -150,8 +150,8 @@ const OrderDetailPage = () => {
                 {(order.items || []).map((item) => (
                   <div key={`${item.bookId}-${item.id || ''}`} className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center">
                     <img
-                      src={item.book?.cover || fallbackBookCover}
-                      onError={(event) => { event.currentTarget.src = fallbackBookCover; }}
+                      src={item.book?.cover || bookCoverPlaceholder}
+                      onError={(event) => { event.currentTarget.src = bookCoverPlaceholder; }}
                       alt={`Ảnh bìa ${item.book?.title || `sách #${item.bookId}`}`}
                       className="h-36 w-24 shrink-0 rounded-lg border border-outline-variant bg-white object-cover shadow-sm sm:h-28 sm:w-20"
                     />
@@ -162,7 +162,7 @@ const OrderDetailPage = () => {
                         <span className="rounded-full bg-primary/5 px-3 py-1.5 text-primary">Số lượng: {item.quantity}</span>
                       </div>
                     </div>
-                    <div className="sm:text-right"><p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Thành tiền</p><p className="mt-1 text-lg font-extrabold text-secondary">{formatVnd(Number(item.price) * Number(item.quantity))}</p></div>
+                    <div className="min-w-0 sm:text-right"><p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Thành tiền</p><p className="mt-1 text-lg font-bold leading-snug text-secondary">{formatVnd(Number(item.price) * Number(item.quantity))}</p></div>
                   </div>
                 ))}
               </div>
@@ -205,7 +205,7 @@ const OrderDetailPage = () => {
               <div className="mt-5 space-y-3 text-sm">
                 <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Trạng thái</span><span className={`font-bold ${isPaid ? 'text-emerald-700' : 'text-secondary'}`}>{isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}</span></div>
                 <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Phương thức</span><span className="font-bold">{paymentMethod}</span></div>
-                {payment?.transactionId ? <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Mã giao dịch</span><span className="break-all text-right font-bold">{payment.transactionId}</span></div> : null}
+                {payment?.transactionId ? <div className="flex min-w-0 justify-between gap-4"><span className="shrink-0 text-on-surface-variant">Mã giao dịch</span><span className="min-w-0 break-all text-right font-bold">{payment.transactionId}</span></div> : null}
                 {payment?.paidAt ? <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Thanh toán lúc</span><span className="text-right font-bold">{formatDateTime(payment.paidAt)}</span></div> : null}
                 {!isPaid && paymentStatus ? <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Trạng thái cổng</span><span className="font-bold">{paymentStatus}</span></div> : null}
               </div>

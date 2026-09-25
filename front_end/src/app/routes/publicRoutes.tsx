@@ -1,17 +1,18 @@
+import { lazy } from 'react';
 import { Route } from 'react-router-dom';
 
 import { BlankLayout, MainLayout } from '@/components/layout/Layout';
-import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage';
-import LoginPage from '@/features/auth/pages/LoginPage';
-import RegisterPage from '@/features/auth/pages/RegisterPage';
-import ResetPasswordPage from '@/features/auth/pages/ResetPasswordPage';
-import AuthorsPage from '@/features/authors/pages/AuthorsPage';
-import BookDetailPage from '@/features/books/pages/BookDetailPage';
-import CatalogPage from '@/features/books/pages/CatalogPage';
-import HomePage from '@/features/books/pages/HomePage';
-import PromotionsPage from '@/features/books/pages/PromotionsPage';
-import SearchResultsPage from '@/features/books/pages/SearchResultsPage';
-import CategoriesPage from '@/features/categories/pages/CategoriesPage';
+const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage'));
+const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
+const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'));
+const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'));
+const AuthorsPage = lazy(() => import('@/features/authors/pages/AuthorsPage'));
+const BookDetailPage = lazy(() => import('@/features/books/pages/BookDetailPage'));
+const CatalogPage = lazy(() => import('@/features/books/pages/CatalogPage'));
+const HomePage = lazy(() => import('@/features/books/pages/HomePage'));
+const PromotionsPage = lazy(() => import('@/features/books/pages/PromotionsPage'));
+const SearchResultsPage = lazy(() => import('@/features/books/pages/SearchResultsPage'));
+const CategoriesPage = lazy(() => import('@/features/categories/pages/CategoriesPage'));
 
 export const publicRoutes = (
   <>

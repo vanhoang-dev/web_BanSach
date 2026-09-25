@@ -1,6 +1,6 @@
 ﻿import { FormEvent, useEffect, useState } from 'react';
 
-import { AdminTable, AdminToolbar, Field, Icon, PrimaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
+import { AdminTable, AdminToolbar, Field, PrimaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
 import inventoryAdminService from '@/features/admin/services/inventoryAdminService';
 
@@ -64,7 +64,7 @@ const AdminInventoryPage = () => {
         <StatCard label="Cần bổ sung" value={lowStock} icon="order" tone="warning" />
       </div>
       {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
-      <form onSubmit={applySet} className="mt-6 grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-[1fr_180px_180px_auto_auto]">
+      <form onSubmit={applySet} className="mt-6 grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_180px_180px_auto_auto]">
         <label className="block">
           <span className="mb-2 block text-sm font-semibold text-on-surface">Đầu sách tồn kho</span>
           <select value={selectedId} onChange={(e) => setSelectedId(e.target.value ? Number(e.target.value) : '')} className="h-11 w-full rounded-lg border-outline-variant bg-surface text-sm">

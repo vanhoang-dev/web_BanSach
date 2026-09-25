@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { Container, EmptyState, formatVnd, Panel, PrimaryButton, SecondaryButton, SectionHeading, StatusBadge } from '@/components/ui/staticUi';
+import { Container, EmptyState, formatVnd, LinkButton, Panel, SecondaryButton, SectionHeading, StatusBadge } from '@/components/ui/staticUi';
 import orderService from '@/features/orders/services/orderService';
 
 const OrdersPage = () => {
@@ -31,7 +31,7 @@ const OrdersPage = () => {
       {loading ? (
         <div className="h-64 animate-pulse rounded-xl bg-surface-container" />
       ) : orders.length === 0 ? (
-        <EmptyState title="Bạn chưa có đơn hàng" description="Các đơn đã đặt sẽ xuất hiện ở đây." action={<Link to="/catalog"><PrimaryButton>Bắt đầu mua sắm</PrimaryButton></Link>} />
+        <EmptyState title="Bạn chưa có đơn hàng" description="Các đơn đã đặt sẽ xuất hiện ở đây." action={<LinkButton to="/catalog">Bắt đầu mua sắm</LinkButton>} />
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (

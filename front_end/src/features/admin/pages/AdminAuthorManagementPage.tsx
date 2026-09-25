@@ -66,7 +66,7 @@ const AdminAuthorManagementPage = () => {
         <StatCard label="Trạng thái" value={loading ? 'Đang tải' : 'Sẵn sàng'} icon="chart" />
       </div>
       {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
-      <form onSubmit={submit} className="mt-6 grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-[1fr_1.4fr_auto]">
+      <form onSubmit={submit} className="mt-6 grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
         <Field label="Tên tac gia" value={form.authorName} onChange={(e) => setForm((current) => ({ ...current, authorName: e.target.value }))} required />
         <Field label="Tieu su" value={form.biography} onChange={(e) => setForm((current) => ({ ...current, biography: e.target.value }))} />
         <div className="flex items-end gap-2">

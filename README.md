@@ -807,8 +807,8 @@ http://localhost:8080
 Dự án có sẵn:
 
 ```text
-Dockerfile
-docker-compose.yml
+infrastructure/docker/docker_local/docker-compose.yml
+infrastructure/docker/docker_prod/docker-compose.prod.yml
 ```
 
 Build file JAR trước:
@@ -820,7 +820,10 @@ mvn clean package
 Sau đó chạy Docker Compose:
 
 ```bash
-docker compose up --build
+docker compose \
+  --env-file infrastructure/docker/docker_local/.env.local \
+  -f infrastructure/docker/docker_local/docker-compose.yml \
+  up --build
 ```
 
 Docker Compose sẽ khởi tạo:
