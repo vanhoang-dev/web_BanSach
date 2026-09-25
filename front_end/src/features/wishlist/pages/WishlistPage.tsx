@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { BookCard, Container, EmptyState, Icon, IconButton, PrimaryButton, SectionHeading } from '@/components/ui/staticUi';
 import cartService from '@/features/cart/services/cartService';
 import wishlistService from '@/features/wishlist/services/wishlistService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
 const WishlistPage = () => {
   const [wishlist, setWishlist] = useState<any[]>([]);
@@ -32,9 +33,9 @@ const WishlistPage = () => {
   const handleAddToCart = async (bookId: number) => {
     try {
       await cartService.addToCart(bookId, 1);
-      alert('Đã thêm vào giỏ hàng');
+      notify.success('Đã thêm vào giỏ hàng');
     } catch {
-      alert('Không thể thêm vào giỏ hàng');
+      notify.error('Không thể thêm vào giỏ hàng');
     }
   };
 
@@ -43,7 +44,7 @@ const WishlistPage = () => {
       await wishlistService.removeFromWishlist(bookId);
       setWishlist((items) => items.filter((item) => (getBook(item).id || getBook(item).bookId) !== bookId));
     } catch {
-      alert('Không thể xóa khỏi danh sách yêu thích');
+      notify.error('Không thể xóa khỏi danh sách yêu thích');
     }
   };
 
@@ -52,7 +53,7 @@ const WishlistPage = () => {
       await wishlistService.clearWishlist();
       setWishlist([]);
     } catch {
-      alert('Không thể xóa toàn bộ danh sách yêu thích');
+      notify.error('Không thể xóa toàn bộ danh sách yêu thích');
     }
   };
 

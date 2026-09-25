@@ -28,14 +28,14 @@ Chạy trên PowerShell tại thư mục gốc dự án.
 
 ```powershell
 # Build container chứa Terraform, Ansible, kubectl, AWS CLI và Docker CLI
-docker compose -f docker-compose.tools.yml build
+docker compose -f infrastructure/docker/docker_for_k8s/docker-compose.tools.yml build
 ```
 
 ### 1.2. Vào toolbox
 
 ```powershell
 # Mở container toolbox để chạy các lệnh deploy
-docker compose -f docker-compose.tools.yml run --rm --service-ports devops-tools
+docker compose -f infrastructure/docker/docker_for_k8s/docker-compose.tools.yml run --rm --service-ports devops-tools
 ```
 
 ### 1.3. Kiểm tra công cụ trong toolbox

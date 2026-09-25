@@ -72,7 +72,7 @@ const AdminCategoryManagementPage = () => {
         <StatCard label="Tạm ẩn" value={categories.filter((item) => item.isActive === false).length} icon="trash" tone="warning" />
       </div>
       {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
-      <form onSubmit={submit} className="mt-6 grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-[1fr_1fr_auto]">
+      <form onSubmit={submit} className="mt-6 grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
         <Field label="Tên danh mục" value={form.name} onChange={(e) => setForm((current: any) => ({ ...current, name: e.target.value }))} required />
         <Field label="Mô tả" value={form.description} onChange={(e) => setForm((current: any) => ({ ...current, description: e.target.value }))} />
         <div className="flex items-end gap-2">

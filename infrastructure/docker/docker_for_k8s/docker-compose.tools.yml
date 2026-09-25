@@ -1,11 +1,11 @@
 services:
   devops-tools:
     build:
-      context: ./infrastructure/toolbox
+      context: ../../toolbox
     image: web-bansach-devops-tools:latest
     working_dir: /workspace
     volumes:
-      - ./:/workspace
+      - ../../..:/workspace
       - ${USERPROFILE:-$HOME}/.aws:/root/.aws
       - ${USERPROFILE:-$HOME}/.ssh:/root/.ssh
       - /var/run/docker.sock:/var/run/docker.sock

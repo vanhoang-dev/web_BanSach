@@ -1,9 +1,10 @@
 ﻿import { FormEvent, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
-import { BookCard, Container, EmptyState, Icon, Panel, PrimaryButton, SectionHeading } from '@/components/ui/staticUi';
+import { BookCard, Container, EmptyState, Icon, LinkButton, Panel, SectionHeading } from '@/components/ui/staticUi';
 import bookService, { Book } from '@/features/books/services/bookService';
 import cartService from '@/features/cart/services/cartService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
 const SearchResultsPage = () => {
   const [params, setParams] = useSearchParams();
@@ -44,9 +45,9 @@ const SearchResultsPage = () => {
     if (!bookId) return;
     try {
       await cartService.addToCart(bookId, 1);
-      alert('Đã thêm vào giỏ hàng');
+      notify.success('Đã thêm vào giỏ hàng');
     } catch {
-      alert('Không thể thêm vào giỏ hàng');
+      notify.error('Không thể thêm vào giỏ hàng');
     }
   };
 
@@ -55,8 +56,8 @@ const SearchResultsPage = () => {
       <SectionHeading eyebrow="Tìm kiếm" title="Kết quả tìm kiếm" description="Tìm sách theo tên sách, tác giả hoặc từ khóa hệ thống đang hỗ trợ." />
       <Panel className="mb-6 p-4">
         <form className="relative" onSubmit={handleSearch}>
-          <input value={keyword} onChange={(event) => setKeyword(event.target.value)} className="h-12 w-full rounded-full border-0 bg-surface-container pl-4 pr-14 text-sm outline-none focus:ring-2 focus:ring-primary/25" placeholder="Tìm kiếm sách, tác giả..." />
-          <button type="submit" className="absolute right-2 top-1 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary"><Icon name="search" /></button>
+          <input value={keyword} onChange={(event) => setKeyword(event.target.value)} className="h-12 w-full rounded-md border border-border-strong bg-surface pl-4 pr-14 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" placeholder="Tìm kiếm sách, tác giả..." />
+          <button type="submit" aria-label="Tìm kiếm" className="absolute right-1 top-1 flex h-10 w-10 items-center justify-center rounded-md bg-primary text-on-primary hover:bg-primary-container"><Icon name="search" /></button>
         </form>
       </Panel>
 
@@ -87,7 +88,7 @@ const SearchResultsPage = () => {
               </Link>
             ))}
           </div>
-          <Link to="/catalog"><PrimaryButton className="mt-5 w-full">Xem danh mục sách</PrimaryButton></Link>
+          <LinkButton to="/catalog" className="mt-5 w-full">Xem danh mục sách</LinkButton>
         </Panel>
       </div>
     </Container>

@@ -1,6 +1,4 @@
-import { Link } from 'react-router-dom';
-
-import { Container, Icon, PrimaryButton, SecondaryButton } from '@/components/ui/staticUi';
+import { Container, Icon, LinkButton, PrimaryButton } from '@/components/ui/staticUi';
 
 export type ErrorPageContent = {
   code: string;
@@ -34,12 +32,10 @@ const PrimaryAction = ({ content }: { content: ErrorPageContent }) => {
   }
 
   return (
-    <Link to={content.primaryTo || '/'}>
-      <PrimaryButton>
+    <LinkButton to={content.primaryTo || '/'}>
         {content.primaryLabel}
         <Icon name="arrow" />
-      </PrimaryButton>
-    </Link>
+    </LinkButton>
   );
 };
 
@@ -56,9 +52,7 @@ const ErrorPageLayout = ({ content }: { content: ErrorPageContent }) => (
         <div className="mt-8 flex flex-wrap gap-3">
           <PrimaryAction content={content} />
           {content.secondaryTo && content.secondaryLabel ? (
-            <Link to={content.secondaryTo}>
-              <SecondaryButton>{content.secondaryLabel}</SecondaryButton>
-            </Link>
+            <LinkButton to={content.secondaryTo} variant="secondary">{content.secondaryLabel}</LinkButton>
           ) : null}
         </div>
       </div>

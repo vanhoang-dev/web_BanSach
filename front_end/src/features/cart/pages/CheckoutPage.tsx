@@ -1,7 +1,7 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { AccentButton, Container, Field, Icon, Panel, SectionHeading } from '@/components/ui/staticUi';
+import { AccentButton, Container, Field, Icon, LinkButton, Panel, SectionHeading } from '@/components/ui/staticUi';
 import { env } from '@/config/env';
 import authService from '@/features/auth/services';
 import bookService from '@/features/books/services/bookService';
@@ -77,6 +77,7 @@ const CheckoutPage = () => {
   const [itemsLoading, setItemsLoading] = useState(true);
   const [itemsError, setItemsError] = useState('');
   const [confirmedTotals, setConfirmedTotals] = useState<ConfirmedTotals | null>(null);
+  const redirectTimerRef = useRef<number | null>(null);
   const paymentId = paymentInfo?.paymentId;
   const orderId = paymentInfo?.orderId;
   const currentPaymentStatus = String(paymentInfo?.status || 'PENDING').toUpperCase();
@@ -94,6 +95,10 @@ const CheckoutPage = () => {
   const originalTotal = itemsSubtotal + Number(form.shippingFee || 0);
   const displayedVoucherDiscount = confirmedTotals?.voucherDiscount ?? estimatedVoucherDiscount;
   const displayedTotal = confirmedTotals?.totalAmount ?? Math.max(0, originalTotal - displayedVoucherDiscount);
+
+  useEffect(() => () => {
+    if (redirectTimerRef.current !== null) window.clearTimeout(redirectTimerRef.current);
+  }, []);
 
   const update = (name: string, value: string) => setForm((current) => ({ ...current, [name]: value }));
 
@@ -231,7 +236,7 @@ const CheckoutPage = () => {
           source.close();
           setPaymentCompleted(true);
           setMessage('Thanh toán thành công. Đang chuyển tới chi tiết đơn hàng...');
-          window.setTimeout(() => navigate(`/orders/${orderId}`), 1800);
+          redirectTimerRef.current = window.setTimeout(() => navigate(`/orders/${orderId}`), 1800);
         } else if (failedStatuses.includes(status)) {
           setError('Thanh toán không thành công. Vui lòng thử lại hoặc chọn phương thức khác.');
         }
@@ -251,6 +256,7 @@ const CheckoutPage = () => {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (loading || paymentInfo) return;
     setError('');
     setMessage('');
     setPaymentInfo(null);
@@ -302,7 +308,7 @@ const CheckoutPage = () => {
       }
 
       setMessage('Đặt hàng thành công. Đang chuyển tới danh sách đơn hàng...');
-      window.setTimeout(() => navigate('/orders'), 1200);
+      redirectTimerRef.current = window.setTimeout(() => navigate('/orders'), 1200);
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
     } finally {
@@ -316,16 +322,16 @@ const CheckoutPage = () => {
   return (
     <Container className="py-10">
       <SectionHeading eyebrow="Thanh toán" title="Hoàn tất đơn hàng" description={bookId ? 'Tạo đơn mua ngay từ sách bạn vừa chọn.' : 'Tạo đơn hàng từ giỏ hàng của bạn.'} />
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        <Panel className="p-5">
-          {error ? <div className="mb-4 rounded-lg border border-error-container bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
-          {message ? <div className={`mb-4 rounded-lg border px-4 py-3 text-sm font-semibold ${isPaid ? 'border-emerald-300 bg-emerald-100 text-emerald-800' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{message}</div> : null}
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Panel className="min-w-0 p-5">
+          {error ? <div role="alert" className="mb-4 rounded-lg border border-error-container bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
+          {message ? <div role="status" className={`mb-4 rounded-lg border px-4 py-3 text-sm font-semibold ${isPaid ? 'border-emerald-300 bg-emerald-100 text-emerald-800' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{message}</div> : null}
           <form onSubmit={submit} className="grid gap-5">
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Tên người nhận" value={form.receiverName} onChange={(event) => update('receiverName', event.target.value)} placeholder="Nguyễn Văn A" />
-              <Field label="Số điện thoại" value={form.receiverPhone} onChange={(event) => update('receiverPhone', event.target.value)} placeholder="0901234567" />
+              <Field label="Tên người nhận" autoComplete="name" required value={form.receiverName} onChange={(event) => update('receiverName', event.target.value)} placeholder="Nguyễn Văn A" />
+              <Field label="Số điện thoại" type="tel" autoComplete="tel" required value={form.receiverPhone} onChange={(event) => update('receiverPhone', event.target.value)} placeholder="0901234567" />
             </div>
-            <Field label="Địa chỉ giao hàng" value={form.shippingAddress} onChange={(event) => update('shippingAddress', event.target.value)} placeholder="Số nhà, đường, phường/xã..." textarea />
+            <Field label="Địa chỉ giao hàng" autoComplete="street-address" required value={form.shippingAddress} onChange={(event) => update('shippingAddress', event.target.value)} placeholder="Số nhà, đường, phường/xã..." textarea />
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-on-surface">Vận chuyển</span>
@@ -392,9 +398,9 @@ const CheckoutPage = () => {
               ) : (
                 <div className="mt-3 divide-y divide-outline-variant">
                   {checkoutItems.map((item) => (
-                    <div key={item.bookId} className="flex gap-3 py-3 first:pt-0">
+                    <div key={item.bookId} className="flex min-w-0 flex-wrap gap-3 py-3 first:pt-0 sm:flex-nowrap">
                       {item.cover ? (
-                        <img src={item.cover} alt={item.title} className="h-20 w-14 shrink-0 rounded-md object-cover" />
+                        <img src={item.cover} alt={item.title} loading="lazy" width="56" height="80" className="h-20 w-14 shrink-0 rounded-md bg-white object-contain" />
                       ) : (
                         <div className="flex h-20 w-14 shrink-0 items-center justify-center rounded-md bg-surface-container-low text-primary"><Icon name="book" /></div>
                       )}
@@ -402,20 +408,20 @@ const CheckoutPage = () => {
                         <p className="font-semibold text-on-surface">{item.title}</p>
                         <p className="mt-1 text-sm text-on-surface-variant">{formatVnd(item.unitPrice)} × {item.quantity}</p>
                       </div>
-                      <span className="shrink-0 text-sm font-bold text-primary">{formatVnd(item.subtotal)}</span>
+                      <span className="ml-auto text-right text-sm font-bold text-primary">{formatVnd(item.subtotal)}</span>
                     </div>
                   ))}
                 </div>
               )}
 
               <div className="mt-3 space-y-2 border-t border-outline-variant pt-3 text-sm">
-                <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Tạm tính ({checkoutItems.reduce((total, item) => total + item.quantity, 0)} sản phẩm)</span><span className="font-semibold">{formatVnd(itemsSubtotal)}</span></div>
-                <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Phí vận chuyển</span><span className="font-semibold">{formatVnd(Number(form.shippingFee || 0))}</span></div>
-                <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Giá gốc đơn hàng</span><span className="font-semibold">{formatVnd(originalTotal)}</span></div>
+                <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0 text-on-surface-variant">Tạm tính ({checkoutItems.reduce((total, item) => total + item.quantity, 0)} sản phẩm)</span><span className="text-right font-semibold">{formatVnd(itemsSubtotal)}</span></div>
+                <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0 text-on-surface-variant">Phí vận chuyển</span><span className="text-right font-semibold">{formatVnd(Number(form.shippingFee || 0))}</span></div>
+                <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0 text-on-surface-variant">Giá gốc đơn hàng</span><span className="text-right font-semibold">{formatVnd(originalTotal)}</span></div>
                 {(displayedVoucherDiscount > 0 || confirmedTotals?.voucherCode) ? (
-                  <div className="flex justify-between gap-4 text-emerald-700"><span>Voucher {confirmedTotals?.voucherCode || selectedVoucher?.code}</span><span className="font-semibold">−{formatVnd(displayedVoucherDiscount)}</span></div>
+                  <div className="flex min-w-0 justify-between gap-3 text-emerald-700"><span className="min-w-0 break-words">Voucher {confirmedTotals?.voucherCode || selectedVoucher?.code}</span><span className="text-right font-semibold">−{formatVnd(displayedVoucherDiscount)}</span></div>
                 ) : null}
-                <div className="flex justify-between gap-4 border-t border-outline-variant pt-3 text-base"><span className="font-bold text-primary">Tổng thanh toán</span><span className="font-bold text-secondary">{formatVnd(displayedTotal)}</span></div>
+                <div className="flex min-w-0 justify-between gap-3 border-t border-outline-variant pt-3 text-base"><span className="min-w-0 font-bold text-primary">Tổng thanh toán</span><span className="text-right font-bold text-secondary">{formatVnd(displayedTotal)}</span></div>
               </div>
             </div>
             <AccentButton type="submit" disabled={loading || itemsLoading || checkoutItems.length === 0 || !!paymentInfo} className="mt-2">{loading ? 'Đang xử lý...' : paymentInfo ? 'Đơn hàng đã được tạo' : 'Xác nhận đặt hàng'}</AccentButton>
@@ -438,9 +444,7 @@ const CheckoutPage = () => {
                 <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Số tiền</span><span className="font-bold text-primary">{Number(paymentInfo.amount || 0).toLocaleString('vi-VN')}đ</span></div>
                 <div className="flex justify-between gap-4"><span className="text-on-surface-variant">Trạng thái</span><span className={isPaid ? 'font-bold text-emerald-700' : 'font-bold text-secondary'}>{statusLabel(paymentInfo.status)}</span></div>
               </div>
-              <Link to={`/orders/${paymentInfo.orderId}`} className="mt-5 block">
-                <AccentButton className="w-full">Xem chi tiết đơn hàng</AccentButton>
-              </Link>
+              <LinkButton to={`/orders/${paymentInfo.orderId}`} variant="accent" className="mt-5 w-full">Xem chi tiết đơn hàng</LinkButton>
             </>
           ) : (
             <>

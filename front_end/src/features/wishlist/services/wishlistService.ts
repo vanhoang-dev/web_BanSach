@@ -60,7 +60,7 @@ const wishlistService = {
     try {
       const response: any = await api.get(`/user/wishlist/books/${bookId}/check`);
       return !!unwrapApiData<any>(response)?.isInWishlist;
-    } catch (error: any) {
+    } catch {
       return false;
     }
   },
