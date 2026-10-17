@@ -64,7 +64,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     // Trả chi tiết một đơn hàng bất kỳ theo ID.
     public OrderResponse getOrderDetail(Long id) {
-        Order order = orderRepository.findById(id)
+        Order order = orderRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
         return orderMapper.mapToResponse(order);
     }
@@ -127,10 +127,10 @@ public class OrderService {
             throw new BusinessException("Đơn hàng đã bị hủy trước đó");
         }
 
-        if (order.getStatus() != OrderStatus.PENDING) {
+        if (order.getStatus() != OrderStatus.CANCELLED) {
             List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
             for (OrderItem item : orderItems) {
-                Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId()).orElse(null);
+                Inventory inventory = inventoryRepository.findByBookIdForUpdate(item.getBook().getId()).orElse(null);
                 if (inventory != null) {
                     inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
                     inventoryRepository.save(inventory);

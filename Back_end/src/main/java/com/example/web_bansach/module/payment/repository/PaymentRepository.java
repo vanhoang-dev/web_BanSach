@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -23,6 +25,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
      * Tìm thanh toán theo mã giao dịch do cổng thanh toán cung cấp.
      */
     Optional<Payment> findByTransactionId(String transactionId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Payment p WHERE p.transactionId = :transactionId")
+    Optional<Payment> findByTransactionIdForUpdate(@Param("transactionId") String transactionId);
 
     long countByStatus(String status);
 

@@ -31,6 +31,7 @@ public class Payment {
     private String status; // PENDING, SUCCESS, FAILED, CANCELLED
 
     // Transaction tracking
+    @Column(unique = true, nullable = false)
     private String transactionId; // ID từ payment gateway
     private String paymentUrl; // URL để redirect người dùng
 

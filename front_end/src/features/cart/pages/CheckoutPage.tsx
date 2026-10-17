@@ -78,6 +78,8 @@ const CheckoutPage = () => {
   const [itemsError, setItemsError] = useState('');
   const [confirmedTotals, setConfirmedTotals] = useState<ConfirmedTotals | null>(null);
   const redirectTimerRef = useRef<number | null>(null);
+  const submittingRef = useRef(false);
+  const idempotencyKeyRef = useRef(crypto.randomUUID());
   const paymentId = paymentInfo?.paymentId;
   const orderId = paymentInfo?.orderId;
   const currentPaymentStatus = String(paymentInfo?.status || 'PENDING').toUpperCase();
@@ -100,7 +102,11 @@ const CheckoutPage = () => {
     if (redirectTimerRef.current !== null) window.clearTimeout(redirectTimerRef.current);
   }, []);
 
-  const update = (name: string, value: string) => setForm((current) => ({ ...current, [name]: value }));
+  const update = (name: string, value: string) => setForm((current) => ({
+    ...current,
+    [name]: value,
+    ...(name === 'shippingMethod' ? { shippingFee: value === 'EXPRESS' ? 30000 : 0 } : {}),
+  }));
 
   useEffect(() => {
     let cancelled = false;
@@ -256,7 +262,11 @@ const CheckoutPage = () => {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (loading || paymentInfo) return;
+    if (submittingRef.current || loading || paymentInfo) return;
+    if (!navigator.onLine) {
+      setError('Bạn đang mất kết nối mạng. Vui lòng kết nối lại rồi thử tiếp; đơn hàng chưa được gửi.');
+      return;
+    }
     setError('');
     setMessage('');
     setPaymentInfo(null);
@@ -265,6 +275,7 @@ const CheckoutPage = () => {
       setError('Vui lòng nhập đầy đủ thông tin giao hàng.');
       return;
     }
+    submittingRef.current = true;
     try {
       setLoading(true);
       const payload = {
@@ -274,6 +285,7 @@ const CheckoutPage = () => {
         shippingMethod: form.shippingMethod,
         shippingFee: Number(form.shippingFee || 0),
         voucherCode: useVoucher && form.voucherCode ? form.voucherCode : undefined,
+        idempotencyKey: idempotencyKeyRef.current,
       };
       const order = bookId
         ? await orderService.buyNow({ ...payload, bookId, quantity })
@@ -312,6 +324,7 @@ const CheckoutPage = () => {
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };

@@ -32,4 +32,7 @@ public class CreateOrderRequest {
 
     @Size(max = 50, message = "Mã voucher tối đa 50 ký tự")
     private String voucherCode; // Mã voucher (optional)
+
+    @Size(max = 64, message = "Idempotency key toi da 64 ky tu")
+    private String idempotencyKey;
 }

@@ -30,6 +30,7 @@ import com.example.web_bansach.module.order.entity.OrderStatus;
 import com.example.web_bansach.module.order.mapper.OrderMapper;
 import com.example.web_bansach.module.order.repository.OrderItemRepository;
 import com.example.web_bansach.module.order.repository.OrderRepository;
+import com.example.web_bansach.module.pricing.service.PricingService;
 import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.UserRepository;
 import com.example.web_bansach.module.voucher.service.VoucherService;
@@ -57,6 +58,7 @@ public class OrderUserService {
     private final OrderMapper orderMapper;
     private final RealtimeNotificationService realtimeNotificationService;
     private final OrderValidationService orderValidationService;
+    private final PricingService pricingService;
 
     // Khởi tạo service với các repository và service liên quan đến đơn hàng.
     public OrderUserService(UserRepository userRepository,
@@ -69,7 +71,8 @@ public class OrderUserService {
             VoucherService voucherService,
             OrderMapper orderMapper,
             RealtimeNotificationService realtimeNotificationService,
-            OrderValidationService orderValidationService) {
+            OrderValidationService orderValidationService,
+            PricingService pricingService) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
@@ -81,6 +84,7 @@ public class OrderUserService {
         this.orderMapper = orderMapper;
         this.realtimeNotificationService = realtimeNotificationService;
         this.orderValidationService = orderValidationService;
+        this.pricingService = pricingService;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -95,7 +99,12 @@ public class OrderUserService {
         }
         log.info("Create order processing, userId={}", user.getId());
 
-        var cart = cartRepository.findByUserId(user.getId())
+        Order existingOrder = findIdempotentOrder(user.getId(), request.getIdempotencyKey());
+        if (existingOrder != null) {
+            return orderMapper.mapToResponse(existingOrder);
+        }
+
+        var cart = cartRepository.findByUserIdForUpdate(user.getId())
                 .orElseThrow(() -> new BusinessException("Giỏ hàng trống, không thể tạo đơn"));
         List<CartItem> cartItems = cartItemRepository.findByCartIdWithBook(cart.getId());
         if (cartItems.isEmpty()) {
@@ -121,10 +130,11 @@ public class OrderUserService {
         }
 
         BigDecimal itemsTotal = cartItems.stream()
-                .map(item -> item.getPrice().multiply(new BigDecimal(item.getQuantity())))
+                .map(item -> pricingService.calculateBookPrice(item.getBook())
+                        .multiply(new BigDecimal(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal shippingFee = request.getShippingFee() == null ? BigDecimal.ZERO : request.getShippingFee();
+        BigDecimal shippingFee = calculateShippingFee(request.getShippingMethod());
         BigDecimal totalAmount = itemsTotal.add(shippingFee);
         BigDecimal voucherDiscount = BigDecimal.ZERO;
 
@@ -163,6 +173,7 @@ public class OrderUserService {
         order.setVoucherDiscount(voucherDiscount);
         order.setTotalAmount(totalAmount);
         order.setUpdatedAt(LocalDateTime.now());
+        order.setIdempotencyKey(normalizeIdempotencyKey(request.getIdempotencyKey()));
 
         Order savedOrder = orderRepository.save(order);
 
@@ -181,10 +192,11 @@ public class OrderUserService {
             orderItem.setOrder(savedOrder);
             orderItem.setBook(cartItem.getBook());
             orderItem.setQuantity(cartItem.getQuantity());
-            orderItem.setPrice(cartItem.getPrice());
+            orderItem.setPrice(pricingService.calculateBookPrice(cartItem.getBook()));
             orderItemRepository.save(orderItem);
 
-            // Giảm Inventory quantity
+            inventory.setQuantity(inventory.getQuantity() - cartItem.getQuantity());
+            inventoryRepository.save(inventory);
         }
 
         // Sử dụng voucher nếu đã áp dụng thành công
@@ -235,6 +247,11 @@ public class OrderUserService {
                 request.getBookId(),
                 request.getQuantity());
 
+        Order existingOrder = findIdempotentOrder(user.getId(), request.getIdempotencyKey());
+        if (existingOrder != null) {
+            return orderMapper.mapToResponse(existingOrder);
+        }
+
         Book book = bookRepository.findById(request.getBookId())
                 .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y sÃ¡ch"));
 
@@ -249,8 +266,14 @@ public class OrderUserService {
             throw new BusinessException("Sá»‘ lÆ°á»£ng sÃ¡ch '" + book.getTitle() + "' khÃ´ng Ä‘á»§");
         }
 
-        BigDecimal itemsTotal = book.getPrice().multiply(new BigDecimal(request.getQuantity()));
-        BigDecimal shippingFee = request.getShippingFee() == null ? BigDecimal.ZERO : request.getShippingFee();
+        existingOrder = findIdempotentOrder(user.getId(), request.getIdempotencyKey());
+        if (existingOrder != null) {
+            return orderMapper.mapToResponse(existingOrder);
+        }
+
+        BigDecimal unitPrice = pricingService.calculateBookPrice(book);
+        BigDecimal itemsTotal = unitPrice.multiply(new BigDecimal(request.getQuantity()));
+        BigDecimal shippingFee = calculateShippingFee(request.getShippingMethod());
         BigDecimal totalAmount = itemsTotal.add(shippingFee);
         BigDecimal voucherDiscount = calculateVoucherDiscount(username, request.getVoucherCode(), itemsTotal);
         totalAmount = totalAmount.subtract(voucherDiscount);
@@ -271,6 +294,7 @@ public class OrderUserService {
         order.setVoucherDiscount(voucherDiscount);
         order.setTotalAmount(totalAmount);
         order.setUpdatedAt(LocalDateTime.now());
+        order.setIdempotencyKey(normalizeIdempotencyKey(request.getIdempotencyKey()));
 
         Order savedOrder = orderRepository.save(order);
 
@@ -278,8 +302,11 @@ public class OrderUserService {
         orderItem.setOrder(savedOrder);
         orderItem.setBook(book);
         orderItem.setQuantity(request.getQuantity());
-        orderItem.setPrice(book.getPrice());
+        orderItem.setPrice(unitPrice);
         orderItemRepository.save(orderItem);
+
+        inventory.setQuantity(inventory.getQuantity() - request.getQuantity());
+        inventoryRepository.save(inventory);
 
         if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
             voucherService.useOwnedVoucher(username, request.getVoucherCode());
@@ -394,10 +421,11 @@ public class OrderUserService {
         }
 
         // Hoàn lại inventory
-        if (order.getStatus() != OrderStatus.PENDING) {
+        if (order.getStatus() != OrderStatus.CANCELLED) {
             List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
             for (OrderItem item : orderItems) {
-                Inventory inventory = inventoryRepository.findByBookId(item.getBook().getId()).get();
+                Inventory inventory = inventoryRepository.findByBookIdForUpdate(item.getBook().getId())
+                        .orElseThrow(() -> new BusinessException("Khong tim thay ton kho de hoan tra"));
                 inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
                 inventoryRepository.save(inventory);
             }
@@ -417,5 +445,25 @@ public class OrderUserService {
                 "orderId", order.getId(),
                 "username", user.getUsername(),
                 "status", OrderStatus.CANCELLED.name()));
+    }
+
+    private Order findIdempotentOrder(Long userId, String key) {
+        String normalizedKey = normalizeIdempotencyKey(key);
+        return normalizedKey == null ? null
+                : orderRepository.findByUserIdAndIdempotencyKey(userId, normalizedKey).orElse(null);
+    }
+
+    private String normalizeIdempotencyKey(String key) {
+        return key == null || key.trim().isEmpty() ? null : key.trim();
+    }
+
+    private BigDecimal calculateShippingFee(String method) {
+        if (method == null || method.isBlank() || "STANDARD".equalsIgnoreCase(method)) {
+            return BigDecimal.ZERO;
+        }
+        if ("EXPRESS".equalsIgnoreCase(method)) {
+            return new BigDecimal("30000");
+        }
+        throw new BusinessException("Phuong thuc giao hang khong hop le");
     }
 }

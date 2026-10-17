@@ -168,8 +168,10 @@ CREATE TABLE IF NOT EXISTS orders (
   voucher_code VARCHAR(50),
   voucher_discount DECIMAL(19, 2),
   updated_at DATETIME,
+  idempotency_key VARCHAR(64),
   user_id BIGINT,
   PRIMARY KEY (order_id),
+  UNIQUE KEY uk_orders_user_idempotency (user_id, idempotency_key),
   KEY idx_orders_user_id (user_id),
   CONSTRAINT fk_orders_user
     FOREIGN KEY (user_id) REFERENCES users (user_id)
@@ -203,7 +205,7 @@ CREATE TABLE IF NOT EXISTS payments (
   amount DECIMAL(19, 2),
   payment_method VARCHAR(255),
   status VARCHAR(255),
-  transaction_id VARCHAR(255),
+  transaction_id VARCHAR(255) NOT NULL,
   payment_url VARCHAR(1000),
   callback_signature VARCHAR(255),
   callback_received_at DATETIME,
@@ -214,6 +216,7 @@ CREATE TABLE IF NOT EXISTS payments (
   order_id BIGINT,
   PRIMARY KEY (id),
   UNIQUE KEY uk_payments_order_id (order_id),
+  UNIQUE KEY uk_payments_transaction_id (transaction_id),
   CONSTRAINT fk_payments_order
     FOREIGN KEY (order_id) REFERENCES orders (order_id)
     ON DELETE CASCADE

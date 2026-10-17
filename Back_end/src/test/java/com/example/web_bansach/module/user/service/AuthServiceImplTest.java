@@ -15,9 +15,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.web_bansach.common.exception.BusinessException;
-import com.example.web_bansach.infrastructure.messaging.email.EmailQueuePublisher;
+import com.example.web_bansach.infrastructure.email.messaging.EmailPublisher;
 import com.example.web_bansach.module.auth.dto.request.UserRequest;
 import com.example.web_bansach.module.auth.repository.PasswordResetTokenRepository;
+import com.example.web_bansach.module.auth.service.AccountVerificationService;
 import com.example.web_bansach.module.user.entity.Roles;
 import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.RolesRepository;
@@ -33,8 +34,9 @@ class AuthServiceImplTest {
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private PasswordResetTokenRepository passwordResetTokenRepository;
-    @Mock private EmailQueuePublisher emailQueuePublisher;
+    @Mock private EmailPublisher emailPublisher;
     @Mock private RolesRepository rolesRepository;
+    @Mock private AccountVerificationService accountVerificationService;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -57,7 +59,9 @@ class AuthServiceImplTest {
         Users savedUser = captor.getValue();
         assertThat(savedUser.getEmail()).isEqualTo("new@test.com");
         assertThat(savedUser.getPassword()).isEqualTo("encoded");
+        assertThat(savedUser.getIsActive()).isFalse();
         assertThat(savedUser.getRoles()).extracting(Roles::getName).containsExactly("ROLE_USER");
+        verify(accountVerificationService).issueVerificationCode(savedUser);
     }
 
     @Test

@@ -1,4 +1,4 @@
-package com.example.web_bansach.infrastructure.messaging.email;
+package com.example.web_bansach.infrastructure.email.messaging;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

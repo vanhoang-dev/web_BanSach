@@ -35,6 +35,7 @@ import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationServi
 import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.UserRepository;
 import com.example.web_bansach.module.voucher.service.VoucherService;
+import com.example.web_bansach.module.pricing.service.PricingService;
 
 @ExtendWith(MockitoExtension.class)
 class OrderUserServiceTest {
@@ -50,6 +51,7 @@ class OrderUserServiceTest {
     @Mock private OrderMapper orderMapper;
     @Mock private RealtimeNotificationService realtimeNotificationService;
     @Mock private OrderValidationService orderValidationService;
+    @Mock private PricingService pricingService;
 
     @InjectMocks
     private OrderUserService orderUserService;
@@ -86,9 +88,10 @@ class OrderUserServiceTest {
         request.setVoucherCode("BAD");
 
         when(userRepository.findByEmail("user@test.com")).thenReturn(user);
-        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(cart));
+        when(cartRepository.findByUserIdForUpdate(1L)).thenReturn(Optional.of(cart));
         when(cartItemRepository.findByCartIdWithBook(10L)).thenReturn(List.of(item));
         when(inventoryRepository.findByBookId(100L)).thenReturn(Optional.of(inventory));
+        when(pricingService.calculateBookPrice(book)).thenReturn(new BigDecimal("100000"));
         when(voucherService.getMyVoucherByCode("user@test.com", "BAD"))
                 .thenThrow(new BusinessException("Mã voucher không thuộc tài khoản hoặc không hợp lệ"));
 
@@ -100,7 +103,7 @@ class OrderUserServiceTest {
     }
 
     @Test
-    void buyNow_shouldCreatePendingOrderWithoutDecreasingInventoryBeforePayment() {
+    void buyNow_shouldCreatePendingOrderAndReserveInventory() {
         Users user = new Users();
         user.setId(1L);
         user.setUsername("user001");
@@ -129,6 +132,7 @@ class OrderUserServiceTest {
         when(userRepository.findByEmail("user@test.com")).thenReturn(user);
         when(bookRepository.findById(100L)).thenReturn(Optional.of(book));
         when(inventoryRepository.findByBookIdForUpdate(100L)).thenReturn(Optional.of(inventory));
+        when(pricingService.calculateBookPrice(book)).thenReturn(new BigDecimal("5000"));
         when(orderRepository.save(org.mockito.ArgumentMatchers.any(Order.class))).thenAnswer(invocation -> {
             Order order = invocation.getArgument(0);
             order.setId(99L);
@@ -139,7 +143,7 @@ class OrderUserServiceTest {
         OrderResponse response = orderUserService.buyNow("user@test.com", request);
 
         org.assertj.core.api.Assertions.assertThat(response.getId()).isEqualTo(99L);
-        org.assertj.core.api.Assertions.assertThat(inventory.getQuantity()).isEqualTo(5);
+        org.assertj.core.api.Assertions.assertThat(inventory.getQuantity()).isEqualTo(3);
         verify(orderItemRepository).save(org.mockito.ArgumentMatchers.any());
         verify(cartItemRepository, never()).deleteByCartId(org.mockito.ArgumentMatchers.anyLong());
     }
