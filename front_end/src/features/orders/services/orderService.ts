@@ -20,6 +20,7 @@ export interface CreateOrderPayload {
   shippingMethod?: string;
   shippingFee?: number;
   voucherCode?: string;
+  idempotencyKey?: string;
 }
 
 export interface BuyNowOrderPayload extends CreateOrderPayload {
@@ -85,6 +86,7 @@ const orderService = {
       shippingMethod: orderData.shippingMethod || 'STANDARD',
       shippingFee: Number(orderData.shippingFee ?? 0),
       voucherCode: orderData.voucherCode || undefined,
+      idempotencyKey: orderData.idempotencyKey,
     };
     const response = await api.post('/user/orders', payload);
     return mapOrder(unwrapApiData(response));
@@ -100,6 +102,7 @@ const orderService = {
       voucherCode: orderData.voucherCode || undefined,
       bookId: Number(orderData.bookId),
       quantity: Number(orderData.quantity),
+      idempotencyKey: orderData.idempotencyKey,
     };
     const response = await api.post('/user/orders/buy-now', payload);
     return mapOrder(unwrapApiData(response));

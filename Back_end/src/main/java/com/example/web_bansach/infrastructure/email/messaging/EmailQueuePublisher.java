@@ -1,4 +1,4 @@
-package com.example.web_bansach.infrastructure.messaging.email;
+package com.example.web_bansach.infrastructure.email.messaging;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +10,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import com.example.web_bansach.infrastructure.messaging.rabbitmq.RabbitMQConfig;
 
 @Service
-public class EmailQueuePublisher {
+public class EmailQueuePublisher implements EmailPublisher {
     private static final Logger logger = LoggerFactory.getLogger(EmailQueuePublisher.class);
 
     private final RabbitTemplate rabbitTemplate;
@@ -19,6 +19,7 @@ public class EmailQueuePublisher {
         this.rabbitTemplate = rabbitTemplate;
     }
 
+    @Override
     public void publishAfterCommit(EmailMessage message) {
         Runnable publishTask = () -> publish(message);
 

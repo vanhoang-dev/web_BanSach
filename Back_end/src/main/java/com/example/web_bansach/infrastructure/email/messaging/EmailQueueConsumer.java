@@ -1,4 +1,4 @@
-package com.example.web_bansach.infrastructure.messaging.email;
+package com.example.web_bansach.infrastructure.email.messaging;
 
 import java.util.List;
 import java.util.Map;
@@ -12,7 +12,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.stereotype.Service;
 
-import com.example.web_bansach.infrastructure.external.EmailSender;
+import com.example.web_bansach.infrastructure.email.smtp.EmailSender;
 import com.example.web_bansach.infrastructure.messaging.rabbitmq.RabbitMQConfig;
 
 @Service

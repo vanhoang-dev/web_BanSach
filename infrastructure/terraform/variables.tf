@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region to create the 3 VPS/EC2 instances." # Mô tả biến region
   type        = string                                           # Kiểu chuỗi
-  default     = "ap-southeast-1"                                 # Singapore
+  default     = "ap-southeast-2"                                 # Sydney
 }
 
 variable "project_name" {
@@ -29,6 +29,11 @@ variable "ssh_public_key_path" {
 variable "allowed_ssh_cidr" {
   description = "Your public IP CIDR for SSH, for example 203.0.113.10/32." # IP được phép SSH/kubectl
   type        = string                                                      # Kiểu chuỗi
+
+  validation {
+    condition     = can(cidrhost(var.allowed_ssh_cidr, 0))
+    error_message = "allowed_ssh_cidr must be a valid CIDR block, for example 203.0.113.10/32."
+  }
 }
 
 variable "root_volume_size" {

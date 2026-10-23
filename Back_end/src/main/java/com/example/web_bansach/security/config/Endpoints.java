@@ -21,6 +21,8 @@ public class Endpoints {
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {
             "/tai-khoan/dang-ky",
+            "/tai-khoan/xac-nhan-email",
+            "/tai-khoan/gui-lai-ma-xac-nhan",
             "/tai-khoan/dang-nhap",
             "/tai-khoan/quen-mat-khau",
             "/tai-khoan/dat-lai-mat-khau",

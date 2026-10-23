@@ -10,7 +10,9 @@ import com.example.web_bansach.common.response.ApiResponse;
 import com.example.web_bansach.module.auth.dto.request.ForgotPasswordRequest;
 import com.example.web_bansach.module.auth.dto.request.LoginRequest;
 import com.example.web_bansach.module.auth.dto.request.ResetPasswordRequest;
+import com.example.web_bansach.module.auth.dto.request.ResendVerificationCodeRequest;
 import com.example.web_bansach.module.auth.dto.request.UserRequest;
+import com.example.web_bansach.module.auth.dto.request.VerifyAccountRequest;
 import com.example.web_bansach.module.auth.dto.response.LoginResponse;
 import com.example.web_bansach.module.user.service.AuthService;
 
@@ -32,7 +34,20 @@ public class AuthController {
     // Tiếp nhận thông tin đăng ký và tạo một tài khoản người dùng mới.
     public ResponseEntity<ApiResponse<?>> dangKy(@Valid @RequestBody UserRequest request) {
         service.taoTaiKhoanMoi(request);
-        return ResponseEntity.ok(ApiResponse.success("Tạo tài khoản thành công", null));
+        return ResponseEntity.ok(ApiResponse.success("Đã gửi mã xác nhận đến email của bạn", null));
+    }
+
+    @PostMapping("/xac-nhan-email")
+    public ResponseEntity<ApiResponse<?>> xacNhanEmail(@Valid @RequestBody VerifyAccountRequest request) {
+        service.xacNhanTaiKhoan(request);
+        return ResponseEntity.ok(ApiResponse.success("Xác nhận tài khoản thành công", null));
+    }
+
+    @PostMapping("/gui-lai-ma-xac-nhan")
+    public ResponseEntity<ApiResponse<?>> guiLaiMaXacNhan(
+            @Valid @RequestBody ResendVerificationCodeRequest request) {
+        service.guiLaiMaXacNhan(request);
+        return ResponseEntity.ok(ApiResponse.success("Đã gửi lại mã xác nhận", null));
     }
 
     @PostMapping("/dang-nhap")

@@ -1,4 +1,4 @@
-package com.example.web_bansach.infrastructure.external;
+package com.example.web_bansach.infrastructure.email.smtp;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.javamail.JavaMailSender;

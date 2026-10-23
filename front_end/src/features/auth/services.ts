@@ -16,6 +16,11 @@ export interface RegisterRequest {
   address?: string;
 }
 
+export interface VerifyAccountRequest {
+  email: string;
+  code: string;
+}
+
 export interface UpdateProfileRequest {
   fullName?: string;
   phone?: string;
@@ -85,6 +90,12 @@ const authService = {
       address: data.address || '',
     });
   },
+
+  verifyAccount: async (data: VerifyAccountRequest): Promise<any> =>
+    api.post('/tai-khoan/xac-nhan-email', data),
+
+  resendVerificationCode: async (email: string): Promise<any> =>
+    api.post('/tai-khoan/gui-lai-ma-xac-nhan', { email }),
 
   getProfile: async (): Promise<any> => unwrapApiData(await api.get('/user/me')),
 

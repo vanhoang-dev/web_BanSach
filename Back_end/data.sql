@@ -73,8 +73,8 @@ INSERT INTO authors (author_name, biography, created_at) VALUES
 INSERT INTO categories (category_name, description, is_active, created_at, updated_at, deleted_at) VALUES 
 ('Trinh Tham', 'Cac cuon tieu thuyet trinh tham va ky bi', 1, NOW(), NOW(), NULL),
 ('Tinh Yeu', 'Truyen yeu thuong va tinh cam', 1, NOW(), NOW(), NULL),
-('Ly Lá»‹ch Su', 'Sach ve lich su, lich su van de chinh tri', 1, NOW(), NOW(), NULL),
-('Khoa Hoc Vien Tuong', 'Sach khoa hoc giáº£ tÆ°á»Ÿng, tÆ°Æ¡ng lai', 1, NOW(), NOW(), NULL),
+('Ly lịch Su', 'Sach ve lich su, lich su van de chinh tri', 1, NOW(), NOW(), NULL),
+('Khoa Hoc Vien Tuong', 'Sach khoa hoc giá , tương lai', 1, NOW(), NOW(), NULL),
 ('Tieu Thuyet Hien Thuc', 'Tieu thuyet viet ve cuoc song hang ngay', 1, NOW(), NOW(), NULL),
 ('Tieu Thuyet Nhu Lam', 'Tieu thuyet humoristic va vui nhon', 1, NOW(), NOW(), NULL),
 ('Phat Trien Ca Nhan', 'Sach ve phat trien ban than va ky nang song', 1, NOW(), NOW(), NULL),

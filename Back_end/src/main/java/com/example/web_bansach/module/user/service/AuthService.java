@@ -3,7 +3,9 @@ package com.example.web_bansach.module.user.service;
 import com.example.web_bansach.module.auth.dto.request.ForgotPasswordRequest;
 import com.example.web_bansach.module.auth.dto.request.LoginRequest;
 import com.example.web_bansach.module.auth.dto.request.ResetPasswordRequest;
+import com.example.web_bansach.module.auth.dto.request.ResendVerificationCodeRequest;
 import com.example.web_bansach.module.auth.dto.request.UserRequest;
+import com.example.web_bansach.module.auth.dto.request.VerifyAccountRequest;
 import com.example.web_bansach.module.auth.dto.response.LoginResponse;
 
 // Định nghĩa các nghiệp vụ xác thực và quản lý mật khẩu mà controller được phép gọi.
@@ -11,6 +13,10 @@ public interface AuthService {
 
     // Tạo tài khoản mới sau khi kiểm tra username, email và gán quyền người dùng.
     void taoTaiKhoanMoi(UserRequest request);
+
+    void xacNhanTaiKhoan(VerifyAccountRequest request);
+
+    void guiLaiMaXacNhan(ResendVerificationCodeRequest request);
 
     // Xác thực thông tin đăng nhập và trả dữ liệu phiên đăng nhập.
     LoginResponse dangNhap(LoginRequest request);

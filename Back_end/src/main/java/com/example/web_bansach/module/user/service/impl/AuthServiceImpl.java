@@ -11,21 +11,25 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.web_bansach.common.exception.BusinessException;
 import com.example.web_bansach.common.logging.LogMaskingUtil;
-import com.example.web_bansach.infrastructure.messaging.email.EmailMessage;
-import com.example.web_bansach.infrastructure.messaging.email.EmailQueuePublisher;
+import com.example.web_bansach.infrastructure.email.messaging.EmailMessage;
+import com.example.web_bansach.infrastructure.email.messaging.EmailPublisher;
 import com.example.web_bansach.module.auth.dto.request.ForgotPasswordRequest;
 import com.example.web_bansach.module.auth.dto.request.LoginRequest;
 import com.example.web_bansach.module.auth.dto.request.ResetPasswordRequest;
+import com.example.web_bansach.module.auth.dto.request.ResendVerificationCodeRequest;
 import com.example.web_bansach.module.auth.dto.request.UserRequest;
+import com.example.web_bansach.module.auth.dto.request.VerifyAccountRequest;
 import com.example.web_bansach.module.auth.dto.response.LoginResponse;
 import com.example.web_bansach.module.auth.entity.PasswordResetToken;
 import com.example.web_bansach.module.auth.repository.PasswordResetTokenRepository;
+import com.example.web_bansach.module.auth.service.AccountVerificationService;
 import com.example.web_bansach.module.user.entity.Roles;
 import com.example.web_bansach.module.user.entity.Users;
 import com.example.web_bansach.module.user.repository.RolesRepository;
@@ -48,8 +52,9 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
-    private final EmailQueuePublisher emailQueuePublisher;
+    private final EmailPublisher emailPublisher;
     private final RolesRepository rolesRepository;
+    private final AccountVerificationService accountVerificationService;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -63,15 +68,17 @@ public class AuthServiceImpl implements AuthService {
             JwtTokenProvider jwtTokenProvider,
             PasswordEncoder passwordEncoder,
             PasswordResetTokenRepository passwordResetTokenRepository,
-            EmailQueuePublisher emailQueuePublisher,
-            RolesRepository rolesRepository) {
+            EmailPublisher emailPublisher,
+            RolesRepository rolesRepository,
+            AccountVerificationService accountVerificationService) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
-        this.emailQueuePublisher = emailQueuePublisher;
+        this.emailPublisher = emailPublisher;
         this.rolesRepository = rolesRepository;
+        this.accountVerificationService = accountVerificationService;
     }
 
     @Transactional
@@ -80,12 +87,17 @@ public class AuthServiceImpl implements AuthService {
     public void taoTaiKhoanMoi(UserRequest request) {
         log.info("Start register user, email={}", LogMaskingUtil.maskEmail(request.getEmail()));
 
-        if (userRepository.findByUsername(request.getUsername()) != null) {
-            throw new BusinessException("Tên đăng nhập đã tồn tại");
+        Users existingUser = userRepository.findByEmail(request.getEmail());
+        if (existingUser != null) {
+            if (!Boolean.TRUE.equals(existingUser.getIsActive())) {
+                accountVerificationService.resendVerificationCode(existingUser.getEmail());
+                return;
+            }
+            throw new BusinessException("Email đã tồn tại");
         }
 
-        if (userRepository.findByEmail(request.getEmail()) != null) {
-            throw new BusinessException("Email đã tồn tại");
+        if (userRepository.findByUsername(request.getUsername()) != null) {
+            throw new BusinessException("Tên đăng nhập đã tồn tại");
         }
 
         Roles userRole = rolesRepository.findByName("ROLE_USER");
@@ -100,13 +112,24 @@ public class AuthServiceImpl implements AuthService {
         user.setFullName(request.getFullName());
         user.setPhone(normalizeOptional(request.getPhone()));
         user.setAddress(normalizeOptional(request.getAddress()));
-        user.setIsActive(true);
+        user.setIsActive(false);
         user.setRoles(Set.of(userRole));
 
         userRepository.save(user);
+        accountVerificationService.issueVerificationCode(user);
         log.info("Register user successfully, userId={}, email={}",
                 user.getId(),
                 LogMaskingUtil.maskEmail(user.getEmail()));
+    }
+
+    @Override
+    public void xacNhanTaiKhoan(VerifyAccountRequest request) {
+        accountVerificationService.verifyAccount(request.getEmail(), request.getCode());
+    }
+
+    @Override
+    public void guiLaiMaXacNhan(ResendVerificationCodeRequest request) {
+        accountVerificationService.resendVerificationCode(request.getEmail());
     }
 
     // Chuẩn hóa trường tùy chọn: bỏ khoảng trắng và đổi chuỗi rỗng thành null.
@@ -121,7 +144,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-        } catch (BadCredentialsException ex) {
+        } catch (AuthenticationException ex) {
             log.warn("Login failed, email={}", LogMaskingUtil.maskEmail(request.getEmail()));
             throw new BadCredentialsException("Email hoặc mật khẩu không đúng");
         }
@@ -171,7 +194,7 @@ public class AuthServiceImpl implements AuthService {
                 "Đặt lại mật khẩu",
                 emailBody,
                 user.getId());
-        emailQueuePublisher.publishAfterCommit(emailMessage);
+        emailPublisher.publishAfterCommit(emailMessage);
     }
 
     @Transactional

@@ -16,13 +16,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "orders")
+@Table(name = "orders", uniqueConstraints = @UniqueConstraint(
+        name = "uk_orders_user_idempotency", columnNames = { "user_id", "idempotency_key" }))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -58,4 +60,7 @@ public class Order {
     private BigDecimal voucherDiscount; // Số tiền giảm từ voucher
     
     private LocalDateTime updatedAt;
+
+    @Column(name = "idempotency_key", length = 64)
+    private String idempotencyKey;
 }

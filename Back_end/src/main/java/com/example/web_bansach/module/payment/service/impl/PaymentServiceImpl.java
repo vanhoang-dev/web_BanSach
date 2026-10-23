@@ -2,7 +2,6 @@ package com.example.web_bansach.module.payment.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -13,18 +12,14 @@ import com.example.web_bansach.common.exception.ResourceNotFoundException;
 import com.example.web_bansach.common.logging.LogMaskingUtil;
 import com.example.web_bansach.infrastructure.payment.PaymentGateway;
 import com.example.web_bansach.infrastructure.realtime.RealtimeNotificationService;
-import com.example.web_bansach.module.inventory.entity.Inventory;
-import com.example.web_bansach.module.inventory.repository.InventoryRepository;
 import com.example.web_bansach.module.order.entity.Order;
-import com.example.web_bansach.module.order.entity.OrderItem;
 import com.example.web_bansach.module.order.entity.OrderStatus;
-import com.example.web_bansach.module.order.repository.OrderItemRepository;
 import com.example.web_bansach.module.order.repository.OrderRepository;
 import com.example.web_bansach.module.payment.dto.PaymentRequest;
 import com.example.web_bansach.module.payment.dto.PaymentResponse;
 import com.example.web_bansach.module.payment.entity.Payment;
 import com.example.web_bansach.module.payment.repository.PaymentRepository;
-import com.example.web_bansach.module.payment.service.PaymentEmailService;
+import com.example.web_bansach.module.payment.service.PaymentNotificationService;
 import com.example.web_bansach.module.payment.service.PaymentService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -40,27 +35,21 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final InventoryRepository inventoryRepository;
     private final PaymentGateway paymentGateway;
     private final RealtimeNotificationService realtimeNotificationService;
-    private final PaymentEmailService paymentEmailService;
+    private final PaymentNotificationService paymentNotificationService;
 
     // Khởi tạo service với repository, cổng thanh toán và dịch vụ realtime.
     public PaymentServiceImpl(PaymentRepository paymentRepository,
             OrderRepository orderRepository,
-            OrderItemRepository orderItemRepository,
-            InventoryRepository inventoryRepository,
             PaymentGateway paymentGateway,
             RealtimeNotificationService realtimeNotificationService,
-            PaymentEmailService paymentEmailService) {
+            PaymentNotificationService paymentNotificationService) {
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-        this.inventoryRepository = inventoryRepository;
         this.paymentGateway = paymentGateway;
         this.realtimeNotificationService = realtimeNotificationService;
-        this.paymentEmailService = paymentEmailService;
+        this.paymentNotificationService = paymentNotificationService;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -77,7 +66,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         validatePaymentRequest(request);
 
-        Order order = orderRepository.findById(request.getOrderId())
+        Order order = orderRepository.findByIdForUpdate(request.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don hang"));
         validateOrderCanBePaidByUser(order, userEmail, request.getAmount());
 
@@ -174,7 +163,7 @@ public class PaymentServiceImpl implements PaymentService {
     // Cập nhật kết quả callback, thời gian trả tiền và xác nhận đơn khi thành công.
     public void updatePaymentStatus(String transactionId, String status, String signature) {
         String normalizedStatus = normalizePaymentStatus(status);
-        Payment payment = findPaymentByTransactionId(transactionId)
+        Payment payment = findPaymentByTransactionIdForUpdate(transactionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay thong tin thanh toan"));
         validatePaymentStatusTransition(payment.getStatus(), normalizedStatus);
         Long orderId = payment.getOrder() != null ? payment.getOrder().getId() : null;
@@ -195,7 +184,6 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setPaidAt(LocalDateTime.now());
             Order order = payment.getOrder();
             if (order != null && order.getStatus() == OrderStatus.PENDING) {
-                deductInventoryForPaidOrder(order);
                 order.setStatus(OrderStatus.CONFIRMED);
                 order.setUpdatedAt(LocalDateTime.now());
                 orderRepository.save(order);
@@ -204,7 +192,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         paymentRepository.save(payment);
         if (shouldSendSuccessEmail) {
-            paymentEmailService.sendPaymentSuccessEmailAfterCommit(payment);
+            paymentNotificationService.notifyPaymentSucceededAfterCommit(payment);
         }
 
         realtimeNotificationService.publishPaymentEvent(
@@ -286,6 +274,17 @@ public class PaymentServiceImpl implements PaymentService {
         return Optional.empty();
     }
 
+    private Optional<Payment> findPaymentByTransactionIdForUpdate(String transactionId) {
+        String normalized = normalizePaymentCode(transactionId);
+        Optional<Payment> payment = paymentRepository.findByTransactionIdForUpdate(normalized);
+        if (payment.isPresent()) {
+            return payment;
+        }
+        String legacy = toLegacyPaymentCode(normalized);
+        return legacy.equals(normalized) ? Optional.empty()
+                : paymentRepository.findByTransactionIdForUpdate(legacy);
+    }
+
     // Tạo nội dung chuyển khoản duy nhất từ ID đơn hàng.
     private String buildPaymentCode(Long orderId) {
         return "SEP" + orderId;
@@ -302,24 +301,6 @@ public class PaymentServiceImpl implements PaymentService {
             return "SEP-" + normalizedCode.substring(3);
         }
         return normalizedCode;
-    }
-
-    // Trừ tồn kho khi giao dịch SePay thành công và đơn được xác nhận.
-    private void deductInventoryForPaidOrder(Order order) {
-        List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithBook(order.getId());
-        for (OrderItem item : orderItems) {
-            Inventory inventory = inventoryRepository.findByBookIdForUpdate(item.getBook().getId())
-                    .orElseThrow(() -> new BusinessException(
-                            "Khong tim thay ban ghi ton kho cho sach: " + item.getBook().getTitle()));
-
-            if (inventory.getQuantity() == null || inventory.getQuantity() < item.getQuantity()) {
-                throw new BusinessException(
-                        "So luong sach '" + item.getBook().getTitle() + "' khong du de xac nhan don hang");
-            }
-
-            inventory.setQuantity(inventory.getQuantity() - item.getQuantity());
-            inventoryRepository.save(inventory);
-        }
     }
 
     private void validatePaymentVisibleToUser(Payment payment, String userEmail, boolean admin) {
@@ -356,8 +337,8 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         if (PAYMENT_SUCCESS.equals(current)
-                || PAYMENT_FAILED.equals(current)
-                || PAYMENT_CANCELLED.equals(current)) {
+                || ((PAYMENT_FAILED.equals(current) || PAYMENT_CANCELLED.equals(current))
+                        && !PAYMENT_SUCCESS.equals(nextStatus))) {
             throw new BusinessException("Khong the thay doi giao dich thanh toan da ket thuc");
         }
     }
