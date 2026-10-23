@@ -116,14 +116,19 @@ jobs:
 
           echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
 
-          aws ec2 authorize-security-group-ingress \
+          if ! AUTHORIZE_OUTPUT="$(aws ec2 authorize-security-group-ingress \
             --group-id "${{ env.K3S_SECURITY_GROUP_ID }}" \
             --protocol tcp \
             --port 6443 \
             --cidr "$RUNNER_IP/32" \
-            --tag-specifications 'ResourceType=security-group-rule,Tags=[{Key=Name,Value=github-actions-k3s-api}]' \
-          || echo "Ingress rule may already exist"
-
+            --tag-specifications 'ResourceType=security-group-rule,Tags=[{Key=Name,Value=github-actions-k3s-api}]' 2>&1)"; then
+            if echo "$AUTHORIZE_OUTPUT" | grep -q "InvalidPermission.Duplicate"; then
+              echo "Ingress rule already exists for $RUNNER_IP/32"
+            else
+              echo "$AUTHORIZE_OUTPUT"
+              exit 1
+            fi
+          fi
       # ==============================
       # INSTALL KUBECTL
       # ==============================
