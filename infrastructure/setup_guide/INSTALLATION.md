@@ -95,27 +95,27 @@ aws sts get-caller-identity
 
 ```bash
 # Tạo thư mục lưu private key
-mkdir -p /root/.ssh
+mkdir -p /workspace/.ssh
 ```
 
 ```bash
 # Tạo key pair trên AWS và lưu private key vào toolbox
 aws ec2 create-key-pair \
-  --region ap-southeast-1 \
+  --region ap-southeast-2 \
   --key-name web-bansach-key \
   --query 'KeyMaterial' \
-  --output text > /root/.ssh/web-bansach-key.pem
+  --output text > /workspace/.ssh/web-bansach-key.pem
 ```
 
 ```bash
 # Cấp quyền an toàn cho private key để SSH chấp nhận
-chmod 400 /root/.ssh/web-bansach-key.pem
+chmod 400 /workspace/.ssh/web-bansach-key.pem
 ```
 
 ```bash
 # Kiểm tra key pair đã tồn tại trên AWS
 aws ec2 describe-key-pairs \
-  --region ap-southeast-1 \
+  --region ap-southeast-2 \
   --key-names web-bansach-key
 ```
 
@@ -533,7 +533,7 @@ http://127.0.0.1:9090
 
 ```bash
 # Đăng nhập VPS master
-ssh -i /root/.ssh/web-bansach-key.pem ubuntu@13.251.26.43
+ssh -i /workspace/.ssh/web-bansach-key.pem ubuntu@13.251.26.43
 ```
 
 ### 12.2. Kiểm tra node trên VPS

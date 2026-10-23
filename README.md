@@ -1,985 +1,312 @@
-# Web Bán Sách - Backend API
+# Web Bán Sách
 
-## 1. Giới thiệu dự án
+Web Bán Sách là một monorepo cho hệ thống thương mại điện tử bán sách, gồm giao diện React dành cho khách hàng và quản trị viên, backend Spring Boot cung cấp REST API, cùng bộ cấu hình hạ tầng phục vụ môi trường local và triển khai trên Kubernetes.
 
-**Web Bán Sách** là hệ thống backend REST API cho một website thương mại điện tử bán sách. Dự án được xây dựng bằng **Java Spring Boot**, sử dụng **MySQL** làm cơ sở dữ liệu chính, hỗ trợ xác thực bằng **JWT**, phân quyền người dùng theo vai trò **USER** và **ADMIN**, đồng thời tích hợp các dịch vụ bên ngoài như **Cloudinary** để lưu trữ hình ảnh sách và **SePay** để xử lý thanh toán.
+Source code là nguồn sự thật chính của dự án. Tài liệu này mô tả những thành phần đã được xác minh trong repository; trạng thái hoạt động của dịch vụ bên ngoài và môi trường triển khai được ghi rõ là `UNVERIFIED` khi chưa có kết quả kiểm thử runtime.
 
-Backend cung cấp API cho cả phía người dùng và quản trị viên. Người dùng có thể đăng ký, đăng nhập, xem sách, tìm kiếm sách, thêm sách vào giỏ hàng, đặt hàng, thanh toán, đánh giá sách, lưu sách yêu thích và sử dụng voucher. Quản trị viên có thể quản lý sách, danh mục, tác giả, người dùng, đơn hàng, tồn kho, voucher, đánh giá và theo dõi thanh toán.
+## 1. Project Overview
 
-Dự án được thiết kế theo kiến trúc nhiều tầng, tách biệt rõ giữa Controller, Service, Repository, Entity, DTO và Security, giúp hệ thống dễ bảo trì, mở rộng và kiểm thử.
+Hệ thống phục vụ ba nhóm truy cập:
 
----
+- **Public**: đăng ký, xác nhận tài khoản, đăng nhập và duyệt catalog công khai.
+- **USER**: quản lý hồ sơ, giỏ hàng, wishlist, voucher, đơn hàng, thanh toán và review.
+- **ADMIN**: quản lý catalog, người dùng, đơn hàng, tồn kho, voucher, review và xem dashboard.
 
-## 2. Mục tiêu dự án
+Ranh giới trách nhiệm chính:
 
-Dự án hướng đến việc xây dựng một hệ thống backend hoàn chỉnh cho website bán sách, bao gồm các nghiệp vụ chính của một nền tảng thương mại điện tử cơ bản.
+- `front_end/` hiển thị storefront và trang quản trị, quản lý trạng thái giao diện và gọi backend API.
+- `Back_end/` thực thi authentication, authorization, business rules, persistence và tích hợp dịch vụ ngoài.
+- `infrastructure/` mô tả container, provisioning, Kubernetes và monitoring; đây không phải nơi chứa business logic.
 
-Các mục tiêu chính:
+## 2. System Scope & Core Features
 
-* Xây dựng hệ thống REST API cho website bán sách.
-* Hỗ trợ đăng ký, đăng nhập và xác thực người dùng bằng JWT.
-* Phân quyền chức năng giữa USER và ADMIN.
-* Cho phép người dùng xem, tìm kiếm và mua sách.
-* Cho phép người dùng quản lý giỏ hàng, đặt hàng và thanh toán.
-* Cho phép quản trị viên quản lý dữ liệu sách, danh mục, tác giả, người dùng, đơn hàng, voucher và tồn kho.
-* Tích hợp Cloudinary để upload và lưu trữ hình ảnh sách.
-* Tích hợp SePay để hỗ trợ thanh toán.
-* Chuẩn hóa response, exception handling và validation.
-* Hỗ trợ kiểm thử backend trước khi deploy.
+| Domain | Chức năng đã xác minh | Trạng thái |
+| --- | --- | --- |
+| Account & Security | Đăng ký, xác nhận email, gửi lại mã xác nhận, đăng nhập JWT, quên/đặt lại mật khẩu, hồ sơ và đổi mật khẩu | `IMPLEMENTED` |
+| Catalog | Danh sách/chi tiết sách, tìm kiếm và lọc; quản lý sách, tác giả, danh mục và ảnh bìa | `IMPLEMENTED` |
+| Cart & Pricing | Thêm, sửa, xóa, làm rỗng giỏ; kiểm tra tồn kho; tính giá theo discount còn hiệu lực | `IMPLEMENTED` |
+| Order | Checkout từ giỏ, buy-now, idempotency key, lịch sử đơn, hủy đơn và chuyển trạng thái | `IMPLEMENTED` |
+| Inventory | Tra cứu tồn kho; admin set, adjust và reconcile; khóa bi quan khi cập nhật số lượng | `IMPLEMENTED` |
+| Payment | Tạo QR SePay, nhận webhook, tra cứu trạng thái, thông báo qua WebSocket/SSE và email thành công | `IMPLEMENTED` |
+| Voucher | Claim voucher, xem voucher đã nhận/khả dụng, dùng khi checkout và CRUD cho admin | `IMPLEMENTED` |
+| Review & Wishlist | CRUD review, thống kê rating, kiểm tra quyền review theo đơn hoàn tất; quản lý wishlist | `IMPLEMENTED` |
+| Admin Dashboard | Tổng hợp số liệu quản trị và cache kết quả | `IMPLEMENTED` |
+| Runtime integrations | MySQL, Redis, RabbitMQ, SMTP, Cloudinary và SePay có code/configuration tương ứng | `UNVERIFIED` |
+| Production deployment | Có cấu hình Terraform, Ansible, Kubernetes và GitHub Actions | `UNVERIFIED` |
 
----
+Các tính năng không tồn tại trong source hiện tại và không được xem là đã triển khai: JWT refresh token, logout/revocation phía server, payment refund API và tích hợp OpenAPI/Swagger.
 
-## 3. Công nghệ sử dụng
+## 3. Technology Stack
 
-| Thành phần     | Công nghệ                                 |
-| -------------- | ----------------------------------------- |
-| Ngôn ngữ       | Java 17                                   |
-| Framework      | Spring Boot                               |
-| Web/API        | Spring Web / Spring MVC                   |
-| ORM            | Spring Data JPA / Hibernate               |
-| Database       | MySQL                                     |
-| Security       | Spring Security                           |
-| Authentication | JWT                                       |
-| Validation     | Spring Validation                         |
-| Upload file    | Cloudinary                                |
-| Payment        | SePay                                     |
-| Email          | Spring Mail                               |
-| Realtime       | WebSocket                                 |
-| Build tool     | Maven                                     |
-| Container      | Docker, Docker Compose                    |
-| Testing        | JUnit, Mockito, Spring Boot Test, MockMvc |
+### Frontend
 
----
+| Thành phần | Công nghệ đã xác minh | Vai trò |
+| --- | --- | --- |
+| UI | React 19, TypeScript 6 | Storefront và admin application |
+| Build | Vite 8 | Development server và production build |
+| Routing | React Router 7 | Điều hướng public, protected và admin routes |
+| HTTP | Axios | Gọi REST API và gắn token qua interceptor |
+| Styling | Tailwind CSS 3 | Giao diện và responsive layout |
+| Test | Vitest, Testing Library | Component/UI tests |
 
-## 4. Kiến trúc tổng quan
+### Backend
 
-Dự án được tổ chức theo mô hình nhiều tầng:
+| Thành phần | Công nghệ đã xác minh | Vai trò |
+| --- | --- | --- |
+| Runtime | Java 17, Spring Boot 4.0.1 | REST application |
+| Web & validation | Spring MVC, Jakarta Validation | Controller, request binding và validation |
+| Persistence | Spring Data JPA, Hibernate, MySQL | Transaction và lưu trữ dữ liệu |
+| Security | Spring Security, JJWT 0.11.5, BCrypt | Stateless JWT authentication và RBAC |
+| Cache | Redis | Cache catalog, review và dashboard |
+| Messaging & email | RabbitMQ, Spring Mail | Gửi email nền và dead-letter flow |
+| File storage | Cloudinary Java SDK 1.38.0 | Upload ảnh sách |
+| Realtime | WebSocket/STOMP, SSE | Thông báo order/payment |
+| Observability | Actuator, Micrometer Prometheus | Health check và metrics |
+| Test | JUnit, Mockito, MockMvc, H2 | Unit, controller và integration tests |
+
+### Infrastructure
+
+Docker/Docker Compose hỗ trợ môi trường container; Terraform và Ansible chuẩn bị hạ tầng AWS/k3s; Kubernetes manifests mô tả application, datastore, ingress và monitoring; Prometheus/Grafana cung cấp metrics và dashboard.
+
+## 4. System Architecture
+
+Backend là một **modular monolith** tổ chức theo domain và áp dụng layered flow bên trong từng module. Source hiện tại không thể hiện đầy đủ các dependency boundary để được mô tả là Clean Architecture hoặc DDD.
+
+```mermaid
+flowchart LR
+    User[Khách hàng / Admin] --> SPA[React SPA]
+    SPA -->|REST + JWT| Security[Spring Security / JWT Filter]
+    SPA <-->|WebSocket / SSE| Realtime[Realtime Notification]
+
+    Security --> Controllers[Domain Controllers]
+    Controllers --> Services[Application & Domain Services]
+    Services --> Repositories[Spring Data JPA]
+    Repositories --> MySQL[(MySQL)]
+
+    Services --> Redis[(Redis Cache)]
+    Services --> Cloudinary[Cloudinary]
+    Services --> SePay[SePay QR / Webhook]
+    Services --> RabbitMQ[(RabbitMQ)]
+    RabbitMQ --> SMTP[SMTP Email]
+    Services --> Realtime
+
+    Actuator[Actuator / Prometheus] -. metrics .-> Services
+```
+
+Luồng xử lý HTTP điển hình:
 
 ```text
-Controller → Service → Repository → Database
+Request → Security filter chain → Controller → Service → Repository → MySQL
+                                      ↓           ↓
+                               ApiResponse    External services / cache / messaging
 ```
 
-Trong đó:
+- Controller nhận request DTO và điều phối HTTP response.
+- Service chứa business validation, transaction và phối hợp giữa các domain.
+- Repository truy cập dữ liệu qua Spring Data JPA.
+- Mapper chuyển entity sang response DTO.
+- `common/` cung cấp response, exception handling, cache, logging và cấu hình dùng chung.
+- `infrastructure/` hiện thực các adapter cho Cloudinary, SePay, email, messaging và realtime.
 
-* **Controller**: tiếp nhận request từ client, gọi service xử lý nghiệp vụ và trả response.
-* **Service**: chứa logic nghiệp vụ chính của hệ thống.
-* **Repository**: thao tác với database thông qua Spring Data JPA.
-* **Entity**: ánh xạ các bảng trong cơ sở dữ liệu.
-* **DTO**: định nghĩa dữ liệu request và response.
-* **Security**: xử lý xác thực, phân quyền và JWT.
-* **Infrastructure**: tích hợp các dịch vụ ngoài như Cloudinary, SePay, Email và WebSocket.
-* **Common**: chứa response dùng chung, exception, config, constant và utility.
-
----
-
-## 5. Cấu trúc thư mục chính
+## 5. Repository Structure
 
 ```text
-src/main/java/com/example/web_bansach
-├── common
-│   ├── config
-│   ├── constant
-│   ├── exception
-│   ├── response
-│   └── util
-│
-├── infrastructure
-│   ├── cloudinary
-│   ├── external
-│   ├── file
-│   ├── payment
-│   ├── persistence
-│   └── realtime
-│
-├── module
-│   ├── auth
-│   ├── user
-│   ├── book
-│   ├── category
-│   ├── author
-│   ├── cart
-│   ├── order
-│   ├── payment
-│   ├── inventory
-│   ├── pricing
-│   ├── review
-│   ├── voucher
-│   └── wishlist
-│
-└── security
-    ├── config
-    ├── handler
-    ├── jwt
-    ├── principal
-    └── service
+web_BanSach/
+├── Back_end/
+│   ├── src/main/java/com/example/web_bansach/
+│   │   ├── common/          # Response, exception, cache, logging, shared config
+│   │   ├── infrastructure/  # Cloudinary, email, RabbitMQ, SePay, persistence, realtime
+│   │   ├── module/          # Các domain nghiệp vụ
+│   │   └── security/        # JWT, filter chain, principal, 401/403 handlers
+│   ├── src/test/            # Unit, controller và integration tests
+│   ├── schema.sql
+│   ├── data.sql
+│   └── pom.xml
+├── front_end/
+│   ├── src/app/             # Bootstrap, providers và routes
+│   ├── src/features/        # Feature theo domain và admin pages
+│   ├── src/services/        # API, storage và WebSocket clients
+│   ├── src/stores/          # Auth, cart và UI state
+│   └── package.json
+├── infrastructure/
+│   ├── docker/              # Local, production và toolbox Compose files
+│   ├── terraform/           # AWS resources
+│   ├── ansible/             # k3s provisioning/deployment
+│   ├── kubernetes/          # Workload, datastore, ingress và monitoring manifests
+│   ├── monitoring/          # Prometheus và Grafana provisioning
+│   └── setup_guide/         # Hướng dẫn hạ tầng hiện có
+└── .github/workflows/       # CI/CD workflow hiện có
 ```
 
----
+Các backend domain hiện có: `auth`, `user`, `book`, `author`, `category`, `cart`, `pricing`, `order`, `inventory`, `payment`, `voucher`, `review`, `wishlist` và `dashboard`.
 
-## 6. Phân quyền hệ thống
+## 6. Core Business Workflows
 
-Hệ thống có 3 nhóm truy cập chính:
+### 6.1 Đăng ký và xác nhận tài khoản
 
-| Nhóm   | Mô tả                                                                                                       |
-| ------ | ----------------------------------------------------------------------------------------------------------- |
-| Public | Khách chưa đăng nhập, có thể xem thông tin công khai và đăng ký/đăng nhập                                   |
-| USER   | Người dùng đã đăng nhập, có thể mua sách, quản lý giỏ hàng, đặt hàng, thanh toán, đánh giá và dùng wishlist |
-| ADMIN  | Quản trị viên, có quyền quản lý dữ liệu hệ thống như sách, người dùng, đơn hàng, tồn kho, voucher và review |
+1. Backend kiểm tra email/username, mã hóa mật khẩu bằng BCrypt và tạo user chưa active với `ROLE_USER`.
+2. Mã xác nhận 6 chữ số được sinh ngẫu nhiên; database chỉ lưu BCrypt hash.
+3. Email được publish sau khi transaction commit qua RabbitMQ.
+4. Mã có TTL, resend cooldown và giới hạn số lần nhập sai theo cấu hình.
+5. Xác nhận thành công kích hoạt user; chỉ user active mới đăng nhập được.
 
----
+### 6.2 Cart và checkout
 
-# 7. Chức năng chính của hệ thống
+1. Add/update cart kiểm tra sách khả dụng, quantity hợp lệ và tồn kho hiện tại.
+2. Checkout khóa cart, kiểm tra lại toàn bộ inventory và tính giá hiện hành.
+3. Voucher chỉ được dùng nếu thuộc user, chưa dùng và chưa hết hạn.
+4. Order `PENDING` và các order item được lưu trong cùng transaction.
+5. Inventory được khóa bằng pessimistic write lock và **trừ ngay khi tạo order**.
+6. Checkout thành công đánh dấu voucher đã dùng, xóa cart item và phát realtime event.
+7. Khi đơn được hủy hợp lệ, tồn kho được cộng trả.
 
-## 7.1. Chức năng Public - Khách chưa đăng nhập
+Hệ thống không có mô hình giữ hàng (`stock reservation`) riêng. Checkout từ giỏ và buy-now đều hỗ trợ optional idempotency key theo từng user.
 
-Khách chưa đăng nhập là người truy cập website nhưng chưa có tài khoản hoặc chưa đăng nhập. Nhóm người dùng này có thể xem dữ liệu công khai và thực hiện các thao tác không yêu cầu xác thực.
+### 6.3 Order lifecycle
 
-Các chức năng chính:
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: Tạo order
+    PENDING --> CONFIRMED: Payment thành công hoặc admin xác nhận
+    PENDING --> CANCELLED: User/Admin hủy
+    CONFIRMED --> SHIPPING: Admin cập nhật
+    CONFIRMED --> CANCELLED: User/Admin hủy
+    SHIPPING --> COMPLETED: Admin cập nhật
+```
 
-* Đăng ký tài khoản mới.
-* Đăng nhập vào hệ thống.
-* Refresh token nếu hệ thống hỗ trợ.
-* Gửi yêu cầu quên mật khẩu.
-* Đặt lại mật khẩu.
-* Xem danh sách sách đang được bán.
-* Xem chi tiết một cuốn sách.
-* Tìm kiếm sách theo từ khóa.
-* Xem danh sách danh mục sách.
-* Xem chi tiết danh mục sách.
-* Tìm kiếm danh mục.
-* Xem danh sách tác giả.
-* Xem chi tiết tác giả.
-* Tìm kiếm tác giả.
-* Xem đánh giá của một cuốn sách.
-* Xem thống kê đánh giá của một cuốn sách.
+Order ở trạng thái `SHIPPING` hoặc `COMPLETED` không thể hủy. Order `COMPLETED` không thể chuyển ngược trạng thái.
 
-Một số API liên quan:
+### 6.4 SePay payment
+
+1. User khởi tạo payment cho order thuộc chính mình; order phải là `PENDING` và amount phải khớp tổng tiền.
+2. Backend tạo transaction code `SEP{orderId}`, URL QR và payment record trạng thái `PENDING`.
+3. Webhook được đối chiếu bằng transaction code, amount và `Authorization` API key header.
+4. Callback hợp lệ chuyển payment sang `SUCCESS`; order `PENDING` tương ứng chuyển sang `CONFIRMED`.
+5. Backend phát realtime event và enqueue email xác nhận thanh toán sau commit.
+
+Integration hiện tại tạo QR và xử lý webhook. Không có refund API hoặc remote payment-status API.
+
+## 7. Authentication & Authorization
+
+- Backend sử dụng stateless access JWT; không tạo HTTP session.
+- JWT subject là email đăng nhập và chứa claims `userId`, `roles`.
+- Client gửi token qua `Authorization: Bearer <token>`.
+- Hai authority được sử dụng là `ROLE_USER` và `ROLE_ADMIN`.
+- CORS origins được đọc từ application configuration.
+- Public access gồm authentication endpoints, catalog category/author/book và SePay webhook.
+- Cart, order, wishlist, voucher, review, inventory-user và payment status yêu cầu `ROLE_USER` hoặc `ROLE_ADMIN`.
+- Các controller quản trị yêu cầu `ROLE_ADMIN`.
+- Payment SSE nhận JWT qua query parameter, tự xác minh token và quyền sở hữu order trước khi subscribe.
+
+JWT hiện chỉ là access token. Source không có refresh token, logout endpoint, token blacklist hoặc server-side revocation.
+
+## 8. API Overview
+
+Repository chưa áp dụng một global API prefix duy nhất. Các route hiện được chia theo controller convention:
+
+| Nhóm | Route tiêu biểu | Access |
+| --- | --- | --- |
+| Authentication | `POST /tai-khoan/dang-ky`, `POST /tai-khoan/dang-nhap` | Public |
+| Public catalog | `GET /user/books`, `GET /api/categories`, `GET /api/authors` | Public |
+| User commerce | `/user/cart/**`, `/user/orders/**`, `/user/vouchers/**` | USER, ADMIN |
+| Payment | `/api/payment/**` | Mixed: authenticated status/initiate, public webhook, token-validated SSE |
+| Administration | `/admin/**`, `/api/admin/**`, `/user_for_admin/**` | ADMIN |
+
+Response thành công và phần lớn application error dùng `ApiResponse`:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Thành công",
+  "data": {},
+  "timestamp": "..."
+}
+```
+
+Response phân trang đặt danh sách trong `content` và metadata trong `meta`. Bean Validation xử lý constraint của request DTO; `GlobalExceptionHandler` ánh xạ business/validation/not-found/system exception sang HTTP 400/404/500.
+
+Lỗi 401/403 phát sinh trong Spring Security hiện dùng `ErrorResponse` với các trường `code`, `message`, `status`, `timestamp` và `path`; schema này khác `ApiResponse`.
+
+## 9. Documentation
+
+### Tài liệu hiện có
+
+| Tài liệu | Nội dung |
+| --- | --- |
+| [Backend README](Back_end/README.md) | Tài liệu backend cũ; cần tiếp tục đối chiếu với source trước khi sử dụng |
+| [Database schema](Back_end/schema.sql) | DDL MySQL hiện có |
+| [Sample data](Back_end/data.sql) | Dữ liệu mẫu/import thủ công |
+| [Frontend README](front_end/README.md) | Ghi chú cho frontend |
+| [Infrastructure overview](infrastructure/INFRASTRUCTURE_OVERVIEW.md) | Vai trò các thành phần infrastructure |
+| [Infrastructure setup guide](infrastructure/setup_guide/INSTALLATION.md) | Hướng dẫn provisioning và deployment riêng |
+| [Ansible README](infrastructure/ansible/README.md) | Ghi chú AWS/k3s bằng Ansible |
+
+README gốc không chứa hướng dẫn production chi tiết; các thao tác Docker, Terraform, Ansible, Kubernetes, HTTPS, monitoring và CI/CD được giữ trong tài liệu infrastructure.
+
+### Documentation structure đề xuất
+
+Cấu trúc dưới đây là kế hoạch cho bước tài liệu hóa tiếp theo; **các file chưa được tạo**.
 
 ```text
-POST /tai-khoan/dang-ky
-POST /tai-khoan/dang-nhap
-POST /tai-khoan/refresh-token
-POST /tai-khoan/quen-mat-khau
-POST /tai-khoan/dat-lai-mat-khau
-
-GET /user/books
-GET /user/books/{id}
-
-GET /api/categories
-GET /api/categories/{id}
-GET /api/categories/search
-
-GET /api/authors
-GET /api/authors/{id}
-GET /api/authors/search
-
-GET /user/reviews/book/{bookId}
-GET /user/reviews/book/{bookId}/stats
+docs/
+├── architecture/
+│   ├── system-architecture.md
+│   └── module-dependencies.md
+├── workflows/
+│   ├── authentication.md
+│   ├── cart-order-inventory.md
+│   └── payment-sepay.md
+├── database/
+│   ├── data-model.md
+│   └── schema-management.md
+├── api/
+│   ├── api-conventions.md
+│   └── endpoint-catalog.md
+├── security/
+│   ├── authentication-authorization.md
+│   └── external-callback-security.md
+└── testing/
+    └── testing-strategy.md
 ```
 
----
-
-## 7.2. Chức năng USER - Người dùng đã đăng nhập
-
-USER là người dùng đã có tài khoản và đăng nhập vào hệ thống. Người dùng có thể mua sách, quản lý thông tin cá nhân, giỏ hàng, đơn hàng, thanh toán, wishlist, review và voucher.
-
----
-
-### 7.2.1. Quản lý tài khoản cá nhân
-
-Người dùng có thể quản lý thông tin cá nhân của mình.
-
-Chức năng chính:
-
-* Xem thông tin tài khoản cá nhân.
-* Cập nhật hồ sơ cá nhân.
-* Đổi mật khẩu.
-* Đăng xuất khỏi hệ thống.
-
-API liên quan:
-
-```text
-GET /user/me
-PUT /user/update-profile
-POST /user/change-password
-POST /tai-khoan/dang-xuat
-```
-
----
-
-### 7.2.2. Xem và tìm kiếm sách
-
-Người dùng có thể duyệt danh sách sách và xem thông tin chi tiết của từng cuốn sách.
-
-Chức năng chính:
-
-* Xem danh sách sách.
-* Xem chi tiết sách.
-* Tìm kiếm sách theo tên hoặc từ khóa.
-* Lọc sách theo danh mục, tác giả hoặc thông tin liên quan.
-* Xem danh sách sách có phân trang.
-
-API liên quan:
-
-```text
-GET /user/books
-GET /user/books/{id}
-```
-
----
-
-### 7.2.3. Giỏ hàng
-
-Người dùng có thể thêm sách vào giỏ hàng trước khi đặt hàng.
-
-Chức năng chính:
-
-* Xem giỏ hàng hiện tại.
-* Thêm sách vào giỏ hàng.
-* Cập nhật số lượng sách trong giỏ hàng.
-* Xóa một sách khỏi giỏ hàng.
-* Xóa toàn bộ giỏ hàng.
-* Tính tổng tiền trong giỏ hàng.
-* Kiểm tra số lượng tồn kho trước khi đặt hàng.
-
-API liên quan:
-
-```text
-GET /user/cart
-POST /user/cart/items
-PUT /user/cart/items/{itemId}
-DELETE /user/cart/items/{itemId}
-DELETE /user/cart/clear
-```
-
----
-
-### 7.2.4. Đặt hàng
-
-Người dùng có thể tạo đơn hàng từ giỏ hàng và theo dõi trạng thái xử lý đơn hàng.
-
-Chức năng chính:
-
-* Tạo đơn hàng từ giỏ hàng.
-* Xem danh sách đơn hàng của bản thân.
-* Xem chi tiết một đơn hàng.
-* Hủy đơn hàng nếu đơn hàng còn ở trạng thái cho phép hủy.
-* Theo dõi trạng thái xử lý đơn hàng.
-
-API liên quan:
-
-```text
-POST /user/orders
-GET /user/orders
-GET /user/orders/{id}
-PUT /user/orders/{id}/cancel
-```
-
----
-
-### 7.2.5. Thanh toán
-
-Người dùng có thể thanh toán đơn hàng thông qua cổng thanh toán được tích hợp.
-
-Chức năng chính:
-
-* Khởi tạo thanh toán cho đơn hàng.
-* Nhận thông tin thanh toán hoặc mã QR thanh toán.
-* Kiểm tra trạng thái thanh toán.
-* Nhận kết quả thanh toán sau khi hệ thống xử lý callback/webhook.
-
-API liên quan:
-
-```text
-POST /api/payment/initiate
-GET /api/payment/status/{paymentId}
-```
-
----
-
-### 7.2.6. Wishlist - Danh sách yêu thích
-
-Người dùng có thể lưu lại các cuốn sách yêu thích để xem hoặc mua sau.
-
-Chức năng chính:
-
-* Thêm sách vào danh sách yêu thích.
-* Xóa sách khỏi danh sách yêu thích.
-* Kiểm tra một cuốn sách đã có trong wishlist hay chưa.
-* Xem toàn bộ danh sách yêu thích.
-* Đếm số lượng sách trong wishlist.
-* Xóa toàn bộ wishlist.
-
-API liên quan:
-
-```text
-POST /user/wishlist/books/{bookId}
-DELETE /user/wishlist/books/{bookId}
-GET /user/wishlist/books/{bookId}/check
-GET /user/wishlist
-GET /user/wishlist/count
-DELETE /user/wishlist/clear
-```
-
----
-
-### 7.2.7. Review - Đánh giá sách
-
-Người dùng có thể đánh giá sách, cập nhật đánh giá của bản thân và xem đánh giá của các người dùng khác.
-
-Chức năng chính:
-
-* Tạo đánh giá cho sách.
-* Cập nhật đánh giá của bản thân.
-* Xóa đánh giá của bản thân.
-* Xem đánh giá của mình trên một cuốn sách.
-* Xem danh sách đánh giá của một cuốn sách.
-* Xem thống kê đánh giá của một cuốn sách.
-
-API liên quan:
-
-```text
-POST /user/reviews
-PUT /user/reviews/{reviewId}
-DELETE /user/reviews/{reviewId}
-GET /user/reviews/book/{bookId}/my-review
-GET /user/reviews/book/{bookId}
-GET /user/reviews/book/{bookId}/stats
-```
-
----
-
-### 7.2.8. Voucher - Mã giảm giá
-
-Người dùng có thể xem và sử dụng mã giảm giá còn hiệu lực trong hệ thống.
-
-Chức năng chính:
-
-* Xem danh sách voucher khả dụng.
-* Tìm voucher theo mã.
-* Áp dụng voucher khi đặt hàng nếu thỏa điều kiện.
-
-API liên quan:
-
-```text
-GET /user/vouchers
-GET /user/vouchers/code/{code}
-```
-
----
-
-### 7.2.9. Kiểm tra tồn kho
-
-Người dùng có thể xem số lượng tồn kho của một cuốn sách trước khi thêm vào giỏ hàng hoặc đặt hàng.
-
-Chức năng chính:
-
-* Xem số lượng tồn kho của một cuốn sách.
-* Kiểm tra sách còn hàng hoặc hết hàng.
-
-API liên quan:
-
-```text
-GET /user/inventory/book/{bookId}
-```
-
----
-
-## 7.3. Chức năng ADMIN - Quản trị viên
-
-ADMIN là người quản trị hệ thống, có quyền quản lý dữ liệu vận hành của website bán sách.
-
----
-
-### 7.3.1. Quản lý người dùng
-
-Admin có thể quản lý tài khoản người dùng trong hệ thống.
-
-Chức năng chính:
-
-* Xem danh sách người dùng.
-* Xem chi tiết một người dùng.
-* Cập nhật thông tin người dùng.
-* Xóa người dùng khỏi hệ thống.
-* Quản lý thông tin liên quan đến tài khoản người dùng.
-
-API liên quan:
-
-```text
-GET /user_for_admin/all
-GET /user_for_admin/user/{id}
-PUT /user_for_admin/user/{id}
-DELETE /user_for_admin/user/delete/{id}
-```
-
----
-
-### 7.3.2. Quản lý sách
-
-Admin có thể quản lý toàn bộ dữ liệu sách được bán trên website.
-
-Chức năng chính:
-
-* Xem danh sách sách trong trang quản trị.
-* Xem chi tiết một cuốn sách.
-* Thêm sách mới.
-* Cập nhật thông tin sách.
-* Xóa sách.
-* Upload ảnh sách.
-* Quản lý giá bán, số lượng, danh mục, tác giả và mô tả sách.
-
-API liên quan:
-
-```text
-GET /admin/books
-GET /admin/books/{id}
-POST /admin/books/create-book
-PUT /admin/books/update-book/{id}
-DELETE /admin/books/delete-book/{id}
-```
-
----
-
-### 7.3.3. Quản lý danh mục sách
-
-Admin có thể quản lý danh mục dùng để phân loại sách.
-
-Chức năng chính:
-
-* Xem danh sách danh mục.
-* Xem chi tiết danh mục.
-* Thêm danh mục mới.
-* Cập nhật danh mục.
-* Xóa danh mục.
-* Kích hoạt danh mục.
-* Vô hiệu hóa danh mục.
-
-API liên quan:
-
-```text
-GET /api/admin/categories
-POST /api/admin/categories
-PUT /api/admin/categories/{id}
-DELETE /api/admin/categories/{id}
-PUT /api/admin/categories/{id}/activate
-PUT /api/admin/categories/{id}/deactivate
-```
-
----
-
-### 7.3.4. Quản lý tác giả
-
-Admin có thể quản lý thông tin tác giả của các đầu sách.
-
-Chức năng chính:
-
-* Xem danh sách tác giả.
-* Xem chi tiết tác giả.
-* Thêm tác giả mới.
-* Cập nhật thông tin tác giả.
-* Xóa tác giả.
-
-API liên quan:
-
-```text
-GET /admin/authors
-POST /admin/authors
-PUT /admin/authors/{id}
-DELETE /admin/authors/{id}
-```
-
----
-
-### 7.3.5. Quản lý đơn hàng
-
-Admin có thể theo dõi và xử lý đơn hàng của toàn bộ người dùng trong hệ thống.
-
-Chức năng chính:
-
-* Xem danh sách tất cả đơn hàng.
-* Xem chi tiết đơn hàng.
-* Cập nhật trạng thái đơn hàng.
-* Hủy đơn hàng.
-* Theo dõi quá trình xử lý đơn hàng.
-
-API liên quan:
-
-```text
-GET /admin/orders
-GET /admin/orders/{id}
-PUT /admin/orders/{id}/status
-PUT /admin/orders/{id}/cancel
-```
-
----
-
-### 7.3.6. Quản lý thanh toán
-
-Admin có thể theo dõi trạng thái thanh toán và xử lý các tình huống liên quan đến giao dịch.
-
-Chức năng chính:
-
-* Kiểm tra trạng thái thanh toán.
-* Theo dõi kết quả thanh toán từ SePay.
-* Xử lý webhook thanh toán.
-* Hoàn tiền nếu hệ thống hoặc gateway hỗ trợ.
-* Kiểm tra các giao dịch lỗi hoặc giao dịch chưa hoàn tất.
-
-API liên quan:
-
-```text
-POST /api/payment/sepay-webhook
-GET /api/payment/status/{paymentId}
-POST /api/payment/refund/{paymentId}
-```
-
----
-
-### 7.3.7. Quản lý kho hàng
-
-Admin có thể quản lý số lượng tồn kho của từng cuốn sách.
-
-Chức năng chính:
-
-* Xem danh sách tồn kho.
-* Xem tồn kho theo từng sách.
-* Set số lượng tồn kho.
-* Điều chỉnh tăng hoặc giảm tồn kho.
-* Đối soát lại số lượng tồn kho.
-* Kiểm soát tình trạng còn hàng hoặc hết hàng.
-
-API liên quan:
-
-```text
-GET /admin/inventory
-PUT /admin/inventory/{id}/set/{quantity}
-POST /admin/inventory/{id}/adjust/{delta}
-PUT /admin/inventory/{id}/reconcile/{quantity}
-```
-
----
-
-### 7.3.8. Quản lý đánh giá
-
-Admin có thể theo dõi và xử lý các đánh giá của người dùng.
-
-Chức năng chính:
-
-* Xem danh sách đánh giá theo người dùng.
-* Xem chi tiết đánh giá.
-* Xóa đánh giá không phù hợp.
-* Quản lý nội dung đánh giá trên hệ thống.
-
-API liên quan:
-
-```text
-GET /admin/reviews/user/{userId}
-GET /admin/reviews/{reviewId}
-DELETE /admin/reviews/{reviewId}
-```
-
----
-
-### 7.3.9. Quản lý voucher
-
-Admin có thể tạo và quản lý các mã giảm giá trong hệ thống.
-
-Chức năng chính:
-
-* Xem danh sách voucher.
-* Xem chi tiết voucher.
-* Tạo voucher mới.
-* Cập nhật voucher.
-* Xóa voucher.
-* Xem danh sách voucher đã hết hạn.
-* Quản lý thời gian áp dụng và điều kiện sử dụng voucher.
-
-API liên quan:
-
-```text
-GET /admin/vouchers
-GET /admin/vouchers/{voucherId}
-GET /admin/vouchers/expired
-POST /admin/vouchers
-PUT /admin/vouchers/{voucherId}
-DELETE /admin/vouchers/{voucherId}
-```
-
----
-
-## 7.4. Tóm tắt phân quyền chức năng
-
-| Nhóm chức năng      | Public               | USER                     | ADMIN           |
-| ------------------- | -------------------- | ------------------------ | --------------- |
-| Đăng ký / Đăng nhập | Có                   | Có                       | Có              |
-| Xem danh sách sách  | Có                   | Có                       | Có              |
-| Xem chi tiết sách   | Có                   | Có                       | Có              |
-| Tìm kiếm sách       | Có                   | Có                       | Có              |
-| Quản lý giỏ hàng    | Không                | Có                       | Không           |
-| Đặt hàng            | Không                | Có                       | Không           |
-| Thanh toán          | Không                | Có                       | Theo dõi/Xử lý  |
-| Wishlist            | Không                | Có                       | Không           |
-| Review sách         | Xem                  | Tạo/Sửa/Xóa của bản thân | Quản lý/Xóa     |
-| Quản lý sách        | Không                | Không                    | Có              |
-| Quản lý danh mục    | Không                | Không                    | Có              |
-| Quản lý tác giả     | Không                | Không                    | Có              |
-| Quản lý người dùng  | Không                | Không                    | Có              |
-| Quản lý đơn hàng    | Không                | Xem/Hủy đơn của bản thân | Quản lý toàn bộ |
-| Quản lý tồn kho     | Xem cơ bản           | Xem tồn kho sách         | Có              |
-| Quản lý voucher     | Xem voucher khả dụng | Xem/Sử dụng              | Có              |
-
----
-
-## 8. Response và xử lý lỗi
-
-Dự án có lớp response dùng chung để chuẩn hóa dữ liệu trả về cho frontend.
-
-Một số thành phần response:
-
-```text
-ApiResponse
-PageResponse
-PaginationMeta
-```
-
-Dự án cũng có hệ thống exception riêng:
-
-```text
-BusinessException
-ResourceNotFoundException
-UnauthorizedException
-ForbiddenException
-ValidationException
-JwtAuthenticationException
-GlobalExceptionHandler
-```
-
-Mục tiêu của phần xử lý lỗi là:
-
-* Trả response thống nhất cho frontend.
-* Không trả lỗi hệ thống trực tiếp cho client.
-* Không làm lộ stack trace.
-* Phân biệt rõ lỗi validate, lỗi không tìm thấy dữ liệu, lỗi chưa đăng nhập và lỗi không đủ quyền.
-* Giúp frontend dễ hiển thị thông báo lỗi cho người dùng.
-
----
-
-## 9. Tích hợp dịch vụ ngoài
-
-## 9.1. Cloudinary
-
-Cloudinary được sử dụng để upload và lưu trữ hình ảnh sách.
-
-Các cấu hình cần có:
-
-```properties
-cloudinary.cloud-name=
-cloudinary.api-key=
-cloudinary.api-secret=
-```
-
----
-
-## 9.2. SePay
-
-SePay được sử dụng để hỗ trợ thanh toán đơn hàng.
-
-Các cấu hình cần có:
-
-```properties
-sepay.bank-code=
-sepay.account-number=
-sepay.account-name=
-sepay.webhook-api-key=
-sepay.return-url=
-sepay.api-key=
-sepay.status-api-url=
-sepay.refund-api-url=
-```
-
----
-
-## 9.3. Email
-
-Dự án có cấu hình Spring Mail để phục vụ các chức năng như quên mật khẩu, gửi thông báo hoặc xác nhận nếu được triển khai.
-
----
-
-## 9.4. WebSocket
-
-Dự án có cấu hình WebSocket để hỗ trợ realtime notification, ví dụ như thông báo trạng thái đơn hàng hoặc thông báo hệ thống.
-
----
-
-## 10. Cấu hình môi trường
-
-File cấu hình chính:
-
-```text
-src/main/resources/application.properties
-```
-
-Một số biến môi trường quan trọng:
-
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/DUAN_WEBBANSACH?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh
-spring.datasource.username=root
-spring.datasource.password=123456
-
-app.jwt.secret=your-secret-key-change-this-in-production
-app.jwt.expiration=1800000
-app.jwt.refresh-token-secret=your-refresh-token-secret-change-this-in-production
-app.jwt.refresh-token-expiration=2592000000
-
-cloudinary.cloud-name=
-cloudinary.api-key=
-cloudinary.api-secret=
-
-sepay.bank-code=MB
-sepay.account-number=
-sepay.account-name=
-sepay.webhook-api-key=
-sepay.return-url=http://localhost:3000/payment-result
-```
-
-Lưu ý quan trọng:
-
-```text
-Không nên commit secret thật, API key, database password hoặc JWT secret lên GitHub.
-```
-
----
-
-## 11. Cách chạy dự án local
-
-## 11.1. Yêu cầu môi trường
-
-Cần cài đặt:
-
-```text
-Java 17
-Maven
-MySQL
-```
-
----
-
-## 11.2. Tạo database
-
-Tạo database trong MySQL:
-
-```sql
-CREATE DATABASE DUAN_WEBBANSACH;
-```
-
-Sau đó kiểm tra lại cấu hình database trong:
-
-```text
-src/main/resources/application.properties
-```
-
----
-
-## 11.3. Chạy bằng Maven
-
-```bash
-mvn clean install
-mvn spring-boot:run
-```
-
-Hoặc nếu dùng Maven Wrapper trên Windows:
-
-```bat
-mvnw.cmd clean install
-mvnw.cmd spring-boot:run
-```
-
-Backend mặc định chạy ở:
-
-```text
-http://localhost:8080
-```
-
----
-
-## 12. Chạy bằng Docker
-
-Dự án có sẵn:
-
-```text
-infrastructure/docker/docker_local/docker-compose.yml
-infrastructure/docker/docker_prod/docker-compose.prod.yml
-```
-
-Build file JAR trước:
-
-```bash
-mvn clean package
-```
-
-Sau đó chạy Docker Compose:
-
-```bash
-docker compose \
-  --env-file infrastructure/docker/docker_local/.env.local \
-  -f infrastructure/docker/docker_local/docker-compose.yml \
-  up --build
-```
-
-Docker Compose sẽ khởi tạo:
-
-```text
-MySQL container
-Spring Boot app container
-```
-
----
-
-## 13. Testing
-
-Dự án cần được kiểm thử backend trước khi deploy để đảm bảo các chức năng hoạt động ổn định, đúng nghiệp vụ và không phát sinh lỗi nghiêm trọng.
-
-Các loại test nên bổ sung:
-
-```text
-Unit Test
-Service Test
-Repository Test
-Controller Test
-Integration Test
-Security Test
-API Smoke Test
-Regression Test
-```
-
-Công cụ testing phù hợp:
-
-| Loại test        | Công cụ                          |
-| ---------------- | -------------------------------- |
-| Unit Test        | JUnit 5, Mockito                 |
-| Controller Test  | MockMvc                          |
-| Repository Test  | DataJpaTest                      |
-| Integration Test | Spring Boot Test, Testcontainers |
-| API Test         | Postman, Newman, REST Assured    |
-| Security Test    | Spring Security Test             |
-| Coverage         | JaCoCo                           |
-
-Các module nên ưu tiên test trước khi deploy:
-
-```text
-Authentication
-Authorization / Role
-Book
-Cart
-Order
-Payment
-Admin
-Validation
-Database Transaction
-```
-
-Một số test case quan trọng:
-
-```text
-Đăng ký tài khoản thành công
-Đăng ký trùng email
-Đăng nhập đúng tài khoản
-Đăng nhập sai mật khẩu
-Gọi API cần token nhưng không gửi token
-USER truy cập API ADMIN
-Admin thêm sách
-Admin cập nhật sách
-Thêm sách vào giỏ hàng
-Cập nhật số lượng giỏ hàng
-Không cho thêm vượt tồn kho
-Không cho update số lượng vượt tồn kho
-Tạo đơn hàng thành công
-Không cho tạo đơn khi giỏ hàng rỗng
-Thanh toán thành công
-Thanh toán thất bại
-Webhook thanh toán hợp lệ
-Không để lộ stack trace khi API lỗi
-```
-
-Chạy test:
-
-```bash
-mvn test
-```
-
----
-
-## 14. Các API chính theo nhóm
-
-| Module    | API chính                                        |
-| --------- | ------------------------------------------------ |
-| Auth      | `/tai-khoan/**`                                  |
-| User      | `/user/**`, `/user_for_admin/**`                 |
-| Book      | `/user/books/**`, `/admin/books/**`              |
-| Category  | `/api/categories/**`, `/api/admin/categories/**` |
-| Author    | `/api/authors/**`, `/admin/authors/**`           |
-| Cart      | `/user/cart/**`                                  |
-| Order     | `/user/orders/**`, `/admin/orders/**`            |
-| Payment   | `/api/payment/**`                                |
-| Inventory | `/user/inventory/**`, `/admin/inventory/**`      |
-| Review    | `/user/reviews/**`, `/admin/reviews/**`          |
-| Voucher   | `/user/vouchers/**`, `/admin/vouchers/**`        |
-| Wishlist  | `/user/wishlist/**`                              |
-
----
-
-## 15. Các vấn đề cần kiểm tra trước deploy
-
-Trước khi deploy, cần kiểm tra kỹ các vấn đề sau:
-
-```text
-Không để password database mặc định trong application.properties
-Không để JWT secret mặc định
-Không commit API key Cloudinary/SePay
-Bật CORS đúng domain frontend
-Kiểm tra phân quyền USER/ADMIN
-Kiểm tra API cần token phải trả 401 nếu thiếu token
-Kiểm tra USER không truy cập được API ADMIN
-Kiểm tra payment webhook
-Kiểm tra payment thành công/thất bại
-Kiểm tra transaction khi tạo đơn hàng
-Kiểm tra không cho đặt hàng vượt tồn kho
-Kiểm tra không cho cập nhật giỏ hàng vượt tồn kho
-Kiểm tra không trả stack trace ra client
-Chạy đầy đủ test trước deploy
-```
-
-Một số rủi ro kỹ thuật cần đặc biệt chú ý:
-
-```text
-Role trong Spring Security cần thống nhất giữa hasRole và hasAuthority.
-JWT subject cần thống nhất là username, email hoặc userId.
-Payment thành công cần đồng bộ trạng thái với Order.
-Cart update quantity cần kiểm tra tồn kho.
-Test environment cần cấu hình riêng để tránh lỗi Cloudinary, SePay hoặc database thật.
-```
-
----
-
-## 16. Hướng phát triển tiếp theo
-
-Dự án có thể mở rộng thêm các chức năng sau:
-
-* Dashboard thống kê doanh thu cho admin.
-* Thống kê sách bán chạy.
-* Quản lý vận chuyển đơn hàng.
-* Gửi email xác nhận đơn hàng.
-* Gửi thông báo realtime khi trạng thái đơn hàng thay đổi.
-* Tích hợp Swagger/OpenAPI để tài liệu hóa API.
-* Bổ sung automation testing cho backend.
-* Tích hợp CI/CD để chạy test tự động trước khi deploy.
-* Cải thiện logging và monitoring production.
-* Phân quyền chi tiết hơn cho admin, staff hoặc manager.
-
----
-
-## 17. Tóm tắt
-
-Dự án **Web Bán Sách Backend** là một hệ thống REST API tương đối đầy đủ cho website thương mại điện tử bán sách. Hệ thống hỗ trợ các nghiệp vụ chính như quản lý tài khoản, xác thực JWT, phân quyền USER/ADMIN, quản lý sách, danh mục, tác giả, giỏ hàng, đơn hàng, thanh toán, tồn kho, đánh giá, voucher và wishlist.
-
-Dự án phù hợp để phát triển thành một hệ thống bán sách hoàn chỉnh với frontend riêng. Trước khi deploy, cần tập trung kiểm thử kỹ các phần quan trọng như authentication, authorization, cart, order, payment, transaction, validation và security.
+| Tài liệu đề xuất | Mục đích và phạm vi | Source liên quan | Ưu tiên | Không lặp lại README |
+| --- | --- | --- | --- | --- |
+| `architecture/system-architecture.md` | Component view, runtime interaction, external dependencies và deployment-neutral architecture | `Back_end/.../module`, `common`, `infrastructure`, `security`; `front_end/src`; `infrastructure/` | P0 | Không lặp overview, stack table hoặc cây repository |
+| `architecture/module-dependencies.md` | Dependency map giữa các backend domain, shared components và infrastructure ports | Service constructors/imports trong `module/**`, `PaymentGateway`, `FileUploadService`, `EmailPublisher` | P1 | Không mô tả lại từng feature cho người dùng cuối |
+| `workflows/authentication.md` | Registration, verification, login, reset password; TTL, retry và transaction behavior | `AuthController`, `AuthServiceImpl`, `AccountVerificationServiceImpl`, JWT classes | P0 | Không lặp bảng role/access tổng quan |
+| `workflows/cart-order-inventory.md` | Cart validation, pricing, checkout/buy-now, idempotency, voucher, locking, deduction và restoration | `cart`, `order`, `inventory`, `pricing`, `voucher` modules | P0 | Không liệt kê toàn bộ endpoint hoặc DTO field |
+| `workflows/payment-sepay.md` | Payment state, QR creation, webhook verification, order sync, SSE/WebSocket và email | `payment` module, `SePayGateway`, realtime và email infrastructure | P0 | Không chứa credential/setup production |
+| `database/data-model.md` | Entity relationship, ownership, unique constraints, soft delete và important indexes | Entity/repository classes, `schema.sql` | P0 | Không sao chép toàn bộ DDL |
+| `database/schema-management.md` | Xác định nguồn schema, Hibernate `ddl-auto`, seed/import flow và migration policy sau khi được quyết định | `application.properties`, `schema.sql`, `data.sql`, manifests/Compose config | P0 | Không lặp hướng dẫn deploy/import chi tiết |
+| `api/api-conventions.md` | Route prefixes, request validation, response/error schema, pagination và naming conventions thực tế | Controllers, DTOs, `ApiResponse`, `PageResponse`, exception/security handlers | P0 | Không tạo endpoint reference dài |
+| `api/endpoint-catalog.md` | Catalog machine-maintainable theo method/path/access/request/response và implementation status | Tất cả controller, `SecurityConfig`, `Endpoints` | P1 | Không giải thích architecture hoặc business workflow |
+| `security/authentication-authorization.md` | JWT claims/lifetime, filter chain, CORS, public/user/admin rule và method security | `security/**`, user/auth services | P0 | Không lặp flow đăng ký chi tiết |
+| `security/external-callback-security.md` | Trust boundary cho SePay webhook, SSE query token, WebSocket exposure và email/message broker | `PaymentController`, `SePayGateway`, `SecurityConfig`, WebSocket/RabbitMQ config | P1 | Không chứa secret, key hoặc giá trị môi trường thật |
+| `testing/testing-strategy.md` | Test pyramid hiện có, test fixtures/profile, coverage gaps và cách phân loại unit/controller/integration | `Back_end/src/test`, `front_end/src/tests`, test configuration | P1 | Không lặp lệnh setup/deployment |
+
+## 10. Project Status & Known Limitations
+
+### Đã xác minh trong source
+
+- Backend có 14 domain package và sử dụng Spring MVC/JPA theo layered architecture.
+- Frontend có storefront, authentication pages và các màn hình quản trị theo feature.
+- Backend có unit, controller và integration tests; test profile dùng H2 và tắt external Redis/RabbitMQ listener.
+- Redis caching, RabbitMQ email, WebSocket, SSE, Actuator và Prometheus đã có implementation/configuration.
+- Các transaction quan trọng của cart/order/inventory/payment sử dụng transaction boundary và pessimistic locking tại các điểm cập nhật đồng thời.
+
+### Hạn chế đã biết
+
+- Không có refresh token, server-side logout/revocation hoặc payment refund.
+- API route prefix chưa thống nhất giữa `/tai-khoan`, `/user`, `/admin`, `/api` và `/user_for_admin`.
+- Application errors và Spring Security errors chưa dùng cùng response schema.
+- Payment status dùng chuỗi thay vì enum; trạng thái runtime cần tuân theo `PENDING`, `SUCCESS`, `FAILED`, `CANCELLED`.
+- `schema.sql` chưa khai báo hai bảng `account_verification_codes` và `password_reset_tokens` đang có JPA entity; hiệu lực schema phụ thuộc cách khởi tạo database của từng môi trường.
+- `Back_end/README.md` là tài liệu legacy và có một số cấu trúc/class không còn khớp source hiện tại.
+
+### UNVERIFIED
+
+- Test suite có pass hoàn toàn trên máy mới hoặc CI hay không.
+- Cloudinary upload, SMTP delivery, RabbitMQ DLQ, Redis cache và SePay webhook trong môi trường tích hợp thực.
+- WebSocket/SSE hoạt động end-to-end qua reverse proxy hoặc Kubernetes ingress.
+- Infrastructure manifests và GitHub Actions có khớp với môi trường production đang vận hành hay không.
+- Database đang được khởi tạo bằng Hibernate, `schema.sql` hay quy trình import riêng.
