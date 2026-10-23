@@ -29,7 +29,6 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/user/reviews")
-@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 public class ReviewUserController {
 
     @Autowired
@@ -40,6 +39,7 @@ public class ReviewUserController {
      * POST /user/reviews
      */
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<ReviewResponse>> createReview(
             Authentication auth,
             @Valid @RequestBody CreateReviewRequest request) {
@@ -53,6 +53,7 @@ public class ReviewUserController {
      * PUT /user/reviews/{reviewId}
      */
     @PutMapping("/{reviewId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<ReviewResponse>> updateReview(
             Authentication auth,
             @PathVariable Long reviewId,
@@ -67,6 +68,7 @@ public class ReviewUserController {
      * DELETE /user/reviews/{reviewId}
      */
     @DeleteMapping("/{reviewId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<?>> deleteReview(
             Authentication auth,
             @PathVariable Long reviewId) {
@@ -80,6 +82,7 @@ public class ReviewUserController {
      * GET /user/reviews/book/{bookId}/my-review
      */
     @GetMapping("/book/{bookId}/my-review")
+    @PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<ReviewResponse>> getMyReview(
             Authentication auth,
             @PathVariable Long bookId) {
