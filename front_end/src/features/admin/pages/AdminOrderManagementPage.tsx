@@ -2,9 +2,10 @@
 
 import { AdminTable, AdminToolbar, formatVnd, Icon, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import { getAdminErrorMessage, orderStatusLabels } from '@/features/admin/adminPresentation';
 import orderAdminService from '@/features/admin/services/orderAdminService';
 
-const statuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'COMPLETED', 'CANCELLED'];
+const statuses = ['PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED', 'CANCELLED'];
 const pageSize = 10;
 
 const AdminOrderManagementPage = () => {
@@ -33,14 +34,24 @@ const AdminOrderManagementPage = () => {
   }, [page]);
 
   const updateStatus = async (id: number, status: string) => {
-    await orderAdminService.updateStatus(id, status);
-    fetchOrders();
+    try {
+      setError('');
+      await orderAdminService.updateStatus(id, status);
+      await fetchOrders();
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể cập nhật trạng thái đơn hàng.'));
+    }
   };
 
   const cancel = async (id: number) => {
-    if (!window.confirm('Hủy đơn hàng nay?')) return;
-    await orderAdminService.cancel(id);
-    fetchOrders();
+    if (!window.confirm('Hủy đơn hàng này?')) return;
+    try {
+      setError('');
+      await orderAdminService.cancel(id);
+      await fetchOrders();
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể hủy đơn hàng.'));
+    }
   };
 
   const visibleOrders = filter ? orders.filter((order) => String(order.id).includes(filter) || String(order.receiverName || order.fullName || '').toLowerCase().includes(filter.toLowerCase())) : orders;
@@ -73,7 +84,7 @@ const AdminOrderManagementPage = () => {
                 <td className="px-5 py-4">
                   <div className="flex flex-wrap gap-2">
                     <select value={order.status || 'PENDING'} onChange={(e) => updateStatus(order.id, e.target.value)} className="h-10 rounded-lg border-outline-variant bg-surface text-sm">
-                      {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                      {statuses.map((status) => <option key={status} value={status}>{orderStatusLabels[status] || status}</option>)}
                     </select>
                     <PrimaryButton onClick={() => cancel(order.id)} disabled={order.status === 'CANCELLED'}>Hủy</PrimaryButton>
                   </div>

@@ -2,6 +2,7 @@
 
 import { AdminTable, AdminToolbar, Field, Icon, IconButton, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import categoryAdminService from '@/features/admin/services/categoryAdminService';
 
 const emptyForm = { name: '', description: '', isActive: true };
@@ -41,8 +42,8 @@ const AdminCategoryManagementPage = () => {
       setForm(emptyForm);
       setEditingId(null);
       fetchCategories();
-    } catch {
-      setError('Không thể lưu danh mục.');
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể lưu danh mục.'));
     }
   };
 
@@ -53,14 +54,24 @@ const AdminCategoryManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa danh mục này?')) return;
-    await categoryAdminService.remove(id);
-    fetchCategories();
+    try {
+      setError('');
+      await categoryAdminService.remove(id);
+      await fetchCategories();
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể xóa danh mục. Danh mục có thể đang chứa sách.'));
+    }
   };
 
   const toggle = async (category: any) => {
-    if (category.isActive === false) await categoryAdminService.activate(category.id);
-    else await categoryAdminService.deactivate(category.id);
-    fetchCategories();
+    try {
+      setError('');
+      if (category.isActive === false) await categoryAdminService.activate(category.id);
+      else await categoryAdminService.deactivate(category.id);
+      await fetchCategories();
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể thay đổi trạng thái danh mục.'));
+    }
   };
 
   return (

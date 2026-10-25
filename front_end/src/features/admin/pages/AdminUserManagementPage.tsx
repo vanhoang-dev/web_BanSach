@@ -2,6 +2,7 @@
 
 import { AdminTable, AdminToolbar, Field, Icon, IconButton, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import { formatRoles, getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import userAdminService from '@/features/admin/services/userAdminService';
 
 const emptyForm = { fullName: '', email: '', phone: '', address: '', isActive: true };
@@ -42,8 +43,8 @@ const AdminUserManagementPage = () => {
       setEditingId(null);
       setForm(emptyForm);
       fetchUsers();
-    } catch {
-      setError('Không thể cập nhật người dùng.');
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể cập nhật người dùng.'));
     }
   };
 
@@ -60,8 +61,13 @@ const AdminUserManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa người dùng này?')) return;
-    await userAdminService.remove(id);
-    fetchUsers();
+    try {
+      setError('');
+      await userAdminService.remove(id);
+      await fetchUsers();
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể xóa người dùng.'));
+    }
   };
 
   const visibleUsers = filter ? users.filter((user) => `${user.fullName || ''} ${user.email || ''} ${user.username || ''}`.toLowerCase().includes(filter.toLowerCase())) : users;
@@ -99,7 +105,7 @@ const AdminUserManagementPage = () => {
                 <tr key={id} className="hover:bg-surface-container-low">
                   <td className="px-5 py-4 font-bold text-primary">{user.fullName || user.username || '-'}</td>
                   <td className="px-5 py-4 text-sm text-on-surface-variant">{user.email || '-'}</td>
-                  <td className="px-5 py-4 text-sm font-bold text-on-surface">{Array.from(user.roles || ['USER']).join(', ')}</td>
+                  <td className="px-5 py-4 text-sm font-bold text-on-surface">{formatRoles(user.roles)}</td>
                   <td className="px-5 py-4"><StatusBadge status={user.isActive === false ? 'INACTIVE' : 'ACTIVE'} /></td>
                   <td className="px-5 py-4"><div className="flex justify-end gap-2"><IconButton onClick={() => edit(user)}><Icon name="edit" /></IconButton><IconButton onClick={() => remove(id)}><Icon name="trash" /></IconButton></div></td>
                 </tr>
