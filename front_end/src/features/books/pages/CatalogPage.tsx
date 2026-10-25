@@ -134,7 +134,7 @@ const CatalogPage = () => {
               <select
                 value={sortOption}
                 onChange={(event) => updateQuery({ sort: event.target.value === 'newest' ? undefined : event.target.value, page: undefined })}
-                className="min-w-0 w-full rounded-md border-border-strong bg-surface px-3 py-2 text-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 sm:w-auto"
+                className="min-w-0 w-full rounded-md border-border-strong bg-surface py-2 pl-3 pr-10 text-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 sm:min-w-[190px] sm:w-auto"
               >
                 <option value="newest">Sắp xếp: Mới nhất</option>
                 <option value="price-asc">Giá tăng dần</option>

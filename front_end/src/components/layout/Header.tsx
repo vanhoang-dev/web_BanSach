@@ -118,10 +118,20 @@ const Header = () => {
         </form>
 
         <div className="flex items-center gap-1 sm:gap-1.5">
-          <Link to="/wishlist" aria-label="Danh sách yêu thích" className="hidden h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-surface-container hover:text-primary sm:inline-flex">
+          <Link
+            to={isAuthenticated ? '/wishlist' : '/login'}
+            state={!isAuthenticated ? { from: '/wishlist' } : undefined}
+            aria-label="Danh sách yêu thích"
+            className="hidden h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-surface-container hover:text-primary sm:inline-flex"
+          >
             <Icon name="heart" />
           </Link>
-          <Link to="/cart" aria-label={`Giỏ hàng, ${cartCount} sản phẩm`} className="relative inline-flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-surface-container hover:text-primary">
+          <Link
+            to={isAuthenticated ? '/cart' : '/login'}
+            state={!isAuthenticated ? { from: '/cart' } : undefined}
+            aria-label={`Giỏ hàng, ${cartCount} sản phẩm`}
+            className="relative inline-flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-surface-container hover:text-primary"
+          >
             <Icon name="cart" />
             {cartCount > 0 ? <span className="absolute right-0 top-0 min-w-5 rounded-full bg-secondary-container px-1 text-center text-[11px] font-bold leading-5 text-on-secondary-container">{cartCount > 99 ? '99+' : cartCount}</span> : null}
           </Link>
@@ -184,7 +194,14 @@ const Header = () => {
                 {item.label}
               </NavLink>
             ))}
-            <Link to="/wishlist" onClick={() => setOpen(false)} className="flex min-h-11 items-center border-l-2 border-transparent px-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container hover:text-primary sm:hidden">Danh sách yêu thích</Link>
+            <Link
+              to={isAuthenticated ? '/wishlist' : '/login'}
+              state={!isAuthenticated ? { from: '/wishlist' } : undefined}
+              onClick={() => setOpen(false)}
+              className="flex min-h-11 items-center border-l-2 border-transparent px-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container hover:text-primary sm:hidden"
+            >
+              Danh sách yêu thích
+            </Link>
             <Link to="/orders" onClick={() => setOpen(false)} className="flex min-h-11 items-center border-l-2 border-transparent px-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container hover:text-primary">Đơn hàng của tôi</Link>
             {isAuthenticated ? (
               <>

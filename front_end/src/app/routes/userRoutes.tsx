@@ -12,7 +12,7 @@ const WishlistPage = lazy(() => import('@/features/wishlist/pages/WishlistPage')
 
 export const userRoutes = (
   <>
-    <Route path="/cart" element={<MainLayout><CartPage /></MainLayout>} />
+    <Route path="/cart" element={<ProtectedRoute><MainLayout><CartPage /></MainLayout></ProtectedRoute>} />
     <Route path="/checkout" element={<ProtectedRoute><MainLayout><CheckoutPage /></MainLayout></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><MainLayout><ProfilePage /></MainLayout></ProtectedRoute>} />
     <Route path="/wishlist" element={<ProtectedRoute><MainLayout><WishlistPage /></MainLayout></ProtectedRoute>} />
