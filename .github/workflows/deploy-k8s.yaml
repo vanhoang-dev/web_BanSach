@@ -179,37 +179,48 @@ jobs:
 
           kubectl apply -f infrastructure/kubernetes/09-cert-manager-issuer.yaml
 
-          kubectl apply -f infrastructure/kubernetes/05-backend.yaml
-
-          kubectl apply -f infrastructure/kubernetes/06-frontend.yaml
-
           kubectl apply -f infrastructure/kubernetes/07-ingress.yaml
 
       # ==============================
-      # DEPLOY EXACT COMMIT IMAGES
+      # APPLY WORKLOADS WITH EXACT COMMIT IMAGES
       # ==============================
-      - name: Rollout images
+      - name: Deploy exact commit images
         run: |
-          kubectl -n web-bansach set image \
-            deployment/backend \
-            backend=${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          sed \
+            "s|image: hoangdev311/web-bansach-backend:latest|image: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}|" \
+            infrastructure/kubernetes/05-backend.yaml | kubectl apply -f -
 
-          kubectl -n web-bansach set image \
-            deployment/frontend \
-            frontend=${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
-
-          kubectl -n web-bansach rollout status \
-            deployment/backend \
-            --timeout=180s
+          sed \
+            "s|image: hoangdev311/web-bansach-frontend:latest|image: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}|" \
+            infrastructure/kubernetes/06-frontend.yaml | kubectl apply -f -
 
           kubectl -n web-bansach rollout status \
+            deployment/backend \
+            --timeout=300s
+
+          kubectl -n web-bansach rollout status \
             deployment/frontend \
-            --timeout=180s
+            --timeout=300s
+
+      # ==============================
+      # COLLECT DIAGNOSTICS ON FAILURE
+      # ==============================
+      - name: Diagnose failed rollout
+        if: failure()
+        run: |
+          kubectl -n web-bansach get deployments,replicasets,pods -o wide || true
+          kubectl -n web-bansach describe deployment backend || true
+          kubectl -n web-bansach get events --sort-by=.lastTimestamp | tail -n 100 || true
+          kubectl -n web-bansach logs -l app=backend \
+            --all-containers=true \
+            --prefix=true \
+            --tail=200 || true
 
       # ==============================
       # SHOW DEPLOYMENT STATUS
       # ==============================
       - name: Show deployment status
+        if: always()
         run: |
           kubectl get nodes
           kubectl get pods -n web-bansach
