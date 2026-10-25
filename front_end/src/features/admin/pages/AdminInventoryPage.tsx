@@ -2,6 +2,7 @@
 
 import { AdminTable, AdminToolbar, Field, PrimaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import inventoryAdminService from '@/features/admin/services/inventoryAdminService';
 
 const pageSize = 10;
@@ -35,21 +36,39 @@ const AdminInventoryPage = () => {
 
   const applySet = async (event: FormEvent) => {
     event.preventDefault();
-    if (!selectedId) return;
-    await inventoryAdminService.setQuantity(Number(selectedId), Number(quantity));
-    fetchInventory();
+    if (!selectedId) return setError('Vui lòng chọn đầu sách cần cập nhật tồn kho.');
+    if (quantity < 0) return setError('Số lượng tồn kho không được nhỏ hơn 0.');
+    try {
+      setError('');
+      await inventoryAdminService.setQuantity(Number(selectedId), Number(quantity));
+      await fetchInventory();
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể đặt số lượng tồn kho.'));
+    }
   };
 
   const applyAdjust = async () => {
-    if (!selectedId) return;
-    await inventoryAdminService.adjust(Number(selectedId), Number(delta));
-    fetchInventory();
+    if (!selectedId) return setError('Vui lòng chọn đầu sách cần điều chỉnh tồn kho.');
+    if (delta === 0) return setError('Số lượng nhập/xuất phải khác 0.');
+    try {
+      setError('');
+      await inventoryAdminService.adjust(Number(selectedId), Number(delta));
+      await fetchInventory();
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể điều chỉnh tồn kho. Kiểm tra số lượng xuất không vượt quá tồn hiện tại.'));
+    }
   };
 
   const applyReconcile = async () => {
-    if (!selectedId) return;
-    await inventoryAdminService.reconcile(Number(selectedId), Number(quantity));
-    fetchInventory();
+    if (!selectedId) return setError('Vui lòng chọn đầu sách cần đối soát.');
+    if (quantity < 0) return setError('Số lượng đối soát không được nhỏ hơn 0.');
+    try {
+      setError('');
+      await inventoryAdminService.reconcile(Number(selectedId), Number(quantity));
+      await fetchInventory();
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể đối soát tồn kho.'));
+    }
   };
 
   const totalStock = inventory.reduce((sum, item) => sum + Number(item.quantity || item.stock || 0), 0);
@@ -73,8 +92,8 @@ const AdminInventoryPage = () => {
           </select>
         </label>
         <Field label="Số lượng mới" type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
-        <Field label="Delta nhập/xuất" type="number" value={delta} onChange={(e) => setDelta(Number(e.target.value))} />
-        <div className="flex items-end"><PrimaryButton type="submit">Set</PrimaryButton></div>
+        <Field label="Số lượng nhập/xuất" type="number" value={delta} onChange={(e) => setDelta(Number(e.target.value))} />
+        <div className="flex items-end"><PrimaryButton type="submit">Đặt số lượng</PrimaryButton></div>
         <div className="flex items-end gap-2"><PrimaryButton onClick={applyAdjust}>Điều chỉnh</PrimaryButton><PrimaryButton onClick={applyReconcile}>Đối soát</PrimaryButton></div>
       </form>
       <div className="mt-6">

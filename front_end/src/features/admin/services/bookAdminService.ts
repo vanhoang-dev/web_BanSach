@@ -26,15 +26,13 @@ const toFormData = (bookData: any) => {
   return formData;
 };
 
-const multipartConfig = { headers: { 'Content-Type': 'multipart/form-data' } };
-
 const bookAdminService = {
   getAll: async (page = 0, size = 10) => withPage(await api.get(`/admin/books?page=${page}&size=${size}`)),
   getById: async (id: number) => unwrapApiData(await api.get(`/admin/books/${id}`)),
   create: async (bookData: any) =>
-    unwrapApiData(await api.post('/admin/books/create-book', toFormData(bookData), multipartConfig)),
+    unwrapApiData(await api.post('/admin/books/create-book', toFormData(bookData))),
   update: async (id: number, bookData: any) =>
-    unwrapApiData(await api.put(`/admin/books/update-book/${id}`, toFormData(bookData), multipartConfig)),
+    unwrapApiData(await api.put(`/admin/books/update-book/${id}`, toFormData(bookData))),
   remove: async (id: number) => api.delete(`/admin/books/delete-book/${id}`),
 };
 

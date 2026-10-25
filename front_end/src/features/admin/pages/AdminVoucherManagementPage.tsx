@@ -2,6 +2,7 @@
 
 import { Field, formatVnd, Icon, IconButton, Panel, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import voucherAdminService from '@/features/admin/services/voucherAdminService';
 
 const emptyForm = { code: '', discountPercent: 10, maxDiscount: 50000, quantity: 10, expiredAt: '' };
@@ -41,8 +42,8 @@ const AdminVoucherManagementPage = () => {
       setForm(emptyForm);
       setEditingId(null);
       fetchVouchers();
-    } catch {
-      setError('Không thể lưu voucher.');
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể lưu voucher.'));
     }
   };
 
@@ -59,8 +60,13 @@ const AdminVoucherManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa voucher này?')) return;
-    await voucherAdminService.remove(id);
-    fetchVouchers();
+    try {
+      setError('');
+      await voucherAdminService.remove(id);
+      await fetchVouchers();
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể xóa voucher. Voucher có thể đã được khách hàng nhận hoặc sử dụng.'));
+    }
   };
 
   return (

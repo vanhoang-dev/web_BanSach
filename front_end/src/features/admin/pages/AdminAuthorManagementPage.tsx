@@ -2,6 +2,7 @@
 
 import { Field, Icon, IconButton, Panel, PrimaryButton, SecondaryButton, SectionHeading, StatCard } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import authorAdminService from '@/features/admin/services/authorAdminService';
 
 const emptyForm = { authorName: '', biography: '' };
@@ -41,8 +42,8 @@ const AdminAuthorManagementPage = () => {
       setForm(emptyForm);
       setEditingId(null);
       fetchAuthors();
-    } catch {
-      setError('Không thể lưu tác giả.');
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể lưu tác giả.'));
     }
   };
 
@@ -53,8 +54,13 @@ const AdminAuthorManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa tác giả này?')) return;
-    await authorAdminService.remove(id);
-    fetchAuthors();
+    try {
+      setError('');
+      await authorAdminService.remove(id);
+      await fetchAuthors();
+    } catch (requestError) {
+      setError(getAdminErrorMessage(requestError, 'Không thể xóa tác giả. Tác giả có thể đang được sử dụng bởi sách.'));
+    }
   };
 
   return (
@@ -67,8 +73,8 @@ const AdminAuthorManagementPage = () => {
       </div>
       {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
       <form onSubmit={submit} className="mt-6 grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
-        <Field label="Tên tac gia" value={form.authorName} onChange={(e) => setForm((current) => ({ ...current, authorName: e.target.value }))} required />
-        <Field label="Tieu su" value={form.biography} onChange={(e) => setForm((current) => ({ ...current, biography: e.target.value }))} />
+        <Field label="Tên tác giả" value={form.authorName} onChange={(e) => setForm((current) => ({ ...current, authorName: e.target.value }))} required />
+        <Field label="Tiểu sử" value={form.biography} onChange={(e) => setForm((current) => ({ ...current, biography: e.target.value }))} />
         <div className="flex items-end gap-2">
           <PrimaryButton type="submit"><Icon name="plus" /> {editingId ? 'Cập nhật' : 'Thêm'}</PrimaryButton>
           {editingId ? <SecondaryButton onClick={() => { setEditingId(null); setForm(emptyForm); }}>Hủy</SecondaryButton> : null}
