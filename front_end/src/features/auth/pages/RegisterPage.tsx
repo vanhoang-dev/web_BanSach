@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import logoWeb from '@/assets/icons/logoweb.png';
@@ -46,6 +46,7 @@ const RegisterPage = () => {
   const [resendSeconds, setResendSeconds] = useState(0);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const registerRequestInFlight = useRef(false);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -57,10 +58,12 @@ const RegisterPage = () => {
 
   const handleRegister = async (event: FormEvent) => {
     event.preventDefault();
+    if (registerRequestInFlight.current) return;
     setError(''); setMessage('');
     if (form.password !== form.confirmPassword) return setError('Mật khẩu xác nhận chưa khớp.');
     if (!isStrongPassword(form.password)) return setError(PASSWORD_REQUIREMENTS_MESSAGE);
     if (!accepted) return setError('Bạn cần đồng ý điều khoản trước khi đăng ký.');
+    registerRequestInFlight.current = true;
     try {
       setLoading(true);
       await authService.register(form);
@@ -70,7 +73,10 @@ const RegisterPage = () => {
       setMessage('Mã xác nhận gồm 6 chữ số đã được gửi tới email của bạn.');
     } catch (requestError: any) {
       setError(getErrorMessage(requestError, 'Không thể đăng ký tài khoản.'));
-    } finally { setLoading(false); }
+    } finally {
+      registerRequestInFlight.current = false;
+      setLoading(false);
+    }
   };
 
   const handleVerify = async (event: FormEvent) => {
@@ -98,16 +104,6 @@ const RegisterPage = () => {
     } catch (requestError: any) {
       setError(getErrorMessage(requestError, 'Không thể gửi lại mã xác nhận.'));
     } finally { setLoading(false); }
-  };
-
-  const continueWithExistingCode = () => {
-    if (!/^\S+@\S+\.\S+$/.test(form.email)) {
-      setError('Nhập email đã đăng ký để tiếp tục xác nhận.');
-      return;
-    }
-    window.sessionStorage.setItem('pendingVerificationEmail', form.email);
-    setSearchParams({ verify: '1' }, { replace: true });
-    setStep('verify'); setError(''); setMessage('');
   };
 
   return (
@@ -152,7 +148,6 @@ const RegisterPage = () => {
                 Tôi đồng ý với điều khoản sử dụng và chính sách bảo mật của Nhà Sách Tri Thức.
               </label>
               <AccentButton disabled={loading} type="submit">{loading ? 'Đang gửi mã xác nhận...' : 'Đăng ký tài khoản'}</AccentButton>
-              <SecondaryButton disabled={loading} type="button" onClick={continueWithExistingCode}>Tôi đã có mã xác nhận</SecondaryButton>
             </form>
           ) : (
             <form className="mt-7" onSubmit={handleVerify}>
