@@ -1,13 +1,17 @@
 ﻿import { useEffect, useState } from 'react';
 
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import { AccentButton, Container, EmptyState, formatVnd, Icon, LinkButton, Panel, SectionHeading, StatusBadge } from '@/components/ui/staticUi';
 import voucherService, { Voucher } from '@/features/vouchers/services/voucherService';
 import { useAuth } from '@/hooks/useAuth';
 
 const PromotionsPage = () => {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
-  const [loading, setLoading] = useState(isAuthenticated);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [claimedCodes, setClaimedCodes] = useState<Set<string>>(new Set());
   const [claimingId, setClaimingId] = useState<number | null>(null);
@@ -15,20 +19,19 @@ const PromotionsPage = () => {
 
   useEffect(() => {
     const fetchVouchers = async () => {
-      if (!isAuthenticated) {
-        setLoading(false);
-        return;
-      }
       try {
         setLoading(true);
-        const [response, ownedResponse] = await Promise.all([
-          voucherService.getVouchers(0, 12),
-          voucherService.getClaimedVouchers(0, 100),
-        ]);
+        setError('');
+        const response = await voucherService.getVouchers(0, 12);
         setVouchers(response.data.content || []);
-        setClaimedCodes(new Set((ownedResponse.data.content || []).map((voucher: Voucher) => voucher.code)));
+        if (isAuthenticated) {
+          const ownedResponse = await voucherService.getClaimedVouchers(0, 100);
+          setClaimedCodes(new Set((ownedResponse.data.content || []).map((voucher: Voucher) => voucher.code)));
+        } else {
+          setClaimedCodes(new Set());
+        }
       } catch {
-        setError('Không thể tải voucher của tài khoản.');
+        setError('Không thể tải danh sách voucher.');
       } finally {
         setLoading(false);
       }
@@ -37,6 +40,10 @@ const PromotionsPage = () => {
   }, [isAuthenticated]);
 
   const claimVoucher = async (voucher: Voucher) => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: `${location.pathname}${location.search}` } });
+      return;
+    }
     if (!voucher.id || claimedCodes.has(voucher.code)) return;
     try {
       setClaimingId(voucher.id);
@@ -115,7 +122,7 @@ const PromotionsPage = () => {
                   disabled={!voucher.id || claimedCodes.has(voucher.code) || claimingId === voucher.id}
                   onClick={() => claimVoucher(voucher)}
                 >
-                  {claimedCodes.has(voucher.code) ? 'Đã lấy voucher' : claimingId === voucher.id ? 'Đang lưu...' : 'Lấy voucher'}
+                  {!isAuthenticated ? 'Đăng nhập để lấy voucher' : claimedCodes.has(voucher.code) ? 'Đã lấy voucher' : claimingId === voucher.id ? 'Đang lưu...' : 'Lấy voucher'}
                 </AccentButton>
               </div>
             </Panel>
@@ -124,9 +131,8 @@ const PromotionsPage = () => {
           {!loading && vouchers.length === 0 ? (
             <div className="md:col-span-2 xl:col-span-3">
               <EmptyState
-                title={isAuthenticated ? 'Hiện chưa có voucher' : 'Đăng nhập để xem voucher'}
-                description={isAuthenticated ? 'Các voucher hợp lệ sẽ xuất hiện tại đây khi được phát hành.' : 'Voucher được tải trực tiếp từ tài khoản của bạn, không sử dụng dữ liệu minh họa.'}
-                action={!isAuthenticated ? <LinkButton to="/login" variant="primary">Đăng nhập</LinkButton> : undefined}
+                title="Hiện chưa có voucher"
+                description="Các voucher hợp lệ sẽ xuất hiện tại đây khi được phát hành."
               />
             </div>
           ) : null}

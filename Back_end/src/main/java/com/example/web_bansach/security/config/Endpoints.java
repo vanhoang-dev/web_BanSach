@@ -17,6 +17,7 @@ public class Endpoints {
             "/user/books/*",
             "/user/reviews/book/*",
             "/user/reviews/book/*/stats",
+            "/api/vouchers",
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {
