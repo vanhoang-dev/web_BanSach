@@ -1,9 +1,10 @@
 ﻿import { useEffect, useState } from 'react';
 
-import { AdminTable, AdminToolbar, formatVnd, Icon, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
+import { AdminTable, AdminToolbar, formatVnd, PrimaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
 import { getAdminErrorMessage, orderStatusLabels } from '@/features/admin/adminPresentation';
 import orderAdminService from '@/features/admin/services/orderAdminService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
 const statuses = ['PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED', 'CANCELLED'];
 const pageSize = 10;
@@ -12,7 +13,6 @@ const AdminOrderManagementPage = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
@@ -23,7 +23,7 @@ const AdminOrderManagementPage = () => {
       setOrders(response.data.content || []);
       setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
-      setError('Không thể tải đơn hàng.');
+      notify.error('Không thể tải đơn hàng. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -34,38 +34,27 @@ const AdminOrderManagementPage = () => {
   }, [page]);
 
   const updateStatus = async (id: number, status: string) => {
-    try {
-      setError('');
-      await orderAdminService.updateStatus(id, status);
-      await fetchOrders();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể cập nhật trạng thái đơn hàng.'));
-    }
+    try { await orderAdminService.updateStatus(id, status); await fetchOrders(); notify.success('Đã cập nhật trạng thái đơn hàng.'); }
+    catch { notify.error('Không thể cập nhật trạng thái đơn hàng.'); }
   };
 
   const cancel = async (id: number) => {
-    if (!window.confirm('Hủy đơn hàng này?')) return;
-    try {
-      setError('');
-      await orderAdminService.cancel(id);
-      await fetchOrders();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể hủy đơn hàng.'));
-    }
+    if (!window.confirm('Hủy đơn hàng nay?')) return;
+    try { await orderAdminService.cancel(id); await fetchOrders(); notify.success('Đã hủy đơn hàng.'); }
+    catch { notify.error('Không thể hủy đơn hàng.'); }
   };
 
   const visibleOrders = filter ? orders.filter((order) => String(order.id).includes(filter) || String(order.receiverName || order.fullName || '').toLowerCase().includes(filter.toLowerCase())) : orders;
 
   return (
-    <div className="mx-auto max-w-7xl">
-      <SectionHeading eyebrow="Quản trị" title="Quản lý đơn hàng" description="Theo dõi đơn, cập nhật trạng thái, hủy đơn và đối chiếu thanh toán qua /admin/orders." action={<SecondaryButton><Icon name="file" /> Xuất báo cáo</SecondaryButton>} />
+    <div className="w-full min-w-0">
+      <SectionHeading eyebrow="Quản trị" title="Quản lý đơn hàng" description="Theo dõi đơn, cập nhật trạng thái, hủy đơn và đối chiếu thanh toán." />
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard label="Chờ xử lý" value={orders.filter((item) => item.status === 'PENDING').length} icon="order" tone="warning" />
         <StatCard label="Đang giao" value={orders.filter((item) => ['SHIPPING', 'SHIPPED'].includes(item.status)).length} icon="inventory" />
         <StatCard label="Hoàn tất" value={orders.filter((item) => ['DELIVERED', 'COMPLETED'].includes(item.status)).length} icon="chart" tone="success" />
         <StatCard label="Đã hủy" value={orders.filter((item) => item.status === 'CANCELLED').length} icon="trash" tone="danger" />
       </div>
-      {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
       <div className="mt-6">
         <AdminToolbar>
           <input value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }} className="h-11 w-full rounded-lg border border-outline-variant bg-surface px-4 text-sm outline-none focus:border-primary md:max-w-sm" placeholder="Tìm mã đơn, khách hàng..." />

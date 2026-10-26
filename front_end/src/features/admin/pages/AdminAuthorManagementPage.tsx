@@ -4,6 +4,7 @@ import { Field, Icon, IconButton, Panel, PrimaryButton, SecondaryButton, Section
 import AdminPagination from '@/features/admin/components/AdminPagination';
 import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import authorAdminService from '@/features/admin/services/authorAdminService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
 const emptyForm = { authorName: '', biography: '' };
 const pageSize = 9;
@@ -13,7 +14,6 @@ const AdminAuthorManagementPage = () => {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
@@ -24,7 +24,7 @@ const AdminAuthorManagementPage = () => {
       setAuthors(response.data.content || []);
       setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
-      setError('Không thể tải tác giả.');
+      notify.error('Không thể tải tác giả. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -41,9 +41,10 @@ const AdminAuthorManagementPage = () => {
       else await authorAdminService.create(form);
       setForm(emptyForm);
       setEditingId(null);
-      fetchAuthors();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể lưu tác giả.'));
+      await fetchAuthors();
+      notify.success(editingId ? 'Đã cập nhật tác giả.' : 'Đã thêm tác giả mới.');
+    } catch {
+      notify.error('Không thể lưu tác giả. Vui lòng kiểm tra dữ liệu.');
     }
   };
 
@@ -54,24 +55,18 @@ const AdminAuthorManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa tác giả này?')) return;
-    try {
-      setError('');
-      await authorAdminService.remove(id);
-      await fetchAuthors();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể xóa tác giả. Tác giả có thể đang được sử dụng bởi sách.'));
-    }
+    try { await authorAdminService.remove(id); await fetchAuthors(); notify.success('Đã xóa tác giả.'); }
+    catch { notify.error('Không thể xóa tác giả.'); }
   };
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="w-full min-w-0">
       <SectionHeading eyebrow="Quản trị" title="Quản lý tác giả" description="Tạo, cập nhật, xóa và tra cứu tác giả theo phân hệ /admin/authors." />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Tổng tác giả" value={pageInfo.totalElements} icon="user" />
         <StatCard label="Đang hiển thị" value={authors.length} icon="book" tone="success" />
         <StatCard label="Trạng thái" value={loading ? 'Đang tải' : 'Sẵn sàng'} icon="chart" />
       </div>
-      {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
       <form onSubmit={submit} className="mt-6 grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
         <Field label="Tên tác giả" value={form.authorName} onChange={(e) => setForm((current) => ({ ...current, authorName: e.target.value }))} required />
         <Field label="Tiểu sử" value={form.biography} onChange={(e) => setForm((current) => ({ ...current, biography: e.target.value }))} />

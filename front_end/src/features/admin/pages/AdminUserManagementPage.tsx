@@ -4,6 +4,7 @@ import { AdminTable, AdminToolbar, Field, Icon, IconButton, PrimaryButton, Secon
 import AdminPagination from '@/features/admin/components/AdminPagination';
 import { formatRoles, getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import userAdminService from '@/features/admin/services/userAdminService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
 const emptyForm = { fullName: '', email: '', phone: '', address: '', isActive: true };
 const pageSize = 10;
@@ -14,7 +15,6 @@ const AdminUserManagementPage = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
@@ -25,7 +25,7 @@ const AdminUserManagementPage = () => {
       setUsers(response.data.content || []);
       setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
-      setError('Không thể tải người dùng.');
+      notify.error('Không thể tải người dùng. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -42,9 +42,10 @@ const AdminUserManagementPage = () => {
       await userAdminService.update(editingId, form);
       setEditingId(null);
       setForm(emptyForm);
-      fetchUsers();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể cập nhật người dùng.'));
+      await fetchUsers();
+      notify.success('Đã cập nhật người dùng.');
+    } catch {
+      notify.error('Không thể cập nhật người dùng.');
     }
   };
 
@@ -61,26 +62,20 @@ const AdminUserManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa người dùng này?')) return;
-    try {
-      setError('');
-      await userAdminService.remove(id);
-      await fetchUsers();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể xóa người dùng.'));
-    }
+    try { await userAdminService.remove(id); await fetchUsers(); notify.success('Đã xóa người dùng.'); }
+    catch { notify.error('Không thể xóa người dùng.'); }
   };
 
   const visibleUsers = filter ? users.filter((user) => `${user.fullName || ''} ${user.email || ''} ${user.username || ''}`.toLowerCase().includes(filter.toLowerCase())) : users;
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="w-full min-w-0">
       <SectionHeading eyebrow="Quản trị" title="Quản lý người dùng" description="Xem hồ sơ, cập nhật và xóa tài khoản theo phân hệ quản trị người dùng." />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Tổng người dùng" value={users.length} icon="users" />
         <StatCard label="Đang hoạt động" value={users.filter((item) => item.isActive !== false).length} icon="user" tone="success" />
         <StatCard label="Quản trị viên" value={users.filter((item) => Array.from(item.roles || []).some((role: any) => String(role).includes('ADMIN'))).length} icon="chart" />
       </div>
-      {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
       {editingId ? (
         <form onSubmit={submit} className="mt-6 grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-3">
           <Field label="Họ tên" value={form.fullName} onChange={(e) => setForm((current: any) => ({ ...current, fullName: e.target.value }))} required />

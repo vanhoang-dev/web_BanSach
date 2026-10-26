@@ -4,6 +4,7 @@ import { Field, formatVnd, Icon, IconButton, Panel, PrimaryButton, SecondaryButt
 import AdminPagination from '@/features/admin/components/AdminPagination';
 import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import voucherAdminService from '@/features/admin/services/voucherAdminService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
 const emptyForm = { code: '', discountPercent: 10, maxDiscount: 50000, quantity: 10, expiredAt: '' };
 const pageSize = 9;
@@ -13,7 +14,6 @@ const AdminVoucherManagementPage = () => {
   const [form, setForm] = useState<any>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
@@ -24,7 +24,7 @@ const AdminVoucherManagementPage = () => {
       setVouchers(response.data.content || []);
       setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
-      setError('Không thể tải voucher.');
+      notify.error('Không thể tải voucher. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -41,9 +41,10 @@ const AdminVoucherManagementPage = () => {
       else await voucherAdminService.create(form);
       setForm(emptyForm);
       setEditingId(null);
-      fetchVouchers();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể lưu voucher.'));
+      await fetchVouchers();
+      notify.success(editingId ? 'Đã cập nhật voucher.' : 'Đã tạo voucher mới.');
+    } catch {
+      notify.error('Không thể lưu voucher. Vui lòng kiểm tra dữ liệu.');
     }
   };
 
@@ -60,24 +61,18 @@ const AdminVoucherManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa voucher này?')) return;
-    try {
-      setError('');
-      await voucherAdminService.remove(id);
-      await fetchVouchers();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể xóa voucher. Voucher có thể đã được khách hàng nhận hoặc sử dụng.'));
-    }
+    try { await voucherAdminService.remove(id); await fetchVouchers(); notify.success('Đã xóa voucher.'); }
+    catch { notify.error('Không thể xóa voucher.'); }
   };
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="w-full min-w-0">
       <SectionHeading eyebrow="Quản trị" title="Quản lý voucher" description="Tạo, sửa, xóa và xem voucher theo phân hệ /admin/vouchers." />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Tổng voucher" value={pageInfo.totalElements} icon="ticket" />
         <StatCard label="Hợp lệ" value={vouchers.filter((item) => item.isValid !== false && item.isExpired !== true).length} icon="chart" tone="success" />
         <StatCard label="Hết hạn" value={vouchers.filter((item) => item.isExpired).length} icon="order" tone="warning" />
       </div>
-      {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
       <form onSubmit={submit} className="mt-6 grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-6">
         <Field className="md:col-span-2" label="Mã voucher" value={form.code} onChange={(e) => setForm((current: any) => ({ ...current, code: e.target.value.toUpperCase() }))} required />
         <Field label="% giảm" type="number" value={form.discountPercent} onChange={(e) => setForm((current: any) => ({ ...current, discountPercent: Number(e.target.value) }))} required />

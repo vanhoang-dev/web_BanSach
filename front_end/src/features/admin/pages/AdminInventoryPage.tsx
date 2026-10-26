@@ -4,6 +4,7 @@ import { AdminTable, AdminToolbar, Field, PrimaryButton, SectionHeading, StatCar
 import AdminPagination from '@/features/admin/components/AdminPagination';
 import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import inventoryAdminService from '@/features/admin/services/inventoryAdminService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
 const pageSize = 10;
 
@@ -13,7 +14,6 @@ const AdminInventoryPage = () => {
   const [quantity, setQuantity] = useState(0);
   const [delta, setDelta] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
@@ -24,7 +24,7 @@ const AdminInventoryPage = () => {
       setInventory(response.data.content || []);
       setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
-      setError('Không thể tải tồn kho.');
+      notify.error('Không thể tải tồn kho. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -36,53 +36,34 @@ const AdminInventoryPage = () => {
 
   const applySet = async (event: FormEvent) => {
     event.preventDefault();
-    if (!selectedId) return setError('Vui lòng chọn đầu sách cần cập nhật tồn kho.');
-    if (quantity < 0) return setError('Số lượng tồn kho không được nhỏ hơn 0.');
-    try {
-      setError('');
-      await inventoryAdminService.setQuantity(Number(selectedId), Number(quantity));
-      await fetchInventory();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể đặt số lượng tồn kho.'));
-    }
+    if (!selectedId) return;
+    try { await inventoryAdminService.setQuantity(Number(selectedId), Number(quantity)); await fetchInventory(); notify.success('Đã cập nhật số lượng tồn kho.'); }
+    catch { notify.error('Không thể cập nhật số lượng tồn kho.'); }
   };
 
   const applyAdjust = async () => {
-    if (!selectedId) return setError('Vui lòng chọn đầu sách cần điều chỉnh tồn kho.');
-    if (delta === 0) return setError('Số lượng nhập/xuất phải khác 0.');
-    try {
-      setError('');
-      await inventoryAdminService.adjust(Number(selectedId), Number(delta));
-      await fetchInventory();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể điều chỉnh tồn kho. Kiểm tra số lượng xuất không vượt quá tồn hiện tại.'));
-    }
+    if (!selectedId) return;
+    try { await inventoryAdminService.adjust(Number(selectedId), Number(delta)); await fetchInventory(); notify.success('Đã điều chỉnh tồn kho.'); }
+    catch { notify.error('Không thể điều chỉnh tồn kho.'); }
   };
 
   const applyReconcile = async () => {
-    if (!selectedId) return setError('Vui lòng chọn đầu sách cần đối soát.');
-    if (quantity < 0) return setError('Số lượng đối soát không được nhỏ hơn 0.');
-    try {
-      setError('');
-      await inventoryAdminService.reconcile(Number(selectedId), Number(quantity));
-      await fetchInventory();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể đối soát tồn kho.'));
-    }
+    if (!selectedId) return;
+    try { await inventoryAdminService.reconcile(Number(selectedId), Number(quantity)); await fetchInventory(); notify.success('Đã đối soát tồn kho.'); }
+    catch { notify.error('Không thể đối soát tồn kho.'); }
   };
 
   const totalStock = inventory.reduce((sum, item) => sum + Number(item.quantity || item.stock || 0), 0);
   const lowStock = inventory.filter((item) => Number(item.quantity || item.stock || 0) < 10).length;
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="w-full min-w-0">
       <SectionHeading eyebrow="Quản trị" title="Quản lý tồn kho" description="Theo dõi tồn kho, đặt số lượng, điều chỉnh nhập/xuất và đối soát theo /admin/inventory." />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Tổng đầu tồn" value={pageInfo.totalElements} icon="inventory" />
         <StatCard label="Tổng số lượng" value={totalStock} icon="book" tone="success" />
         <StatCard label="Cần bổ sung" value={lowStock} icon="order" tone="warning" />
       </div>
-      {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
       <form onSubmit={applySet} className="mt-6 grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_180px_180px_auto_auto]">
         <label className="block">
           <span className="mb-2 block text-sm font-semibold text-on-surface">Đầu sách tồn kho</span>

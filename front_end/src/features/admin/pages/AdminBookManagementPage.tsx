@@ -6,6 +6,7 @@ import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import authorAdminService from '@/features/admin/services/authorAdminService';
 import bookAdminService from '@/features/admin/services/bookAdminService';
 import categoryAdminService from '@/features/admin/services/categoryAdminService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
 const emptyForm: any = {
   title: '',
@@ -30,8 +31,6 @@ const AdminBookManagementPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
@@ -48,7 +47,7 @@ const AdminBookManagementPage = () => {
       setAuthors(authorPage.data.content || []);
       setCategories(categoryPage.data.content || []);
     } catch {
-      setError('Không thể tải dữ liệu sách.');
+      notify.error('Không thể tải dữ liệu sách. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -71,11 +70,10 @@ const AdminBookManagementPage = () => {
       setForm(emptyForm);
       setEditingId(null);
       setShowForm(false);
-      fetchData();
+      await fetchData();
+      notify.success(editingId ? 'Đã cập nhật sách.' : 'Đã thêm sách mới.');
     } catch (err: any) {
-      setError(getAdminErrorMessage(err, 'Không thể lưu sách.'));
-    } finally {
-      setSaving(false);
+      notify.error(err?.response?.data?.message || 'Không thể lưu sách.');
     }
   };
 
@@ -98,19 +96,14 @@ const AdminBookManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa sách này?')) return;
-    try {
-      setError('');
-      await bookAdminService.remove(id);
-      await fetchData();
-    } catch (requestError) {
-      setError(getAdminErrorMessage(requestError, 'Không thể xóa sách. Sách có thể đang được sử dụng trong đơn hàng.'));
-    }
+    try { await bookAdminService.remove(id); await fetchData(); notify.success('Đã xóa sách.'); }
+    catch { notify.error('Không thể xóa sách.'); }
   };
 
   const visibleBooks = filter ? books.filter((book) => `${book.title || ''} ${book.isbn || ''} ${book.authorName || ''}`.toLowerCase().includes(filter.toLowerCase())) : books;
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="w-full min-w-0">
       <SectionHeading
         eyebrow="Quản trị"
         title="Quản lý sách"
@@ -123,8 +116,6 @@ const AdminBookManagementPage = () => {
         <StatCard label="Đang bán" value={books.filter((item) => Number(item.price || 0) > 0).length} icon="chart" tone="success" />
         <StatCard label="Cần bổ sung dữ liệu" value={books.filter((item) => !item.authorName || !item.categoryName).length} icon="inventory" tone="warning" />
       </div>
-
-      {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
 
       {showForm ? (
         <form onSubmit={submit} className="mt-6 grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-4">

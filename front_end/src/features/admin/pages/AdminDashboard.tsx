@@ -3,6 +3,7 @@
 import { AdminTable, formatVnd, Icon, Panel, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import dashboardService from '@/features/admin/services/dashboardService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
 type RecentOrder = {
   id: number;
@@ -44,11 +45,9 @@ const AdminDashboard = () => {
       .then((response) => {
         if (active) setDashboard({ ...emptyStats, ...response });
       })
-      .catch((requestError) => {
-        if (active) {
-          setDashboard(emptyStats);
-          setError(getAdminErrorMessage(requestError, 'Không thể tải dữ liệu tổng quan.'));
-        }
+      .catch(() => {
+        setDashboard(emptyStats);
+        notify.error('Không thể tải dữ liệu tổng quan. Vui lòng thử lại.');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -60,7 +59,7 @@ const AdminDashboard = () => {
   }, []);
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="w-full min-w-0">
       <SectionHeading
         eyebrow="Quản trị"
         title="Tổng quan vận hành"
@@ -78,7 +77,7 @@ const AdminDashboard = () => {
         <StatCard label="Người dùng" value={loading ? '...' : dashboard.totalUsers.toLocaleString('vi-VN')} icon="users" />
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_360px]">
+      <div className="mt-6 grid min-w-0 gap-6 2xl:grid-cols-[minmax(0,1fr)_340px]">
         <AdminTable minWidth="720px">
           <thead className="border-b border-outline-variant bg-surface-container-high">
             <tr>
