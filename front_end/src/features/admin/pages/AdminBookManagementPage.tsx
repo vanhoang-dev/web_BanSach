@@ -30,6 +30,7 @@ const AdminBookManagementPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
@@ -60,6 +61,9 @@ const AdminBookManagementPage = () => {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (saving) return;
+
+    setSaving(true);
     try {
       if (editingId) await bookAdminService.update(editingId, form);
       else await bookAdminService.create(form);
@@ -70,6 +74,8 @@ const AdminBookManagementPage = () => {
       notify.success(editingId ? 'Đã cập nhật sách.' : 'Đã thêm sách mới.');
     } catch (err: any) {
       notify.error(err?.response?.data?.message || 'Không thể lưu sách.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -140,8 +146,10 @@ const AdminBookManagementPage = () => {
             <input type="file" accept="image/*" onChange={(e) => update('coverImageFile', e.target.files?.[0] || null)} className="block w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" />
           </label>
           <div className="flex gap-2 md:col-span-4">
-            <PrimaryButton type="submit">{editingId ? 'Cập nhật sách' : 'Thêm sách'}</PrimaryButton>
-            <SecondaryButton onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }}>Hủy</SecondaryButton>
+            <PrimaryButton type="submit" disabled={saving}>
+              {saving ? 'Đang lưu...' : editingId ? 'Cập nhật sách' : 'Thêm sách'}
+            </PrimaryButton>
+            <SecondaryButton disabled={saving} onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }}>Hủy</SecondaryButton>
           </div>
         </form>
       ) : null}
