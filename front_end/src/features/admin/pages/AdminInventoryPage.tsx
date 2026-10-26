@@ -2,7 +2,6 @@
 
 import { AdminTable, AdminToolbar, Field, PrimaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
-import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import inventoryAdminService from '@/features/admin/services/inventoryAdminService';
 import { notify } from '@/features/notifications/NotificationProvider';
 

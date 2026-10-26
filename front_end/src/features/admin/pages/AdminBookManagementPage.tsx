@@ -31,6 +31,7 @@ const AdminBookManagementPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
@@ -62,9 +63,9 @@ const AdminBookManagementPage = () => {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (saving) return;
+
+    setSaving(true);
     try {
-      setSaving(true);
-      setError('');
       if (editingId) await bookAdminService.update(editingId, form);
       else await bookAdminService.create(form);
       setForm(emptyForm);
@@ -72,8 +73,10 @@ const AdminBookManagementPage = () => {
       setShowForm(false);
       await fetchData();
       notify.success(editingId ? 'Đã cập nhật sách.' : 'Đã thêm sách mới.');
-    } catch (err: any) {
-      notify.error(err?.response?.data?.message || 'Không thể lưu sách.');
+    } catch (error: unknown) {
+      notify.error(getAdminErrorMessage(error, 'Không thể lưu sách.'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -145,7 +148,9 @@ const AdminBookManagementPage = () => {
             <span className="mt-1 block text-xs text-on-surface-variant">JPEG, PNG hoặc WebP; tối đa 5 MB.</span>
           </label>
           <div className="flex gap-2 md:col-span-4">
-            <PrimaryButton type="submit" disabled={saving}>{saving ? 'Đang lưu...' : editingId ? 'Cập nhật sách' : 'Thêm sách'}</PrimaryButton>
+            <PrimaryButton type="submit" disabled={saving}>
+              {saving ? 'Đang lưu...' : editingId ? 'Cập nhật sách' : 'Thêm sách'}
+            </PrimaryButton>
             <SecondaryButton disabled={saving} onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }}>Hủy</SecondaryButton>
           </div>
         </form>

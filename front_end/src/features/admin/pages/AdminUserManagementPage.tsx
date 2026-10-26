@@ -2,7 +2,7 @@
 
 import { AdminTable, AdminToolbar, Field, Icon, IconButton, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
-import { formatRoles, getAdminErrorMessage } from '@/features/admin/adminPresentation';
+import { formatRoles } from '@/features/admin/adminPresentation';
 import userAdminService from '@/features/admin/services/userAdminService';
 import { notify } from '@/features/notifications/NotificationProvider';
 
