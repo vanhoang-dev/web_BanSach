@@ -56,7 +56,7 @@ public class BookAdminController {
     // Tạo sách mới và tải ảnh bìa lên kho lưu trữ nếu có.
     public ResponseEntity<ApiResponse<BookAdminResponse>> createBook(
             @Valid @ModelAttribute BookRequest request,
-            @RequestParam(required = false) MultipartFile image) throws Exception {
+            @RequestParam(name = "image", required = false) MultipartFile image) throws Exception {
         return ResponseEntity.status(201).body(ApiResponse.created(bookCommandService.createBook(request, image)));
     }
 
@@ -65,7 +65,7 @@ public class BookAdminController {
     public ResponseEntity<ApiResponse<BookAdminResponse>> updateBook(
             @PathVariable Long id,
             @Valid @ModelAttribute BookRequest request,
-            @RequestParam(required = false) MultipartFile image) throws Exception {
+            @RequestParam(name = "image", required = false) MultipartFile image) throws Exception {
         return ResponseEntity.ok(ApiResponse.success(bookCommandService.updateBook(id, request, image)));
     }
 

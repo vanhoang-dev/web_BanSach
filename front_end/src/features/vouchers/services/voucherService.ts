@@ -27,7 +27,7 @@ const normalizeVoucher = (item: any): Voucher => ({
 
 const voucherService = {
   getVouchers: async (page: number = 0, size: number = 12): Promise<any> => {
-    const response = await api.get(`/user/vouchers?page=${page}&size=${size}`);
+    const response = await api.get(`/api/vouchers?page=${page}&size=${size}`);
     const pageData = unwrapPage<any>(response);
     return {
       data: {

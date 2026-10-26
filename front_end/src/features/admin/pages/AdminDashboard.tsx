@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 
 import { AdminTable, formatVnd, Icon, Panel, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
+import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import dashboardService from '@/features/admin/services/dashboardService';
 import { notify } from '@/features/notifications/NotificationProvider';
 
@@ -35,6 +36,7 @@ const emptyStats: DashboardStats = {
 const AdminDashboard = () => {
   const [dashboard, setDashboard] = useState<DashboardStats>(emptyStats);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -63,6 +65,8 @@ const AdminDashboard = () => {
         title="Tổng quan vận hành"
         description="Theo dõi doanh thu, đơn hàng, thanh toán, người dùng và tồn kho từ các phân hệ hệ thống."
       />
+
+      {error ? <div role="alert" className="mb-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <StatCard label="Tổng đơn hàng" value={loading ? '...' : dashboard.totalOrders.toLocaleString('vi-VN')} icon="order" />

@@ -2,6 +2,7 @@
 
 import { AdminTable, AdminToolbar, Field, formatVnd, Icon, IconButton, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import authorAdminService from '@/features/admin/services/authorAdminService';
 import bookAdminService from '@/features/admin/services/bookAdminService';
 import categoryAdminService from '@/features/admin/services/categoryAdminService';
@@ -60,7 +61,10 @@ const AdminBookManagementPage = () => {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (saving) return;
     try {
+      setSaving(true);
+      setError('');
       if (editingId) await bookAdminService.update(editingId, form);
       else await bookAdminService.create(form);
       setForm(emptyForm);
@@ -117,7 +121,7 @@ const AdminBookManagementPage = () => {
         <form onSubmit={submit} className="mt-6 grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-4">
           <Field className="md:col-span-2" label="Tên sách" value={form.title} onChange={(e) => update('title', e.target.value)} required />
           <Field label="ISBN" value={form.isbn} onChange={(e) => update('isbn', e.target.value)} required />
-          <Field label="Nhà xuất bản" value={form.publisher} onChange={(e) => update('publisher', e.target.value)} />
+          <Field label="Nhà xuất bản" value={form.publisher} onChange={(e) => update('publisher', e.target.value)} required />
           <Field label="Năm XB" type="number" value={form.publicationYear} onChange={(e) => update('publicationYear', Number(e.target.value))} />
           <Field label="Giá" type="number" value={form.price} onChange={(e) => update('price', Number(e.target.value))} required />
           <label className="block">
@@ -138,10 +142,11 @@ const AdminBookManagementPage = () => {
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-on-surface">Ảnh bìa</span>
             <input type="file" accept="image/*" onChange={(e) => update('coverImageFile', e.target.files?.[0] || null)} className="block w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" />
+            <span className="mt-1 block text-xs text-on-surface-variant">JPEG, PNG hoặc WebP; tối đa 5 MB.</span>
           </label>
           <div className="flex gap-2 md:col-span-4">
-            <PrimaryButton type="submit">{editingId ? 'Cập nhật sách' : 'Thêm sách'}</PrimaryButton>
-            <SecondaryButton onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }}>Hủy</SecondaryButton>
+            <PrimaryButton type="submit" disabled={saving}>{saving ? 'Đang lưu...' : editingId ? 'Cập nhật sách' : 'Thêm sách'}</PrimaryButton>
+            <SecondaryButton disabled={saving} onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }}>Hủy</SecondaryButton>
           </div>
         </form>
       ) : null}

@@ -2,6 +2,7 @@
 
 import { AdminTable, AdminToolbar, Field, PrimaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import { getAdminErrorMessage } from '@/features/admin/adminPresentation';
 import inventoryAdminService from '@/features/admin/services/inventoryAdminService';
 import { notify } from '@/features/notifications/NotificationProvider';
 
@@ -72,8 +73,8 @@ const AdminInventoryPage = () => {
           </select>
         </label>
         <Field label="Số lượng mới" type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
-        <Field label="Delta nhập/xuất" type="number" value={delta} onChange={(e) => setDelta(Number(e.target.value))} />
-        <div className="flex items-end"><PrimaryButton type="submit">Set</PrimaryButton></div>
+        <Field label="Số lượng nhập/xuất" type="number" value={delta} onChange={(e) => setDelta(Number(e.target.value))} />
+        <div className="flex items-end"><PrimaryButton type="submit">Đặt số lượng</PrimaryButton></div>
         <div className="flex items-end gap-2"><PrimaryButton onClick={applyAdjust}>Điều chỉnh</PrimaryButton><PrimaryButton onClick={applyReconcile}>Đối soát</PrimaryButton></div>
       </form>
       <div className="mt-6">
