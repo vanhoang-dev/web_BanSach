@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import logoWeb from '@/assets/icons/logoweb.png';
 import { Field, Icon, PrimaryButton } from '@/components/ui/staticUi';
@@ -53,6 +53,7 @@ const PasswordField = ({
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,7 +70,10 @@ const LoginPage = () => {
       setLoading(true);
       setError('');
       await login(email, password);
-      navigate('/');
+      const destination = typeof location.state?.from === 'string' && location.state.from.startsWith('/')
+        ? location.state.from
+        : '/';
+      navigate(destination, { replace: true });
     } catch (err: any) {
       setError(err?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {

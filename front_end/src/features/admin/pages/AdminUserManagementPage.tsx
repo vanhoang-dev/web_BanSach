@@ -2,6 +2,7 @@
 
 import { AdminTable, AdminToolbar, Field, Icon, IconButton, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import { formatRoles } from '@/features/admin/adminPresentation';
 import userAdminService from '@/features/admin/services/userAdminService';
 import { notify } from '@/features/notifications/NotificationProvider';
 
@@ -99,7 +100,7 @@ const AdminUserManagementPage = () => {
                 <tr key={id} className="hover:bg-surface-container-low">
                   <td className="px-5 py-4 font-bold text-primary">{user.fullName || user.username || '-'}</td>
                   <td className="px-5 py-4 text-sm text-on-surface-variant">{user.email || '-'}</td>
-                  <td className="px-5 py-4 text-sm font-bold text-on-surface">{Array.from(user.roles || ['USER']).join(', ')}</td>
+                  <td className="px-5 py-4 text-sm font-bold text-on-surface">{formatRoles(user.roles)}</td>
                   <td className="px-5 py-4"><StatusBadge status={user.isActive === false ? 'INACTIVE' : 'ACTIVE'} /></td>
                   <td className="px-5 py-4"><div className="flex justify-end gap-2"><IconButton onClick={() => edit(user)}><Icon name="edit" /></IconButton><IconButton onClick={() => remove(id)}><Icon name="trash" /></IconButton></div></td>
                 </tr>

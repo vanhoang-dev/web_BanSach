@@ -2,10 +2,11 @@
 
 import { AdminTable, AdminToolbar, formatVnd, PrimaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import { orderStatusLabels } from '@/features/admin/adminPresentation';
 import orderAdminService from '@/features/admin/services/orderAdminService';
 import { notify } from '@/features/notifications/NotificationProvider';
 
-const statuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'COMPLETED', 'CANCELLED'];
+const statuses = ['PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED', 'CANCELLED'];
 const pageSize = 10;
 
 const AdminOrderManagementPage = () => {
@@ -72,7 +73,7 @@ const AdminOrderManagementPage = () => {
                 <td className="px-5 py-4">
                   <div className="flex flex-wrap gap-2">
                     <select value={order.status || 'PENDING'} onChange={(e) => updateStatus(order.id, e.target.value)} className="h-10 rounded-lg border-outline-variant bg-surface text-sm">
-                      {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                      {statuses.map((status) => <option key={status} value={status}>{orderStatusLabels[status] || status}</option>)}
                     </select>
                     <PrimaryButton onClick={() => cancel(order.id)} disabled={order.status === 'CANCELLED'}>Hủy</PrimaryButton>
                   </div>

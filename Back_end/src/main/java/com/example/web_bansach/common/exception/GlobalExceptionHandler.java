@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -144,6 +145,20 @@ public class GlobalExceptionHandler {
                 response.setPath(requestPath(request));
 
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        @ExceptionHandler(DataIntegrityViolationException.class)
+        public ResponseEntity<ApiResponse<?>> handleDataIntegrityViolation(
+                        DataIntegrityViolationException ex,
+                        WebRequest request) {
+                log.warn("Data integrity violation, path={}", requestPath(request), ex);
+
+                ApiResponse<?> response = ApiResponse.failure(
+                                HttpStatus.CONFLICT.value(),
+                                "Dữ liệu bị trùng hoặc đang được sử dụng nên không thể thay đổi hay xóa");
+                response.setPath(requestPath(request));
+
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
 
         @ExceptionHandler(Exception.class)
