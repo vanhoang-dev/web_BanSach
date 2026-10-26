@@ -3,6 +3,7 @@
 import { AdminTable, AdminToolbar, Field, Icon, IconButton, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
 import categoryAdminService from '@/features/admin/services/categoryAdminService';
+import { notify } from '@/features/notifications/NotificationProvider';
 
 const emptyForm = { name: '', description: '', isActive: true };
 const pageSize = 10;
@@ -12,7 +13,6 @@ const AdminCategoryManagementPage = () => {
   const [form, setForm] = useState<any>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
@@ -23,7 +23,7 @@ const AdminCategoryManagementPage = () => {
       setCategories(response.data.content || []);
       setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
-      setError('Không thể tải danh mục.');
+      notify.error('Không thể tải danh mục. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -40,9 +40,10 @@ const AdminCategoryManagementPage = () => {
       else await categoryAdminService.create(form);
       setForm(emptyForm);
       setEditingId(null);
-      fetchCategories();
+      await fetchCategories();
+      notify.success(editingId ? 'Đã cập nhật danh mục.' : 'Đã thêm danh mục mới.');
     } catch {
-      setError('Không thể lưu danh mục.');
+      notify.error('Không thể lưu danh mục. Vui lòng kiểm tra dữ liệu.');
     }
   };
 
@@ -53,25 +54,27 @@ const AdminCategoryManagementPage = () => {
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa danh mục này?')) return;
-    await categoryAdminService.remove(id);
-    fetchCategories();
+    try { await categoryAdminService.remove(id); await fetchCategories(); notify.success('Đã xóa danh mục.'); }
+    catch { notify.error('Không thể xóa danh mục.'); }
   };
 
   const toggle = async (category: any) => {
-    if (category.isActive === false) await categoryAdminService.activate(category.id);
-    else await categoryAdminService.deactivate(category.id);
-    fetchCategories();
+    try {
+      if (category.isActive === false) await categoryAdminService.activate(category.id);
+      else await categoryAdminService.deactivate(category.id);
+      await fetchCategories();
+      notify.success('Đã cập nhật trạng thái danh mục.');
+    } catch { notify.error('Không thể cập nhật trạng thái danh mục.'); }
   };
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="w-full min-w-0">
       <SectionHeading eyebrow="Quản trị" title="Quản lý danh mục" description="Tạo, sửa, xóa, kích hoạt và tạm ẩn danh mục theo API quản trị danh mục." />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Tổng danh mục" value={categories.length} icon="category" />
         <StatCard label="Đang hoạt động" value={categories.filter((item) => item.isActive !== false).length} icon="chart" tone="success" />
         <StatCard label="Tạm ẩn" value={categories.filter((item) => item.isActive === false).length} icon="trash" tone="warning" />
       </div>
-      {error ? <div className="mt-5 rounded-lg bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{error}</div> : null}
       <form onSubmit={submit} className="mt-6 grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
         <Field label="Tên danh mục" value={form.name} onChange={(e) => setForm((current: any) => ({ ...current, name: e.target.value }))} required />
         <Field label="Mô tả" value={form.description} onChange={(e) => setForm((current: any) => ({ ...current, description: e.target.value }))} />

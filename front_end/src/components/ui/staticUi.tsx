@@ -76,10 +76,10 @@ export const Surface = ({ children, className = '' }: BaseProps) => (
 );
 
 export const SectionHeading = ({ eyebrow, title, description, action }: SectionHeadingProps) => (
-  <div className="mb-8 flex min-w-0 flex-col gap-5 md:flex-row md:items-end md:justify-between">
+  <div className="mb-6 flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
     <div className="min-w-0 max-w-3xl">
       {eyebrow ? <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-secondary">{eyebrow}</p> : null}
-      <h1 className="font-serif text-[30px] font-bold leading-[1.22] text-primary sm:text-3xl md:text-4xl">{title}</h1>
+      <h1 className="font-serif text-[28px] font-bold leading-[1.22] text-primary sm:text-3xl">{title}</h1>
       {description ? <p className="mt-3 max-w-2xl break-words text-base leading-7 text-on-surface-variant">{description}</p> : null}
     </div>
     {action ? <div className="flex w-full flex-wrap gap-3 md:w-auto md:shrink-0">{action}</div> : null}
@@ -178,7 +178,7 @@ export const StatCard = ({ label, value, detail, icon = 'chart', tone = 'default
   };
 
   return (
-    <Panel className="p-6">
+    <Panel className="p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-on-surface-variant">{label}</p>
@@ -283,7 +283,7 @@ export const AdminTable = ({ children, minWidth = '760px' }: BaseProps & { minWi
 );
 
 export const AdminToolbar = ({ children }: BaseProps) => (
-  <div className="mb-4 flex flex-wrap items-center gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4">{children}</div>
+  <div className="mb-4 flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-4">{children}</div>
 );
 
 export const Icon = ({ name, className = 'h-5 w-5' }: IconProps) => {
@@ -336,6 +336,10 @@ export const Icon = ({ name, className = 'h-5 w-5' }: IconProps) => {
       return <svg {...common} className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></svg>;
     case 'bell':
       return <svg {...common} className={className}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>;
+    case 'check':
+      return <svg {...common} className={className}><path d="m5 12 4 4L19 6" /></svg>;
+    case 'warning':
+      return <svg {...common} className={className}><path d="M10.3 3.7 2.4 17.4A2 2 0 0 0 4.1 20h15.8a2 2 0 0 0 1.7-2.6L13.7 3.7a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>;
     default:
       return <svg {...common} className={className}><circle cx="12" cy="12" r="9" /></svg>;
   }
