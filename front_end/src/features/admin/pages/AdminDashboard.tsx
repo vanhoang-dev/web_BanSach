@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 
-import { AdminTable, formatVnd, Icon, Panel, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
+import { AdminTable, formatVnd, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
+import AdminSectionHeader from '@/features/admin/components/AdminSectionHeader';
 import dashboardService from '@/features/admin/services/dashboardService';
 import { notify } from '@/features/notifications/NotificationProvider';
 
@@ -73,7 +74,8 @@ const AdminDashboard = () => {
         <StatCard label="Người dùng" value={loading ? '...' : dashboard.totalUsers.toLocaleString('vi-VN')} icon="users" />
       </div>
 
-      <div className="mt-6 grid min-w-0 gap-6 2xl:grid-cols-[minmax(0,1fr)_340px]">
+      <AdminSectionHeader title="Đơn hàng gần đây" description="Các đơn mới nhất cần theo dõi trong quá trình vận hành." />
+      <div className="min-w-0">
         <AdminTable minWidth="720px">
           <thead className="border-b border-outline-variant bg-surface-container-high">
             <tr>
@@ -100,26 +102,6 @@ const AdminDashboard = () => {
           </tbody>
         </AdminTable>
 
-        <Panel className="p-5">
-          <h2 className="text-lg font-bold text-primary">Luồng nghiệp vụ</h2>
-          <div className="mt-5 space-y-4">
-            {[
-              ['Sách', 'Thêm, sửa, xóa sách, ảnh bìa, tác giả, danh mục', 'book'],
-              ['Bán hàng', 'Giỏ hàng, voucher, tạo đơn, thanh toán', 'cart'],
-              ['Vận hành', 'Duyệt đơn, cập nhật kho, quản lý người dùng', 'inventory'],
-            ].map(([title, desc, icon]) => (
-              <div key={title} className="flex gap-3 rounded-lg border border-outline-variant p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
-                  <Icon name={icon} />
-                </div>
-                <div>
-                  <p className="font-bold text-primary">{title}</p>
-                  <p className="mt-1 text-sm leading-6 text-on-surface-variant">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Panel>
       </div>
     </div>
   );

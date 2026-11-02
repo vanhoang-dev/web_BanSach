@@ -21,7 +21,7 @@ const AdminPagination = ({ page, pageSize, totalElements, totalPages, onPageChan
   const lastItem = Math.min((page + 1) * pageSize, totalElements);
 
   return (
-    <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface px-4 py-3 sm:flex-row">
+    <div data-ui="admin-pagination" className="mt-4 flex flex-col items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface px-4 py-3 sm:flex-row">
       <p className="text-sm text-on-surface-variant">
         Hiển thị <span className="font-bold text-on-surface">{firstItem}–{lastItem}</span> trong{' '}
         <span className="font-bold text-on-surface">{totalElements}</span> kết quả

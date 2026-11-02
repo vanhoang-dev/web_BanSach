@@ -2,6 +2,7 @@
 
 import { AdminTable, AdminToolbar, Field, Icon, IconButton, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import AdminSectionHeader from '@/features/admin/components/AdminSectionHeader';
 import { formatRoles } from '@/features/admin/adminPresentation';
 import userAdminService from '@/features/admin/services/userAdminService';
 import { notify } from '@/features/notifications/NotificationProvider';
@@ -77,7 +78,9 @@ const AdminUserManagementPage = () => {
         <StatCard label="Quản trị viên" value={users.filter((item) => Array.from(item.roles || []).some((role: any) => String(role).includes('ADMIN'))).length} icon="chart" />
       </div>
       {editingId ? (
-        <form onSubmit={submit} className="mt-6 grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-3">
+        <>
+        <AdminSectionHeader title="Cập nhật người dùng" description="Chỉnh sửa thông tin liên hệ và trạng thái tài khoản." />
+        <form onSubmit={submit} className="grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-3">
           <Field label="Họ tên" value={form.fullName} onChange={(e) => setForm((current: any) => ({ ...current, fullName: e.target.value }))} required />
           <Field label="Email" value={form.email} onChange={(e) => setForm((current: any) => ({ ...current, email: e.target.value }))} type="email" />
           <Field label="Số điện thoại" value={form.phone} onChange={(e) => setForm((current: any) => ({ ...current, phone: e.target.value }))} />
@@ -85,14 +88,16 @@ const AdminUserManagementPage = () => {
           <label className="flex items-end gap-3 text-sm font-semibold text-on-surface"><input checked={form.isActive} onChange={(e) => setForm((current: any) => ({ ...current, isActive: e.target.checked }))} type="checkbox" /> Hoạt động</label>
           <div className="flex gap-2 md:col-span-3"><PrimaryButton type="submit">Lưu người dùng</PrimaryButton><SecondaryButton onClick={() => { setEditingId(null); setForm(emptyForm); }}>Hủy</SecondaryButton></div>
         </form>
+        </>
       ) : null}
-      <div className="mt-6">
+      <AdminSectionHeader title="Danh sách người dùng" description="Tra cứu tài khoản, vai trò và trạng thái hoạt động." />
+      <div>
         <AdminToolbar>
           <input value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }} className="h-11 w-full rounded-lg border-outline-variant bg-surface px-4 text-sm md:max-w-sm" placeholder="Tìm tên hoặc email..." />
           <span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${pageInfo.totalElements} người dùng`}</span>
         </AdminToolbar>
         <AdminTable minWidth="860px">
-          <thead className="border-b border-outline-variant bg-surface-container-high text-xs uppercase text-on-surface-variant"><tr>{['Tên', 'Email', 'Vai trò', 'Trạng thái', ''].map((head) => <th key={head} className="px-5 py-4">{head}</th>)}</tr></thead>
+          <thead className="border-b border-outline-variant bg-surface-container-high text-xs uppercase text-on-surface-variant"><tr>{['Tên', 'Email', 'Vai trò', 'Trạng thái', 'Hành động'].map((head) => <th key={head} className={`px-5 py-4 ${head === 'Hành động' ? 'text-right' : ''}`}>{head}</th>)}</tr></thead>
           <tbody className="divide-y divide-outline-variant">
             {visibleUsers.map((user) => {
               const id = user.userId || user.id;

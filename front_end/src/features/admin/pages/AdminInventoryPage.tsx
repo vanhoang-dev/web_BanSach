@@ -2,6 +2,7 @@
 
 import { AdminTable, AdminToolbar, Field, PrimaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import AdminSectionHeader from '@/features/admin/components/AdminSectionHeader';
 import inventoryAdminService from '@/features/admin/services/inventoryAdminService';
 import { notify } from '@/features/notifications/NotificationProvider';
 
@@ -53,17 +54,16 @@ const AdminInventoryPage = () => {
   };
 
   const totalStock = inventory.reduce((sum, item) => sum + Number(item.quantity || item.stock || 0), 0);
-  const lowStock = inventory.filter((item) => Number(item.quantity || item.stock || 0) < 10).length;
 
   return (
     <div className="w-full min-w-0">
-      <SectionHeading eyebrow="Quản trị" title="Quản lý tồn kho" description="Theo dõi tồn kho, đặt số lượng, điều chỉnh nhập/xuất và đối soát theo /admin/inventory." />
-      <div className="grid gap-4 md:grid-cols-3">
+      <SectionHeading eyebrow="Quản trị" title="Quản lý tồn kho" description="Theo dõi số lượng, điều chỉnh nhập xuất và đối soát từng đầu sách." />
+      <div className="grid gap-4 md:grid-cols-2">
         <StatCard label="Tổng đầu tồn" value={pageInfo.totalElements} icon="inventory" />
         <StatCard label="Tổng số lượng" value={totalStock} icon="book" tone="success" />
-        <StatCard label="Cần bổ sung" value={lowStock} icon="order" tone="warning" />
       </div>
-      <form onSubmit={applySet} className="mt-6 grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_180px_180px_auto_auto]">
+      <AdminSectionHeader title="Điều chỉnh tồn kho" description="Đặt lại số lượng, nhập xuất hoặc đối soát một đầu sách." />
+      <form onSubmit={applySet} className="grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_180px_180px_auto_auto]">
         <label className="block">
           <span className="mb-2 block text-sm font-semibold text-on-surface">Đầu sách tồn kho</span>
           <select value={selectedId} onChange={(e) => setSelectedId(e.target.value ? Number(e.target.value) : '')} className="h-11 w-full rounded-lg border-outline-variant bg-surface text-sm">
@@ -76,7 +76,8 @@ const AdminInventoryPage = () => {
         <div className="flex items-end"><PrimaryButton type="submit">Đặt số lượng</PrimaryButton></div>
         <div className="flex items-end gap-2"><PrimaryButton onClick={applyAdjust}>Điều chỉnh</PrimaryButton><PrimaryButton onClick={applyReconcile}>Đối soát</PrimaryButton></div>
       </form>
-      <div className="mt-6">
+      <AdminSectionHeader title="Danh sách tồn kho" description="Theo dõi số lượng hiện tại và các đầu sách cần chú ý." />
+      <div>
         <AdminToolbar><span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${pageInfo.totalElements} dòng tồn kho`}</span></AdminToolbar>
         <AdminTable minWidth="760px">
           <thead className="border-b border-outline-variant bg-surface-container-high text-xs uppercase text-on-surface-variant"><tr>{['ID', 'Sách', 'Tồn kho', 'Cảnh báo'].map((head) => <th key={head} className="px-5 py-4">{head}</th>)}</tr></thead>

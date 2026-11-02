@@ -2,6 +2,7 @@
 
 import { Field, formatVnd, Icon, IconButton, Panel, PrimaryButton, SecondaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import AdminSectionHeader from '@/features/admin/components/AdminSectionHeader';
 import voucherAdminService from '@/features/admin/services/voucherAdminService';
 import { notify } from '@/features/notifications/NotificationProvider';
 
@@ -66,13 +67,14 @@ const AdminVoucherManagementPage = () => {
 
   return (
     <div className="w-full min-w-0">
-      <SectionHeading eyebrow="Quản trị" title="Quản lý voucher" description="Tạo, sửa, xóa và xem voucher theo phân hệ /admin/vouchers." />
+      <SectionHeading eyebrow="Quản trị" title="Quản lý voucher" description="Tạo, cập nhật và theo dõi hiệu lực của các mã giảm giá." />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Tổng voucher" value={pageInfo.totalElements} icon="ticket" />
         <StatCard label="Hợp lệ" value={vouchers.filter((item) => item.isValid !== false && item.isExpired !== true).length} icon="chart" tone="success" />
         <StatCard label="Hết hạn" value={vouchers.filter((item) => item.isExpired).length} icon="order" tone="warning" />
       </div>
-      <form onSubmit={submit} className="mt-6 grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-6">
+      <AdminSectionHeader title={editingId ? 'Cập nhật voucher' : 'Tạo voucher'} description="Thiết lập mức giảm, số lượng và thời hạn áp dụng." />
+      <form onSubmit={submit} className="grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 md:grid-cols-6">
         <Field className="md:col-span-2" label="Mã voucher" value={form.code} onChange={(e) => setForm((current: any) => ({ ...current, code: e.target.value.toUpperCase() }))} required />
         <Field label="% giảm" type="number" value={form.discountPercent} onChange={(e) => setForm((current: any) => ({ ...current, discountPercent: Number(e.target.value) }))} required />
         <Field label="Giảm tối đa" type="number" value={form.maxDiscount} onChange={(e) => setForm((current: any) => ({ ...current, maxDiscount: Number(e.target.value) }))} required />
@@ -83,7 +85,8 @@ const AdminVoucherManagementPage = () => {
           {editingId ? <SecondaryButton onClick={() => { setEditingId(null); setForm(emptyForm); }}>Hủy</SecondaryButton> : null}
         </div>
       </form>
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <AdminSectionHeader title="Danh sách voucher" description="Theo dõi hiệu lực và mức sử dụng của các mã giảm giá." />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {loading ? Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-48 animate-pulse rounded-xl bg-surface-container" />) : vouchers.map((voucher) => (
           <Panel key={voucher.id} className="p-5">
             <div className="flex items-start justify-between gap-4">

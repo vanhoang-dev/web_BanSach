@@ -4,6 +4,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import logoWeb from '@/assets/icons/logoweb.png';
 import { Icon, IconButton } from '@/components/ui/staticUi';
 import cartService, { cartChangedEvent } from '@/features/cart/services/cartService';
+import wishlistService, { wishlistChangedEvent } from '@/features/wishlist/services/wishlistService';
 import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
@@ -20,6 +21,7 @@ const Header = () => {
   const [open, setOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const accountRef = useRef<HTMLDivElement>(null);
   const displayName = user?.fullName || 'Tài khoản';
   const avatarText = displayName.trim().charAt(0).toUpperCase() || 'U';
@@ -45,6 +47,31 @@ const Header = () => {
     return () => {
       active = false;
       window.removeEventListener(cartChangedEvent, handleCartChange);
+    };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setWishlistCount(0);
+      return;
+    }
+
+    let active = true;
+    const refreshWishlistCount = () => {
+      wishlistService.getWishlistCount()
+        .then((count) => {
+          if (active) setWishlistCount(count);
+        })
+        .catch(() => {
+          if (active) setWishlistCount(0);
+        });
+    };
+
+    refreshWishlistCount();
+    window.addEventListener(wishlistChangedEvent, refreshWishlistCount);
+    return () => {
+      active = false;
+      window.removeEventListener(wishlistChangedEvent, refreshWishlistCount);
     };
   }, [isAuthenticated]);
 
@@ -121,10 +148,11 @@ const Header = () => {
           <Link
             to={isAuthenticated ? '/wishlist' : '/login'}
             state={!isAuthenticated ? { from: '/wishlist' } : undefined}
-            aria-label="Danh sách yêu thích"
-            className="hidden h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-surface-container hover:text-primary sm:inline-flex"
+            aria-label={`Danh sách yêu thích, ${wishlistCount} sản phẩm`}
+            className="relative hidden h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-surface-container hover:text-primary sm:inline-flex"
           >
             <Icon name="heart" />
+            {wishlistCount > 0 ? <span className="absolute right-0 top-0 min-w-5 rounded-full bg-secondary-container px-1 text-center text-[11px] font-bold leading-5 text-on-secondary-container">{wishlistCount > 99 ? '99+' : wishlistCount}</span> : null}
           </Link>
           <Link
             to={isAuthenticated ? '/cart' : '/login'}
@@ -200,7 +228,8 @@ const Header = () => {
               onClick={() => setOpen(false)}
               className="flex min-h-11 items-center border-l-2 border-transparent px-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container hover:text-primary sm:hidden"
             >
-              Danh sách yêu thích
+              <span className="flex-1">Danh sách yêu thích</span>
+              {wishlistCount > 0 ? <span className="min-w-5 rounded-full bg-secondary-container px-1 text-center text-[11px] font-bold leading-5 text-on-secondary-container">{wishlistCount > 99 ? '99+' : wishlistCount}</span> : null}
             </Link>
             <Link to="/orders" onClick={() => setOpen(false)} className="flex min-h-11 items-center border-l-2 border-transparent px-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container hover:text-primary">Đơn hàng của tôi</Link>
             {isAuthenticated ? (

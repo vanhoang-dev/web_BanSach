@@ -2,6 +2,7 @@
 
 import { Field, Icon, IconButton, Panel, PrimaryButton, SecondaryButton, SectionHeading, StatCard } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import AdminSectionHeader from '@/features/admin/components/AdminSectionHeader';
 import authorAdminService from '@/features/admin/services/authorAdminService';
 import { notify } from '@/features/notifications/NotificationProvider';
 
@@ -12,20 +13,16 @@ const AdminAuthorManagementPage = () => {
   const [authors, setAuthors] = useState<any[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState({ totalElements: 0, totalPages: 0 });
 
   const fetchAuthors = async () => {
     try {
-      setLoading(true);
       const response = await authorAdminService.getAll(page, pageSize);
       setAuthors(response.data.content || []);
       setPageInfo({ totalElements: response.data.totalElements, totalPages: response.data.totalPages });
     } catch {
       notify.error('Không thể tải tác giả. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -60,13 +57,13 @@ const AdminAuthorManagementPage = () => {
 
   return (
     <div className="w-full min-w-0">
-      <SectionHeading eyebrow="Quản trị" title="Quản lý tác giả" description="Tạo, cập nhật, xóa và tra cứu tác giả theo phân hệ /admin/authors." />
-      <div className="grid gap-4 md:grid-cols-3">
+      <SectionHeading eyebrow="Quản trị" title="Quản lý tác giả" description="Tạo, cập nhật và quản lý thông tin tác giả của các đầu sách." />
+      <div className="grid gap-4 md:grid-cols-2">
         <StatCard label="Tổng tác giả" value={pageInfo.totalElements} icon="user" />
         <StatCard label="Đang hiển thị" value={authors.length} icon="book" tone="success" />
-        <StatCard label="Trạng thái" value={loading ? 'Đang tải' : 'Sẵn sàng'} icon="chart" />
       </div>
-      <form onSubmit={submit} className="mt-6 grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
+      <AdminSectionHeader title={editingId ? 'Cập nhật tác giả' : 'Thêm tác giả'} description="Lưu tên và thông tin giới thiệu của tác giả." />
+      <form onSubmit={submit} className="grid min-w-0 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
         <Field label="Tên tác giả" value={form.authorName} onChange={(e) => setForm((current) => ({ ...current, authorName: e.target.value }))} required />
         <Field label="Tiểu sử" value={form.biography} onChange={(e) => setForm((current) => ({ ...current, biography: e.target.value }))} />
         <div className="flex items-end gap-2">
@@ -74,7 +71,8 @@ const AdminAuthorManagementPage = () => {
           {editingId ? <SecondaryButton onClick={() => { setEditingId(null); setForm(emptyForm); }}>Hủy</SecondaryButton> : null}
         </div>
       </form>
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <AdminSectionHeader title="Danh sách tác giả" description="Các tác giả hiện có trong dữ liệu nhà sách." />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {authors.map((author) => (
           <Panel key={author.id} className="p-5">
             <div className="flex items-start gap-4">
