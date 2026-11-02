@@ -67,8 +67,8 @@ textarea {
 /* Admin app shell — scoped adaptation of the local DESIGN.md system. */
 .admin-shell {
   min-width: 320px;
-  background: #f3f3f1;
-  color: #141414;
+  background: #F7F8FA;
+  color: #1D2939;
 }
 
 .admin-shell [data-ui='section-heading'] {
@@ -77,13 +77,13 @@ textarea {
 
 .admin-shell [data-ui='section-eyebrow'] {
   margin-bottom: 8px;
-  color: #7b7b76;
+  color: #E58F29;
   text-transform: none;
   letter-spacing: 0;
 }
 
 .admin-shell [data-ui='section-title'] {
-  color: #141414;
+  color: #183B4E;
   font-size: clamp(1.75rem, 2.2vw, 2.25rem);
   font-weight: 700;
   line-height: 1.08;
@@ -92,7 +92,7 @@ textarea {
 
 .admin-shell [data-ui='section-description'] {
   max-width: 680px;
-  color: #70706b;
+  color: #667085;
   font-size: 0.9375rem;
   line-height: 1.55;
 }
@@ -100,7 +100,7 @@ textarea {
 .admin-shell [data-ui='panel'],
 .admin-shell [data-ui='stat-card'],
 .admin-shell [data-ui='admin-table'] {
-  border-color: #e5e5e2;
+  border-color: #E4E7EC;
   border-radius: 20px;
   background: #fff;
   box-shadow: none;
@@ -112,12 +112,12 @@ textarea {
 }
 
 .admin-shell [data-ui='stat-label'] {
-  color: #777772;
+  color: #667085;
   font-weight: 500;
 }
 
 .admin-shell [data-ui='stat-value'] {
-  color: #141414;
+  color: #183B4E;
   font-size: 1.625rem;
   line-height: 1.15;
 }
@@ -126,19 +126,19 @@ textarea {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: #f0f0ee !important;
-  color: #242420 !important;
+  background: #E8F0F3 !important;
+  color: #183B4E !important;
 }
 
 .admin-shell main form {
-  border-color: #e5e5e2 !important;
+  border-color: #E4E7EC !important;
   border-radius: 20px !important;
   background: #fff !important;
   padding: 20px !important;
 }
 
 .admin-shell main label > span:first-child {
-  color: #383834;
+  color: #344054;
   font-weight: 600;
 }
 
@@ -147,22 +147,22 @@ textarea {
 .admin-shell main textarea {
   border-color: transparent !important;
   border-radius: 14px !important;
-  background-color: #f0f0ee !important;
-  color: #141414 !important;
+  background-color: #F2F4F7 !important;
+  color: #1D2939 !important;
   box-shadow: none !important;
 }
 
 .admin-shell main input[type='file'] {
-  border-color: #e2e2df !important;
+  border-color: #D0D5DD !important;
   border-radius: 14px !important;
-  background: #f7f7f5 !important;
+  background: #F7F8FA !important;
 }
 
 .admin-shell main input:not([type='checkbox']):not([type='radio']):focus,
 .admin-shell main select:focus,
 .admin-shell main textarea:focus {
-  border-color: #141414 !important;
-  box-shadow: 0 0 0 1px #141414 !important;
+  border-color: #183B4E !important;
+  box-shadow: 0 0 0 1px #183B4E !important;
   outline: none;
 }
 
@@ -177,53 +177,53 @@ textarea {
 }
 
 .admin-shell [data-ui='button-primary'] {
-  border-color: #141414;
-  background: #141414;
+  border-color: #183B4E;
+  background: #183B4E;
   color: #fff;
 }
 
 .admin-shell [data-ui='button-primary']:hover {
-  background: #2a2a27;
+  background: #102E3D;
 }
 
 .admin-shell [data-ui='button-secondary'] {
-  border-color: #dededb;
+  border-color: #D0D5DD;
   background: #fff;
-  color: #242420;
+  color: #344054;
 }
 
 .admin-shell [data-ui='button-secondary']:hover,
 .admin-shell [data-ui='button-ghost']:hover {
-  background: #eeeeeb;
-  color: #141414;
+  background: #F2F4F7;
+  color: #183B4E;
 }
 
 .admin-shell [data-ui='icon-button'] {
   width: 42px;
   height: 42px;
-  border-color: #dfdfdc;
+  border-color: #D0D5DD;
   border-radius: 14px;
   background: #fff;
-  color: #5e5e59;
+  color: #667085;
   box-shadow: none;
 }
 
 .admin-shell [data-ui='icon-button']:hover {
-  border-color: #c9c9c5;
-  background: #f0f0ee;
-  color: #141414;
+  border-color: #98A2B3;
+  background: #E8F0F3;
+  color: #183B4E;
 }
 
 .admin-shell [data-ui='admin-toolbar'] {
-  border-color: #e5e5e2;
+  border-color: #E4E7EC;
   border-radius: 18px;
   background: #fff;
 }
 
 .admin-shell [data-ui='admin-table'] thead {
-  border-color: #e5e5e2;
-  background: #f2f2ef;
-  color: #666661;
+  border-color: #E4E7EC;
+  background: #F2F4F7;
+  color: #667085;
   text-transform: none;
   letter-spacing: 0;
 }
@@ -234,7 +234,7 @@ textarea {
 }
 
 .admin-shell [data-ui='admin-table'] tbody {
-  border-color: #ececea;
+  border-color: #E4E7EC;
 }
 
 .admin-shell [data-ui='admin-table'] tbody tr {
@@ -242,15 +242,15 @@ textarea {
 }
 
 .admin-shell [data-ui='admin-table'] tbody tr:hover {
-  background: #f7f7f5;
+  background: #F7F8FA;
 }
 
 .admin-shell [data-ui='admin-table'] td {
-  color: #3e3e3a;
+  color: #344054;
 }
 
 .admin-shell [data-ui='admin-pagination'] {
-  border-color: #e5e5e2;
+  border-color: #E4E7EC;
   border-radius: 18px;
   background: #fff;
 }
