@@ -2,6 +2,7 @@
 
 import { AdminTable, AdminToolbar, formatVnd, PrimaryButton, SectionHeading, StatCard, StatusBadge } from '@/components/ui/staticUi';
 import AdminPagination from '@/features/admin/components/AdminPagination';
+import AdminSectionHeader from '@/features/admin/components/AdminSectionHeader';
 import { orderStatusLabels } from '@/features/admin/adminPresentation';
 import orderAdminService from '@/features/admin/services/orderAdminService';
 import { notify } from '@/features/notifications/NotificationProvider';
@@ -55,7 +56,8 @@ const AdminOrderManagementPage = () => {
         <StatCard label="Hoàn tất" value={orders.filter((item) => ['DELIVERED', 'COMPLETED'].includes(item.status)).length} icon="chart" tone="success" />
         <StatCard label="Đã hủy" value={orders.filter((item) => item.status === 'CANCELLED').length} icon="trash" tone="danger" />
       </div>
-      <div className="mt-6">
+      <AdminSectionHeader title="Danh sách đơn hàng" description="Tra cứu khách hàng và cập nhật tiến trình xử lý đơn." />
+      <div>
         <AdminToolbar>
           <input value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }} className="h-11 w-full rounded-lg border border-outline-variant bg-surface px-4 text-sm outline-none focus:border-primary md:max-w-sm" placeholder="Tìm mã đơn, khách hàng..." />
           <span className="text-sm font-semibold text-on-surface-variant">{loading ? 'Đang tải...' : `${pageInfo.totalElements} đơn hàng`}</span>

@@ -13,7 +13,18 @@ export interface WishlistItem {
   addedAt?: string;
 }
 
+export const wishlistChangedEvent = 'wishlist:changed';
+
+const publishWishlistChange = () => {
+  window.dispatchEvent(new Event(wishlistChangedEvent));
+};
+
 const wishlistService = {
+  getWishlistCount: async (): Promise<number> => {
+    const response: unknown = await api.get('/user/wishlist?page=0&size=1');
+    return unwrapPage(response).totalElements;
+  },
+
   // Lấy danh sách wishlist
   getWishlist: async (page: number = 0, size: number = 50): Promise<any> => {
     try {
@@ -39,6 +50,7 @@ const wishlistService = {
   addToWishlist: async (bookId: number): Promise<any> => {
     try {
       const response = await api.post(`/user/wishlist/books/${bookId}`);
+      publishWishlistChange();
       return response;
     } catch (error: any) {
       throw error;
@@ -49,6 +61,7 @@ const wishlistService = {
   removeFromWishlist: async (bookId: number): Promise<any> => {
     try {
       const response = await api.delete(`/user/wishlist/books/${bookId}`);
+      publishWishlistChange();
       return response;
     } catch (error: any) {
       throw error;
@@ -65,7 +78,11 @@ const wishlistService = {
     }
   },
 
-  clearWishlist: async (): Promise<any> => api.delete('/user/wishlist/clear'),
+  clearWishlist: async (): Promise<any> => {
+    const response = await api.delete('/user/wishlist/clear');
+    publishWishlistChange();
+    return response;
+  },
 };
 
 export default wishlistService;

@@ -68,7 +68,7 @@ export const Container = ({ children, className = '' }: BaseProps) => (
 );
 
 export const Panel = ({ children, className = '', ...props }: HTMLAttributes<HTMLDivElement>) => (
-  <div {...props} className={`rounded-lg border border-outline-variant bg-surface ${className}`}>{children}</div>
+  <div data-ui="panel" {...props} className={`rounded-lg border border-outline-variant bg-surface ${className}`}>{children}</div>
 );
 
 export const Surface = ({ children, className = '' }: BaseProps) => (
@@ -76,18 +76,18 @@ export const Surface = ({ children, className = '' }: BaseProps) => (
 );
 
 export const SectionHeading = ({ eyebrow, title, description, action }: SectionHeadingProps) => (
-  <div className="mb-6 flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
+  <div data-ui="section-heading" className="mb-6 flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
     <div className="min-w-0 max-w-3xl">
-      {eyebrow ? <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-secondary">{eyebrow}</p> : null}
-      <h1 className="font-serif text-[28px] font-bold leading-[1.22] text-primary sm:text-3xl">{title}</h1>
-      {description ? <p className="mt-3 max-w-2xl break-words text-base leading-7 text-on-surface-variant">{description}</p> : null}
+      {eyebrow ? <p data-ui="section-eyebrow" className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-secondary">{eyebrow}</p> : null}
+      <h1 data-ui="section-title" className="font-serif text-[28px] font-bold leading-[1.22] text-primary sm:text-3xl">{title}</h1>
+      {description ? <p data-ui="section-description" className="mt-3 max-w-2xl break-words text-base leading-7 text-on-surface-variant">{description}</p> : null}
     </div>
     {action ? <div className="flex w-full flex-wrap gap-3 md:w-auto md:shrink-0">{action}</div> : null}
   </div>
 );
 
 export const Field = ({ label, textarea = false, className = '', ...props }: FieldProps) => (
-  <label className={`block ${className}`}>
+  <label data-ui="field" className={`block ${className}`}>
     <span className="mb-2 block text-sm font-semibold text-on-surface">{label}</span>
     {textarea ? (
       <textarea
@@ -105,6 +105,7 @@ export const Field = ({ label, textarea = false, className = '', ...props }: Fie
 
 export const PrimaryButton = ({ children, className = '', type = 'button', ...props }: ButtonProps) => (
   <button
+    data-ui="button-primary"
     {...props}
     type={type}
     className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
@@ -131,6 +132,7 @@ export const LinkButton = ({ children, className = '', variant = 'primary', ...p
 
 export const SecondaryButton = ({ children, className = '', type = 'button', ...props }: ButtonProps) => (
   <button
+    data-ui="button-secondary"
     {...props}
     type={type}
     className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-surface px-4 py-2 text-sm font-semibold text-[#344054] transition hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
@@ -141,6 +143,7 @@ export const SecondaryButton = ({ children, className = '', type = 'button', ...
 
 export const AccentButton = ({ children, className = '', type = 'button', ...props }: ButtonProps) => (
   <button
+    data-ui="button-accent"
     {...props}
     type={type}
     className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-secondary-container px-4 py-2 text-sm font-semibold text-on-secondary-container transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
@@ -151,6 +154,7 @@ export const AccentButton = ({ children, className = '', type = 'button', ...pro
 
 export const GhostButton = ({ children, className = '', type = 'button', ...props }: ButtonProps) => (
   <button
+    data-ui="button-ghost"
     {...props}
     type={type}
     className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-on-surface-variant transition hover:bg-surface-container hover:text-primary ${className}`}
@@ -161,6 +165,7 @@ export const GhostButton = ({ children, className = '', type = 'button', ...prop
 
 export const IconButton = ({ children, className = '', type = 'button', ...props }: ButtonProps) => (
   <button
+    data-ui="icon-button"
     {...props}
     type={type}
     className={`inline-flex h-11 w-11 items-center justify-center rounded-md border border-border-strong bg-surface text-on-surface-variant transition hover:bg-surface-container hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
@@ -178,14 +183,14 @@ export const StatCard = ({ label, value, detail, icon = 'chart', tone = 'default
   };
 
   return (
-    <Panel className="p-5">
+    <Panel data-ui="stat-card" className="p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-on-surface-variant">{label}</p>
-          <div className="mt-2 text-2xl font-bold text-primary">{value}</div>
+          <p data-ui="stat-label" className="text-sm font-semibold text-on-surface-variant">{label}</p>
+          <div data-ui="stat-value" className="mt-2 text-2xl font-bold text-primary">{value}</div>
           {detail ? <p className="mt-2 text-sm text-on-surface-variant">{detail}</p> : null}
         </div>
-        <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${tones[tone]}`}>
+        <div data-ui="stat-icon" className={`flex h-11 w-11 items-center justify-center rounded-lg ${tones[tone]}`}>
           <Icon name={icon} className="h-5 w-5" />
         </div>
       </div>
@@ -275,7 +280,7 @@ export const BookCard = ({ id, title, author, category, price, cover, discount, 
 );
 
 export const AdminTable = ({ children, minWidth = '760px' }: BaseProps & { minWidth?: string }) => (
-  <Panel className="overflow-hidden">
+  <Panel data-ui="admin-table" className="overflow-hidden">
     <div className="overflow-x-auto">
       <table className="w-full text-left" style={{ minWidth }}>{children}</table>
     </div>
@@ -283,7 +288,7 @@ export const AdminTable = ({ children, minWidth = '760px' }: BaseProps & { minWi
 );
 
 export const AdminToolbar = ({ children }: BaseProps) => (
-  <div className="mb-4 flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-4">{children}</div>
+  <div data-ui="admin-toolbar" className="mb-4 flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-4">{children}</div>
 );
 
 export const Icon = ({ name, className = 'h-5 w-5' }: IconProps) => {

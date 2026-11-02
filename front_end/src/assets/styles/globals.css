@@ -63,3 +63,208 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Admin app shell — scoped adaptation of the local DESIGN.md system. */
+.admin-shell {
+  min-width: 320px;
+  background: #f3f3f1;
+  color: #141414;
+}
+
+.admin-shell [data-ui='section-heading'] {
+  margin-bottom: 24px;
+}
+
+.admin-shell [data-ui='section-eyebrow'] {
+  margin-bottom: 8px;
+  color: #7b7b76;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.admin-shell [data-ui='section-title'] {
+  color: #141414;
+  font-size: clamp(1.75rem, 2.2vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.admin-shell [data-ui='section-description'] {
+  max-width: 680px;
+  color: #70706b;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.admin-shell [data-ui='panel'],
+.admin-shell [data-ui='stat-card'],
+.admin-shell [data-ui='admin-table'] {
+  border-color: #e5e5e2;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.admin-shell [data-ui='stat-card'] {
+  min-height: 116px;
+  padding: 20px;
+}
+
+.admin-shell [data-ui='stat-label'] {
+  color: #777772;
+  font-weight: 500;
+}
+
+.admin-shell [data-ui='stat-value'] {
+  color: #141414;
+  font-size: 1.625rem;
+  line-height: 1.15;
+}
+
+.admin-shell [data-ui='stat-icon'] {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #f0f0ee !important;
+  color: #242420 !important;
+}
+
+.admin-shell main form {
+  border-color: #e5e5e2 !important;
+  border-radius: 20px !important;
+  background: #fff !important;
+  padding: 20px !important;
+}
+
+.admin-shell main label > span:first-child {
+  color: #383834;
+  font-weight: 600;
+}
+
+.admin-shell main input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.admin-shell main select,
+.admin-shell main textarea {
+  border-color: transparent !important;
+  border-radius: 14px !important;
+  background-color: #f0f0ee !important;
+  color: #141414 !important;
+  box-shadow: none !important;
+}
+
+.admin-shell main input[type='file'] {
+  border-color: #e2e2df !important;
+  border-radius: 14px !important;
+  background: #f7f7f5 !important;
+}
+
+.admin-shell main input:not([type='checkbox']):not([type='radio']):focus,
+.admin-shell main select:focus,
+.admin-shell main textarea:focus {
+  border-color: #141414 !important;
+  box-shadow: 0 0 0 1px #141414 !important;
+  outline: none;
+}
+
+.admin-shell [data-ui='button-primary'],
+.admin-shell [data-ui='button-secondary'],
+.admin-shell [data-ui='button-accent'],
+.admin-shell [data-ui='button-ghost'] {
+  min-height: 44px;
+  border-radius: 9999px;
+  padding-inline: 18px;
+  box-shadow: none;
+}
+
+.admin-shell [data-ui='button-primary'] {
+  border-color: #141414;
+  background: #141414;
+  color: #fff;
+}
+
+.admin-shell [data-ui='button-primary']:hover {
+  background: #2a2a27;
+}
+
+.admin-shell [data-ui='button-secondary'] {
+  border-color: #dededb;
+  background: #fff;
+  color: #242420;
+}
+
+.admin-shell [data-ui='button-secondary']:hover,
+.admin-shell [data-ui='button-ghost']:hover {
+  background: #eeeeeb;
+  color: #141414;
+}
+
+.admin-shell [data-ui='icon-button'] {
+  width: 42px;
+  height: 42px;
+  border-color: #dfdfdc;
+  border-radius: 14px;
+  background: #fff;
+  color: #5e5e59;
+  box-shadow: none;
+}
+
+.admin-shell [data-ui='icon-button']:hover {
+  border-color: #c9c9c5;
+  background: #f0f0ee;
+  color: #141414;
+}
+
+.admin-shell [data-ui='admin-toolbar'] {
+  border-color: #e5e5e2;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.admin-shell [data-ui='admin-table'] thead {
+  border-color: #e5e5e2;
+  background: #f2f2ef;
+  color: #666661;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.admin-shell [data-ui='admin-table'] th {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.admin-shell [data-ui='admin-table'] tbody {
+  border-color: #ececea;
+}
+
+.admin-shell [data-ui='admin-table'] tbody tr {
+  transition: background-color 160ms ease;
+}
+
+.admin-shell [data-ui='admin-table'] tbody tr:hover {
+  background: #f7f7f5;
+}
+
+.admin-shell [data-ui='admin-table'] td {
+  color: #3e3e3a;
+}
+
+.admin-shell [data-ui='admin-pagination'] {
+  border-color: #e5e5e2;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.admin-shell [data-ui='admin-pagination'] button {
+  border-radius: 9999px;
+}
+
+@media (max-width: 639px) {
+  .admin-shell main form {
+    padding: 16px !important;
+  }
+
+  .admin-shell [data-ui='stat-card'] {
+    min-height: 104px;
+  }
+}
